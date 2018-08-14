@@ -1,15 +1,15 @@
 use parser::{Error, Input, ParseResult, Parser};
 
-pub fn any<I: Input>(mut i: I) -> ParseResult<I, I::Token> {
+pub fn any<I: Input>(mut i: I) -> ParseResult<I, I::Item> {
     match i.pop() {
         Some(t) => i.ok(t),
         None => i.err(Error::eof()),
     }
 }
 
-pub fn cond<I: Input, F>(mut i: I, f: F) -> ParseResult<I, I::Token>
+pub fn cond<I: Input, F>(mut i: I, f: F) -> ParseResult<I, I::Item>
 where
-    F: Fn(&I::Token) -> bool,
+    F: Fn(&I::Item) -> bool,
 {
     match i.peek() {
         Some(ref t) if f(t) => {
@@ -20,11 +20,11 @@ where
     }
 }
 
-pub struct CondParser<I: Input>(Fn(&I::Token) -> bool);
+pub struct CondParser<I: Input>(Fn(&I::Item) -> bool);
 
 impl<I: Input> Parser for CondParser<I> {
     type Input = I;
-    type Output = I::Token;
+    type Output = I::Item;
 
     fn parse(&mut self, mut i: Self::Input) -> ParseResult<Self::Input, Self::Output> {
         match i.peek() {
