@@ -1,7 +1,6 @@
-pub mod input;
-pub mod parser;
+mod input;
 
-use self::input::Input;
+pub use self::input::Input;
 
 #[derive(Debug, PartialEq)]
 pub struct Error(String);
@@ -24,5 +23,30 @@ impl<I: Input, O> ParseResult<I, O> {
             ParseResult::Ok(ok) => Ok(ok),
             ParseResult::Err(err) => Err(err),
         }
+    }
+}
+
+pub trait Parser {
+    type Input: Input;
+    type Output;
+
+    fn parse(&mut self, Self::Input) -> ParseResult<Self::Input, Self::Output>;
+}
+
+impl<'a, I: Input, O> Parser for FnMut(&mut I) -> ParseResult<I, O> + 'a {
+    type Input = I;
+    type Output = O;
+
+    fn parse(&mut self, mut i: Self::Input) -> ParseResult<Self::Input, Self::Output> {
+        self(&mut i)
+    }
+}
+
+impl<I: Input, O> Parser for fn(&mut I) -> ParseResult<I, O> {
+    type Input = I;
+    type Output = O;
+
+    fn parse(&mut self, mut i: Self::Input) -> ParseResult<Self::Input, Self::Output> {
+        self(&mut i)
     }
 }

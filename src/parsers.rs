@@ -1,6 +1,4 @@
-use parser::input::Input;
-use parser::parser::Parser;
-use parser::{Error, ParseResult};
+use parser::{Error, Input, ParseResult, Parser};
 
 pub fn any<I: Input>(mut i: I) -> ParseResult<I, I::Token> {
     match i.pop() {
