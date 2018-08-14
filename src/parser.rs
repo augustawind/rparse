@@ -68,16 +68,19 @@ impl Error {
     }
 }
 
-pub trait Parser<I: Input, O> {
-    fn parse(&self, I) -> ParseResult<I, O>;
+pub trait Parser {
+    type Input: Input;
+    type Output;
+
+    fn parse(&mut self, Self::Input) -> ParseResult<Self::Input, Self::Output>;
 }
 
-impl<I: Input, O, F> Parser<I, O> for F
-where
-    F: Fn(I) -> ParseResult<I, O>,
-{
-    fn parse(&self, i: I) -> ParseResult<I, O> {
-        self(i)
+impl<'a, I: Input, O> Parser for FnMut(&mut I) -> ParseResult<I, O> + 'a {
+    type Input = I;
+    type Output = O;
+
+    fn parse(&mut self, mut i: Self::Input) -> ParseResult<Self::Input, Self::Output> {
+        self(&mut i)
     }
 }
 
@@ -90,14 +93,31 @@ pub fn any<I: Input>(mut i: I) -> ParseResult<I, I::Token> {
 
 pub fn cond<I: Input, F>(mut i: I, f: F) -> ParseResult<I, I::Token>
 where
-    F: FnOnce(I::Token) -> bool,
+    F: Fn(&I::Token) -> bool,
 {
     match i.peek() {
-        Some(t) if f(t) => {
+        Some(ref t) if f(t) => {
             i.pop();
-            i.ok(t)
+            i.ok(*t)
         }
         _ => i.err(Error::eof()),
+    }
+}
+
+pub struct CondParser<I: Input>(Fn(&I::Token) -> bool);
+
+impl<I: Input> Parser for CondParser<I> {
+    type Input = I;
+    type Output = I::Token;
+
+    fn parse(&mut self, mut i: Self::Input) -> ParseResult<Self::Input, Self::Output> {
+        match i.peek() {
+            Some(ref t) if self.0(t) => {
+                i.pop();
+                i.ok(*t)
+            }
+            _ => i.err(Error::eof()),
+        }
     }
 }
 
@@ -115,11 +135,11 @@ mod test {
     fn test_cond() {
         let input = "123abc";
         assert_eq!(
-            cond(input, char::is_numeric),
+            cond(input, |&c| c.is_numeric()),
             ParseResult::Ok(("23abc", '1'))
         );
         let input = "123abc";
-        let (input, _) = cond(input, char::is_alphabetic).result().unwrap_err();
+        let (input, _) = cond(input, |&c| c.is_alphabetic()).result().unwrap_err();
         assert_eq!(input, "123abc");
     }
 }
