@@ -55,16 +55,16 @@ impl Error {
     }
 }
 
-trait Parser<I: Input, O> {
+pub trait Parser<I: Input, O> {
     fn parse(&self, I) -> Result<I, O>;
 }
 
 impl<I: Input, O, F> Parser<I, O> for F
 where
-    F: Fn(&mut I) -> Result<I, O>,
+    F: Fn(I) -> Result<I, O>,
 {
-    fn parse(&self, mut i: I) -> Result<I, O> {
-        self(&mut i)
+    fn parse(&self, i: I) -> Result<I, O> {
+        self(i)
     }
 }
 
