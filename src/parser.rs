@@ -8,12 +8,12 @@ pub trait Input: Sized {
     where
         F: FnMut(Self::Token);
 
-    fn ok<O>(self, result: O) -> Result<Self, O> {
-        Ok((self, result))
+    fn ok<O>(self, result: O) -> ParseResult<Self, O> {
+        ParseResult::Ok((self, result))
     }
 
-    fn err<O>(self, error: Error) -> Result<Self, O> {
-        Err((self, error))
+    fn err<O>(self, error: Error) -> ParseResult<Self, O> {
+        ParseResult::Err((self, error))
     }
 }
 
@@ -47,7 +47,20 @@ impl<'a> Input for &'a str {
 #[derive(Debug, PartialEq)]
 pub struct Error(String);
 
-type Result<I, O> = ::std::result::Result<(I, O), (I, Error)>;
+#[derive(Debug, PartialEq)]
+pub enum ParseResult<I: Input, O> {
+    Ok((I, O)),
+    Err((I, Error)),
+}
+
+impl<I: Input, O> ParseResult<I, O> {
+    pub fn result(self) -> Result<(I, O), (I, Error)> {
+        match self {
+            ParseResult::Ok(ok) => Ok(ok),
+            ParseResult::Err(err) => Err(err),
+        }
+    }
+}
 
 impl Error {
     fn eof() -> Self {
@@ -56,26 +69,26 @@ impl Error {
 }
 
 pub trait Parser<I: Input, O> {
-    fn parse(&self, I) -> Result<I, O>;
+    fn parse(&self, I) -> ParseResult<I, O>;
 }
 
 impl<I: Input, O, F> Parser<I, O> for F
 where
-    F: Fn(I) -> Result<I, O>,
+    F: Fn(I) -> ParseResult<I, O>,
 {
-    fn parse(&self, i: I) -> Result<I, O> {
+    fn parse(&self, i: I) -> ParseResult<I, O> {
         self(i)
     }
 }
 
-pub fn any<I: Input>(mut i: I) -> Result<I, I::Token> {
+pub fn any<I: Input>(mut i: I) -> ParseResult<I, I::Token> {
     match i.pop() {
         Some(t) => i.ok(t),
         None => i.err(Error::eof()),
     }
 }
 
-pub fn cond<I: Input, F>(mut i: I, f: F) -> Result<I, I::Token>
+pub fn cond<I: Input, F>(mut i: I, f: F) -> ParseResult<I, I::Token>
 where
     F: FnOnce(I::Token) -> bool,
 {
@@ -95,15 +108,18 @@ mod test {
     #[test]
     fn test_any() {
         let input = "hello, world.";
-        assert_eq!(any(input), Ok(("ello, world.", 'h')));
+        assert_eq!(any(input), ParseResult::Ok(("ello, world.", 'h')));
     }
 
     #[test]
     fn test_cond() {
         let input = "123abc";
-        assert_eq!(cond(input, char::is_numeric), Ok(("23abc", '1')));
+        assert_eq!(
+            cond(input, char::is_numeric),
+            ParseResult::Ok(("23abc", '1'))
+        );
         let input = "123abc";
-        let (input, _) = cond(input, char::is_alphabetic).unwrap_err();
+        let (input, _) = cond(input, char::is_alphabetic).result().unwrap_err();
         assert_eq!(input, "123abc");
     }
 }
