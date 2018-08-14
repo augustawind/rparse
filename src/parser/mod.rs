@@ -18,10 +18,17 @@ pub enum ParseResult<I: Input, O> {
 }
 
 impl<I: Input, O> ParseResult<I, O> {
-    pub fn result(self) -> Result<(I, O), (I, Error)> {
+    pub fn result(&self) -> Result<&O, &Error> {
         match self {
-            ParseResult::Ok(ok) => Ok(ok),
-            ParseResult::Err(err) => Err(err),
+            ParseResult::Ok((_, result)) => Ok(result),
+            ParseResult::Err((_, err)) => Err(err),
+        }
+    }
+
+    pub fn input(&self) -> &I {
+        match self {
+            ParseResult::Ok((input, _)) => input,
+            ParseResult::Err((input, _)) => input,
         }
     }
 }
