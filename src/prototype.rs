@@ -26,41 +26,45 @@ impl From<::std::num::ParseFloatError> for Error {
     }
 }
 
-pub enum BinOp {
+pub enum Op {
     Add,
     Sub,
     Mul,
     Div,
 }
 
-impl BinOp {
-    fn eval(&self, x: f64, y: f64) -> f64 {
-        match self {
-            BinOp::Add => x + y,
-            BinOp::Sub => x - y,
-            BinOp::Mul => x * y,
-            BinOp::Div => x / y,
-        }
+impl Op {
+    fn eval(&self, stack: &mut Vec<f64>) -> Result<f64> {
+        let (x, y) = (
+            stack.pop().ok_or_else(|| Error::Arity(self.to_string()))?,
+            stack.pop().ok_or_else(|| Error::Arity(self.to_string()))?,
+        );
+        Ok(match self {
+            Op::Add => x + y,
+            Op::Sub => x - y,
+            Op::Mul => x * y,
+            Op::Div => x / y,
+        })
     }
 }
 
-impl fmt::Display for BinOp {
+impl fmt::Display for Op {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
             "{}",
             match self {
-                BinOp::Add => '+',
-                BinOp::Sub => '-',
-                BinOp::Mul => '*',
-                BinOp::Div => '/',
+                Op::Add => '+',
+                Op::Sub => '-',
+                Op::Mul => '*',
+                Op::Div => '/',
             }
         )
     }
 }
 
 pub enum Token {
-    BinOp(BinOp),
+    Op(Op),
     Number(f64),
 }
 
@@ -69,10 +73,10 @@ impl FromStr for Token {
 
     fn from_str(s: &str) -> Result<Self> {
         match s {
-            "+" => Ok(Token::BinOp(BinOp::Add)),
-            "-" => Ok(Token::BinOp(BinOp::Sub)),
-            "*" => Ok(Token::BinOp(BinOp::Mul)),
-            "/" => Ok(Token::BinOp(BinOp::Div)),
+            "+" => Ok(Token::Op(Op::Add)),
+            "-" => Ok(Token::Op(Op::Sub)),
+            "*" => Ok(Token::Op(Op::Mul)),
+            "/" => Ok(Token::Op(Op::Div)),
             n => Ok(Token::Number(n.parse()?)),
         }
     }
@@ -88,13 +92,7 @@ pub fn lex(s: &str) -> Result<Vec<Token>> {
 pub fn parse(tokens: Vec<Token>) -> Result<f64> {
     let stack: Result<Vec<f64>> = tokens.iter().try_fold(Vec::new(), |mut stack, t| {
         let n = match *t {
-            Token::BinOp(ref op) => {
-                let (x, y) = (
-                    stack.pop().ok_or_else(|| Error::Arity(op.to_string()))?,
-                    stack.pop().ok_or_else(|| Error::Arity(op.to_string()))?,
-                );
-                op.eval(x, y)
-            }
+            Token::Op(ref op) => op.eval(&mut stack)?,
             Token::Number(n) => n,
         };
         stack.push(n);
