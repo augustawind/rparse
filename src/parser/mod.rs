@@ -3,35 +3,21 @@ mod input;
 pub use self::input::Input;
 
 #[derive(Debug, PartialEq)]
-pub struct Error(String);
-
-impl Error {
-    pub fn eof() -> Self {
-        Error("unexpected end of input".to_string())
-    }
+pub struct Error<I: Input> {
+    msg: String,
+    token: Option<I::Item>,
 }
 
-#[derive(Debug, PartialEq)]
-pub enum ParseResult<I: Input, O> {
-    Ok((I, O)),
-    Err((I, Error)),
-}
-
-impl<I: Input, O> ParseResult<I, O> {
-    pub fn result(&self) -> Result<&O, &Error> {
-        match self {
-            ParseResult::Ok((_, result)) => Ok(result),
-            ParseResult::Err((_, err)) => Err(err),
-        }
-    }
-
-    pub fn input(&self) -> &I {
-        match self {
-            ParseResult::Ok((input, _)) => input,
-            ParseResult::Err((input, _)) => input,
+impl<I: Input> Error<I> {
+    pub fn end() -> Self {
+        Error {
+            msg: "unexpected end of input".to_string(),
+            token: None,
         }
     }
 }
+
+pub type ParseResult<I, O> = (Result<O, Error<I>>, I);
 
 pub trait Parser {
     type Input: Input;

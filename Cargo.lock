@@ -1,4 +1,4 @@
 [[package]]
-name = "rpn"
+name = "rparse"
 version = "0.1.0"
 

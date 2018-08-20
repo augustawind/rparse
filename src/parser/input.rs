@@ -11,11 +11,11 @@ pub trait Input: Sized {
         F: FnMut(Self::Item);
 
     fn ok<O>(self, result: O) -> ParseResult<Self, O> {
-        ParseResult::Ok((self, result))
+        (Ok(result), self)
     }
 
-    fn err<O>(self, error: Error) -> ParseResult<Self, O> {
-        ParseResult::Err((self, error))
+    fn err<O>(self, error: Error<Self>) -> ParseResult<Self, O> {
+        (Err(error), self)
     }
 }
 
