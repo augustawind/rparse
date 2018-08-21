@@ -75,10 +75,7 @@ where
 }
 
 pub fn digit<I: Input<Item = T>, T: Copy + Debug + Into<char>>() -> Cond<I, fn(&I::Item) -> bool> {
-    fn is_digit<T: Copy + Debug + Into<char>>(&c: &T) -> bool {
-        c.into().is_ascii_digit()
-    }
-    Cond(is_digit, PhantomData)
+    Cond(|&c: &T| c.into().is_ascii_digit(), PhantomData)
 }
 
 #[cfg(test)]
@@ -100,12 +97,22 @@ mod test {
 
     #[test]
     fn test_cond() {
-        let input = "123abc";
         assert_eq!(
-            cond(|&c: &char| c.is_numeric()).parse(input),
+            cond(|&c: &char| c.is_numeric()).parse("123abc"),
             (Ok('1'), "23abc")
         );
-        let input = "123abc";
-        assert_eq!(cond(|&c: &char| c.is_alphabetic()).parse(input).1, input);
+        assert_eq!(
+            cond(|&c: &char| c.is_alphabetic()).parse("123abc"),
+            (Err(Error::Unexpected(Info::Token('1'))), "123abc")
+        );
+    }
+
+    #[test]
+    fn test_digit() {
+        assert_eq!(digit().parse("1ab23"), (Ok('1'), "ab23"));
+        assert_eq!(
+            digit().parse("a1b23"),
+            (Err(Error::Unexpected(Info::Token('a'))), "a1b23")
+        );
     }
 }
