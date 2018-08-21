@@ -12,7 +12,11 @@ pub enum Info<I: Input> {
     Description(&'static str),
 }
 
-impl<I: Input<Item = T>, T: Copy + Debug + PartialEq> PartialEq for Info<I> {
+impl<I, T> PartialEq for Info<I>
+where
+    I: Input<Item = T>,
+    T: Copy + Debug + PartialEq,
+{
     fn eq(&self, other: &Info<I>) -> bool {
         match (self, other) {
             (&Info::Token(ref l), &Info::Token(ref r)) => l == r,
@@ -30,7 +34,11 @@ pub enum Error<I: Input> {
     Other(Box<StdError + Send + Sync>),
 }
 
-impl<I: Input<Item = T>, T: Copy + Debug + PartialEq> PartialEq for Error<I> {
+impl<I, T> PartialEq for Error<I>
+where
+    I: Input<Item = T>,
+    T: Copy + Debug + PartialEq,
+{
     fn eq(&self, other: &Error<I>) -> bool {
         match (self, other) {
             (&Error::Expected(ref l), &Error::Expected(ref r)) => l == r,
