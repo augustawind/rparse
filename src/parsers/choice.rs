@@ -105,6 +105,7 @@ mod test {
             Box::new(sep_by(ascii::digit(), ascii::whitespace())),
         ]);
         assert_eq!(parser.parse("123 45 6"), (Ok("123".to_string()), " 45 6"));
+        assert_eq!(parser.parse(" 1 2 3"), (Ok("123".to_string()), ""));
     }
 
     #[test]
@@ -117,5 +118,6 @@ mod test {
             sep_by(ascii::digit(), ascii::whitespace()),
         );
         assert_eq!(parser.parse("123 45 6"), (Ok("123".to_string()), " 45 6"));
+        assert_eq!(parser.parse(" 1 2 3"), (Ok("123".to_string()), ""));
     }
 }
