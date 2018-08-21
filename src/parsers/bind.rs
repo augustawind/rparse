@@ -42,15 +42,16 @@ mod test {
         // let mut parser = bind(many1(ascii::letter()), |s: String| s.to_uppercase());
         // assert_eq!(parser.parse("aBcD12e"), (Ok("ABCD".to_string()), "12e"));
 
-        let mut parser = bind(many1(ascii::alpha_num()), |s: String, rest| {
-            match s.parse::<usize>() {
-                Ok(n) => (Ok(n), rest),
-                Err(e) => (Err(Error::Other(Box::new(e))), rest),
-            }
+        let mut parser = bind(many1(ascii::alpha_num()), |s: String, rest: String| match s
+            .parse::<usize>()
+        {
+            Ok(n) => (Ok(n), rest),
+            Err(e) => (Err(Error::Other(Box::new(e))), s + &rest),
         });
-        assert_eq!(parser.parse("324 dogs"), (Ok(324 as usize), " dogs"));
-        // TODO: make this keep the stuff that wasn't processed:
-        // assert_eq!(parser.parse("324dogs").1, "324dogs");
-        assert_eq!(parser.parse("324dogs").1, "");
+        assert_eq!(
+            parser.parse("324 dogs".to_string()),
+            (Ok(324 as usize), " dogs".to_string())
+        );
+        assert_eq!(parser.parse("324dogs".to_string()).1, "324dogs".to_string());
     }
 }

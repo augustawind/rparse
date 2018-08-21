@@ -25,10 +25,6 @@ pub trait Input: Sized + Debug {
     fn pop(&mut self) -> Option<Self::Item>;
     fn tokens(&self) -> Tokens<Self>;
 
-    fn foreach<F>(&self, F)
-    where
-        F: FnMut(Self::Item);
-
     fn ok<O>(self, result: O) -> ParseResult<Self, O> {
         (Ok(result), self)
     }
@@ -60,11 +56,24 @@ impl<'a> Input for &'a str {
     fn tokens(&self) -> Tokens<Self> {
         Tokens::new(self.chars())
     }
+}
 
-    fn foreach<F>(&self, f: F)
-    where
-        F: FnMut(Self::Item),
-    {
-        self.chars().for_each(f);
+impl Input for String {
+    type Item = char;
+
+    fn peek(&self) -> Option<Self::Item> {
+        self.chars().next()
+    }
+
+    fn pop(&mut self) -> Option<Self::Item> {
+        if self.is_empty() {
+            None
+        } else {
+            Some(self.remove(0))
+        }
+    }
+
+    fn tokens(&self) -> Tokens<Self> {
+        Tokens::new(self.chars())
     }
 }

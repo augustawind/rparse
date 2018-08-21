@@ -59,7 +59,7 @@ where
 
     fn parse(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
         match input.peek() {
-            Some(ref t) if self.0(t) => {
+            Some(ref t) if (self.0)(t) => {
                 input.pop();
                 input.ok(*t)
             }
