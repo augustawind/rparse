@@ -1,10 +1,29 @@
+use std::fmt::Debug;
+
 use super::{Error, ParseResult};
 
-pub trait Input: Sized {
-    type Item: Copy;
+pub struct Tokens<'a, I: Input>(Box<Iterator<Item = I::Item> + 'a>);
+
+impl<'a, I: Input> Tokens<'a, I> {
+    fn new<T: Iterator<Item = I::Item> + 'a>(t: T) -> Self {
+        Tokens(Box::new(t))
+    }
+}
+
+impl<'a, I: Input> Iterator for Tokens<'a, I> {
+    type Item = I::Item;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next()
+    }
+}
+
+pub trait Input: Sized + Debug {
+    type Item: Copy + Debug;
 
     fn peek(&self) -> Option<Self::Item>;
     fn pop(&mut self) -> Option<Self::Item>;
+    fn tokens(&self) -> Tokens<Self>;
 
     fn foreach<F>(&self, F)
     where
@@ -36,6 +55,10 @@ impl<'a> Input for &'a str {
 
             c
         })
+    }
+
+    fn tokens(&self) -> Tokens<Self> {
+        Tokens::new(self.chars())
     }
 
     fn foreach<F>(&self, f: F)

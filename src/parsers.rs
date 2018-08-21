@@ -1,7 +1,7 @@
 use std::iter::FromIterator;
 use std::marker::PhantomData;
 
-use parser::{Error, Input, ParseResult, Parser};
+use parser::{Error, Info, Input, ParseResult, Parser};
 
 #[derive(Copy, Clone)]
 pub struct Token<I: Input>(I::Item);
@@ -19,7 +19,7 @@ where
                 input.pop();
                 input.ok(item)
             }
-            _ => input.err(Error::end()),
+            _ => input.err(Error::Expected(Info::Token(self.0))),
         }
     }
 }
@@ -37,7 +37,7 @@ impl<I: Input> Parser for Any<I> {
     fn parse(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
         match input.pop() {
             Some(t) => input.ok(t),
-            None => input.err(Error::end()),
+            _ => input.err(Error::Expected(Info::AnyToken)),
         }
     }
 }
@@ -100,13 +100,14 @@ where
     type Input = I;
     type Output = I::Item;
 
-    fn parse(&mut self, mut i: Self::Input) -> ParseResult<Self::Input, Self::Output> {
-        match i.peek() {
+    fn parse(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
+        match input.peek() {
             Some(ref t) if self.0(t) => {
-                i.pop();
-                i.ok(*t)
+                input.pop();
+                input.ok(*t)
             }
-            _ => i.err(Error::end()),
+            Some(ref t) => input.err(Error::Unexpected(Info::Token(*t))),
+            None => input.err(Error::Expected(Info::AnyToken)),
         }
     }
 }
