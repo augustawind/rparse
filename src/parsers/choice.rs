@@ -80,26 +80,22 @@ mod test {
     #[test]
     fn test_choice() {
         assert_eq!(
-            choice(vec![
-                Box::new(token('a')),
-                Box::new(token('b')),
-                Box::new(token('c')),
-            ]).parse("bcd"),
-            (Ok('b'), "cd")
-        );
-        assert_eq!(
             choice(vec![Box::new(token('a')), Box::new(token('b'))]).parse("a"),
             (Ok('a'), "")
         );
-        assert_eq!(
-            choice(vec![
-                Box::new(token('a')),
-                Box::new(token('b')),
-                Box::new(token('c')),
-            ]).parse("def")
-                .1,
-            "def"
-        );
+
+        let mut parser = choice(vec![
+            Box::new(token('a')),
+            Box::new(token('b')),
+            Box::new(token('c')),
+        ]);
+        assert_eq!(parser.parse("bcd"), (Ok('b'), "cd"));
+        assert_eq!(parser.parse("def").1, "def");
+
+        let mut parser = choice(vec![Box::new(ascii::letter())]);
+        assert_eq!(parser.parse("Z"), (Ok('Z'), ""));
+        assert_eq!(parser.parse("9").1, "9");
+
         let mut parser = choice(vec![
             Box::new(many1(ascii::digit())),
             Box::new(sep_by(ascii::digit(), ascii::whitespace())),
