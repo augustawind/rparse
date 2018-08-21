@@ -74,42 +74,73 @@ where
     Cond(f, PhantomData)
 }
 
-/// Parses a digit according to [`std::char::is_digit`].
-///
-/// [`std::char::is_digit`]: https://doc.rust-lang.org/std/primitive.char.html#method.is_alphabetic
-pub fn digit<I, T>() -> Cond<I, fn(&I::Item) -> bool>
-where
-    I: Input<Item = T>,
-    T: Copy + Debug + Into<char>,
-{
-    Cond(|&c: &T| c.into().is_ascii_digit(), PhantomData)
+macro_rules! char_parser {
+    ($(#[$attr:meta])* $name:ident, $f:ident) => {
+        $(#[$attr])*
+        pub fn $name<I, T>() -> Cond<I, fn(&I::Item) -> bool>
+        where
+            I: Input<Item = T>,
+            T: Copy + Debug + Into<char>,
+        {
+            Cond(|&c: &T| c.into().$f(), PhantomData)
+        }
+    };
 }
 
-/// Parses an alphabetic code point.
-pub fn letter<I, T>() -> Cond<I, fn(&I::Item) -> bool>
-where
-    I: Input<Item = T>,
-    T: Copy + Debug + Into<char>,
-{
-    Cond(|&c: &T| c.into().is_alphabetic(), PhantomData)
+pub mod ascii {
+    use super::*;
+
+    char_parser!(
+        /// Parses a digit according to [`std::char::is_ascii_digit`].
+        ///
+        /// [`std::char::is_ascii_digit`]: https://doc.rust-lang.org/std/primitive.char.html#method.is_ascii_digit
+        digit,
+        is_ascii_digit
+    );
+
+    #[cfg(test)]
+    mod test {
+        use super::*;
+
+        #[test]
+        fn test_digit() {
+            assert_eq!(digit().parse("1ab23"), (Ok('1'), "ab23"));
+            assert_eq!(
+                digit().parse("a1b23"),
+                (Err(Error::Unexpected(Info::Token('a'))), "a1b23")
+            );
+        }
+    }
 }
 
-/// Parses a numeric code point.
-pub fn numeric<I, T>() -> Cond<I, fn(&I::Item) -> bool>
-where
-    I: Input<Item = T>,
-    T: Copy + Debug + Into<char>,
-{
-    Cond(|&c: &T| c.into().is_numeric(), PhantomData)
-}
+pub mod unicode {
+    use super::*;
 
-/// Parses an alphabetic or numeric code point.
-pub fn alpha_num<I, T>() -> Cond<I, fn(&I::Item) -> bool>
-where
-    I: Input<Item = T>,
-    T: Copy + Debug + Into<char>,
-{
-    Cond(|&c: &T| c.into().is_alphanumeric(), PhantomData)
+    char_parser!(
+        /// Parses a unicode whitespace character.
+        whitespace,
+        is_whitespace
+    );
+    char_parser!(
+        /// Parses a unicode alphabetic character.
+        letter,
+        is_alphabetic
+    );
+    char_parser!(
+        /// Parses a unicode numeric character.
+        numeric,
+        is_numeric
+    );
+    char_parser!(
+        /// Parses a unicode alphabetic or numeric character.
+        alpha_num,
+        is_alphanumeric
+    );
+
+    #[cfg(test)]
+    mod test {
+        use super::*;
+    }
 }
 
 #[cfg(test)]
@@ -138,15 +169,6 @@ mod test {
         assert_eq!(
             cond(|&c: &char| c.is_alphabetic()).parse("123abc"),
             (Err(Error::Unexpected(Info::Token('1'))), "123abc")
-        );
-    }
-
-    #[test]
-    fn test_digit() {
-        assert_eq!(digit().parse("1ab23"), (Ok('1'), "ab23"));
-        assert_eq!(
-            digit().parse("a1b23"),
-            (Err(Error::Unexpected(Info::Token('a'))), "a1b23")
         );
     }
 }
