@@ -157,5 +157,9 @@ mod test {
             many(token('a')).parse(input),
             (Ok("aaa".to_string()), "bcdef")
         );
+        assert_eq!(
+            many(token('a')).parse(input),
+            (Ok(vec!['a', 'a', 'a']), "bcdef")
+        );
     }
 }
