@@ -68,6 +68,16 @@ impl<I: Input, O> Parser for Choice<I, O> {
     }
 }
 
+#[macro_export]
+macro_rules! choice {
+    ($head : expr) => {
+        $head
+    };
+    ($head : expr, $($tail : expr),+) => {
+        or($head, choice!($($tail),+))
+    };
+}
+
 pub fn choice<I: Input, O>(parsers: Vec<Box<Parser<Input = I, Output = O>>>) -> Choice<I, O> {
     Choice { parsers }
 }
@@ -117,5 +127,14 @@ mod test {
         );
         assert_eq!(parser.parse("123 45 6"), (Ok("123".to_string()), " 45 6"));
         assert_eq!(parser.parse(" 1 2 3"), (Ok("123".to_string()), ""));
+    }
+
+    #[test]
+    fn test_choice_macro() {
+        let mut parser = choice!(token('a'), ascii::digit(), ascii::punctuation());
+        assert_eq!(parser.parse("a9."), (Ok('a'), "9."));
+        assert_eq!(parser.parse("9.a"), (Ok('9'), ".a"));
+        assert_eq!(parser.parse(".a9"), (Ok('.'), "a9"));
+        assert_eq!(parser.parse("ba9.").1, "ba9.");
     }
 }
