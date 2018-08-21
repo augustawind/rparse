@@ -1,13 +1,12 @@
 use std::iter::FromIterator;
 use std::marker::PhantomData;
 
-use parser::{Error, Info, Input, ParseResult, Parser};
+use parser::{Error, ParseResult, Parser};
 
 #[derive(Copy, Clone)]
 pub struct Many<P, O> {
     p: P,
     min: usize,
-    max: Option<usize>,
     _marker: PhantomData<O>,
 }
 
@@ -21,16 +20,26 @@ where
 
     fn parse(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
         let mut output = Vec::new();
+        let mut i = 0;
         loop {
             match self.p.parse(input) {
                 (Ok(result), remaining) => {
                     output.push(result);
                     input = remaining;
                 }
-                (Err(_), remaining) => {
-                    return (Ok(output.into_iter().collect()), remaining);
+                (Err(Error::Expected(info)), remaining) => {
+                    if i < self.min {
+                        break (Err(Error::Expected(info)), remaining);
+                    }
+                    input = remaining;
+                    break (Ok(output.into_iter().collect()), input);
+                }
+                (Err(err), remaining) => {
+                    break (Err(err), remaining);
                 }
             }
+
+            i += 1;
         }
     }
 }
@@ -43,7 +52,6 @@ where
     Many {
         p,
         min: 0,
-        max: None,
         _marker: PhantomData,
     }
 }
@@ -56,7 +64,6 @@ where
     Many {
         p,
         min: 1,
-        max: None,
         _marker: PhantomData,
     }
 }
@@ -64,6 +71,7 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
+    use parser::Info;
     use parsers::token::*;
 
     #[test]
