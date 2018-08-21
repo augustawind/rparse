@@ -1,3 +1,4 @@
+//! Defines single-token parsers.
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
@@ -88,9 +89,14 @@ macro_rules! char_parser {
 }
 
 pub mod ascii {
+    //! Defines parsers for ASCII characters.
     use super::*;
 
-    char_parser!(letter, is_ascii_alphabetic);
+    char_parser!(
+        /// Parses an ASCII letter.
+        letter,
+        is_ascii_alphabetic
+    );
     char_parser!(
         /// Parses a digit according to [`std::char::is_ascii_digit`].
         ///
@@ -98,9 +104,21 @@ pub mod ascii {
         digit,
         is_ascii_digit
     );
-    char_parser!(alpha_num, is_ascii_alphanumeric);
-    char_parser!(whitespace, is_ascii_whitespace);
-    char_parser!(punctuation, is_ascii_punctuation);
+    char_parser!(
+        /// Parses an ASCII letter or digit.
+        alpha_num,
+        is_ascii_alphanumeric
+    );
+    char_parser!(
+        /// Parses an ASCII whitespace character.
+        whitespace,
+        is_ascii_whitespace
+    );
+    char_parser!(
+        /// Parses an ASCII punctuation character.
+        punctuation,
+        is_ascii_punctuation
+    );
 
     #[cfg(test)]
     mod test {
@@ -118,25 +136,26 @@ pub mod ascii {
 }
 
 pub mod unicode {
+    //! Defines parsers for Unicode characters.
     use super::*;
 
     char_parser!(
-        /// Parses a unicode alphabetic character.
+        /// Parses a Unicode alphabetic character.
         letter,
         is_alphabetic
     );
     char_parser!(
-        /// Parses a unicode numeric character.
+        /// Parses a Unicode numeric character.
         numeric,
         is_numeric
     );
     char_parser!(
-        /// Parses a unicode alphabetic or numeric character.
+        /// Parses a Unicode alphabetic or numeric character.
         alpha_num,
         is_alphanumeric
     );
     char_parser!(
-        /// Parses a unicode whitespace character.
+        /// Parses a Unicode whitespace character.
         whitespace,
         is_whitespace
     );
