@@ -87,14 +87,16 @@ mod test {
             (Ok("aaa".to_string()), "bcd")
         );
         assert_eq!(
+            many1(token('a')).parse("abcd"),
+            (Ok("a".to_string()), "bcd")
+        );
+        assert_eq!(
             many1(token('a')).parse("aaaa"),
             (Ok(vec!['a', 'a', 'a', 'a']), "")
         );
-
-        let mut parser: Many<_, String> = many1(token('b'));
         assert_eq!(
-            parser.parse("abcd"),
-            (Err(Error::Expected(Info::Token('b'))), "abcd")
-        )
+            many1(token('b')).parse("abcd"),
+            (Err(Error::Expected(Info::Token('b'))), "abcd") as ParseResult<&str, String>
+        );
     }
 }
