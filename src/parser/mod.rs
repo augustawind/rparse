@@ -26,20 +26,20 @@ pub trait Parser {
     fn parse(&mut self, Self::Input) -> ParseResult<Self::Input, Self::Output>;
 }
 
-impl<'a, I: Input, O> Parser for FnMut(&mut I) -> ParseResult<I, O> + 'a {
+impl<'a, I: Input, O> Parser for FnMut(I) -> ParseResult<I, O> + 'a {
     type Input = I;
     type Output = O;
 
-    fn parse(&mut self, mut i: Self::Input) -> ParseResult<Self::Input, Self::Output> {
-        self(&mut i)
+    fn parse(&mut self, input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
+        self(input)
     }
 }
 
-impl<I: Input, O> Parser for fn(&mut I) -> ParseResult<I, O> {
+impl<I: Input, O> Parser for fn(I) -> ParseResult<I, O> {
     type Input = I;
     type Output = O;
 
-    fn parse(&mut self, mut i: Self::Input) -> ParseResult<Self::Input, Self::Output> {
-        self(&mut i)
+    fn parse(&mut self, input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
+        self(input)
     }
 }

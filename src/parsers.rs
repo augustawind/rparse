@@ -2,15 +2,6 @@ use std::marker::PhantomData;
 
 use parser::{Error, Input, ParseResult, Parser};
 
-impl<I: Input, O> Parser for Fn(&mut I) -> ParseResult<I, O> {
-    type Input = I;
-    type Output = O;
-
-    fn parse(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
-        self(&mut input)
-    }
-}
-
 #[derive(Copy, Clone)]
 pub struct Token<I: Input>(I::Item);
 
@@ -34,6 +25,24 @@ where
 
 pub fn token<I: Input>(item: I::Item) -> Token<I> {
     Token(item)
+}
+
+pub struct Any<I: Input>(PhantomData<I>);
+
+impl<I: Input> Parser for Any<I> {
+    type Input = I;
+    type Output = I::Item;
+
+    fn parse(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
+        match input.pop() {
+            Some(t) => input.ok(t),
+            None => input.err(Error::end()),
+        }
+    }
+}
+
+pub fn any<I: Input>() -> Any<I> {
+    Any(PhantomData)
 }
 
 #[derive(Copy, Clone)]
@@ -64,13 +73,6 @@ where
         p,
         min: 0,
         max: None,
-    }
-}
-
-pub fn any<I: Input>(mut i: I) -> ParseResult<I, I::Item> {
-    match i.pop() {
-        Some(t) => i.ok(t),
-        None => i.err(Error::end()),
     }
 }
 
@@ -115,7 +117,7 @@ mod test {
     #[test]
     fn test_any() {
         let input = "hello, world.";
-        assert_eq!(any(input), (Ok('h'), "ello, world."));
+        assert_eq!(any().parse(input), (Ok('h'), "ello, world."));
     }
 
     #[test]
