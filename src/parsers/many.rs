@@ -3,11 +3,10 @@ use std::marker::PhantomData;
 
 use parser::{Error, ParseResult, Parser};
 
-#[derive(Copy, Clone)]
 pub struct Many<P, O> {
     p: P,
     min: usize,
-    _marker: PhantomData<O>,
+    __marker: PhantomData<O>,
 }
 
 impl<P, O> Parser for Many<P, O>
@@ -52,7 +51,7 @@ where
     Many {
         p,
         min: 0,
-        _marker: PhantomData,
+        __marker: PhantomData,
     }
 }
 
@@ -64,7 +63,7 @@ where
     Many {
         p,
         min: 1,
-        _marker: PhantomData,
+        __marker: PhantomData,
     }
 }
 
