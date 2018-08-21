@@ -74,8 +74,42 @@ where
     Cond(f, PhantomData)
 }
 
-pub fn digit<I: Input<Item = T>, T: Copy + Debug + Into<char>>() -> Cond<I, fn(&I::Item) -> bool> {
+/// Parses a digit according to [`std::char::is_digit`].
+///
+/// [`std::char::is_digit`]: https://doc.rust-lang.org/std/primitive.char.html#method.is_alphabetic
+pub fn digit<I, T>() -> Cond<I, fn(&I::Item) -> bool>
+where
+    I: Input<Item = T>,
+    T: Copy + Debug + Into<char>,
+{
     Cond(|&c: &T| c.into().is_ascii_digit(), PhantomData)
+}
+
+/// Parses an alphabetic code point.
+pub fn letter<I, T>() -> Cond<I, fn(&I::Item) -> bool>
+where
+    I: Input<Item = T>,
+    T: Copy + Debug + Into<char>,
+{
+    Cond(|&c: &T| c.into().is_alphabetic(), PhantomData)
+}
+
+/// Parses a numeric code point.
+pub fn numeric<I, T>() -> Cond<I, fn(&I::Item) -> bool>
+where
+    I: Input<Item = T>,
+    T: Copy + Debug + Into<char>,
+{
+    Cond(|&c: &T| c.into().is_numeric(), PhantomData)
+}
+
+/// Parses an alphabetic or numeric code point.
+pub fn alpha_num<I, T>() -> Cond<I, fn(&I::Item) -> bool>
+where
+    I: Input<Item = T>,
+    T: Copy + Debug + Into<char>,
+{
+    Cond(|&c: &T| c.into().is_alphanumeric(), PhantomData)
 }
 
 #[cfg(test)]
