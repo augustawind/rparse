@@ -90,6 +90,7 @@ macro_rules! char_parser {
 pub mod ascii {
     use super::*;
 
+    char_parser!(letter, is_ascii_alphabetic);
     char_parser!(
         /// Parses a digit according to [`std::char::is_ascii_digit`].
         ///
@@ -97,6 +98,9 @@ pub mod ascii {
         digit,
         is_ascii_digit
     );
+    char_parser!(alpha_num, is_ascii_alphanumeric);
+    char_parser!(whitespace, is_ascii_whitespace);
+    char_parser!(punctuation, is_ascii_punctuation);
 
     #[cfg(test)]
     mod test {
@@ -117,11 +121,6 @@ pub mod unicode {
     use super::*;
 
     char_parser!(
-        /// Parses a unicode whitespace character.
-        whitespace,
-        is_whitespace
-    );
-    char_parser!(
         /// Parses a unicode alphabetic character.
         letter,
         is_alphabetic
@@ -136,10 +135,25 @@ pub mod unicode {
         alpha_num,
         is_alphanumeric
     );
+    char_parser!(
+        /// Parses a unicode whitespace character.
+        whitespace,
+        is_whitespace
+    );
 
     #[cfg(test)]
     mod test {
         use super::*;
+
+        #[test]
+        fn test_letter() {
+            assert_eq!(letter().parse("京34a"), (Ok('京'), "34a"));
+            assert_eq!(letter().parse("a京34"), (Ok('a'), "京34"));
+            assert_eq!(
+                letter().parse("3京4a"),
+                (Err(Error::Unexpected(Info::Token('3'))), "3京4a")
+            );
+        }
     }
 }
 
@@ -149,8 +163,7 @@ mod test {
 
     #[test]
     fn test_any() {
-        let input = "hello, world.";
-        assert_eq!(any().parse(input), (Ok('h'), "ello, world."));
+        assert_eq!(any().parse("hello, world."), (Ok('h'), "ello, world."));
     }
 
     #[test]
