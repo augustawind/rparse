@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::marker::PhantomData;
 
 use parser::{Error, Info, Input, ParseResult, Parser};
@@ -71,6 +72,13 @@ where
     F: Fn(&I::Item) -> bool,
 {
     Cond(f, PhantomData)
+}
+
+pub fn digit<I: Input<Item = T>, T: Copy + Debug + Into<char>>() -> Cond<I, fn(&I::Item) -> bool> {
+    fn is_digit<T: Copy + Debug + Into<char>>(&c: &T) -> bool {
+        c.into().is_ascii_digit()
+    }
+    Cond(is_digit, PhantomData)
 }
 
 #[cfg(test)]
