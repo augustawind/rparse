@@ -84,7 +84,15 @@ mod test {
             (Ok(vec!['a', 'a', 'a']), "bcd")
         );
         assert_eq!(many(token('b')).parse("abcd"), (Ok("".to_string()), "abcd"));
-        assert_eq!(many(token('a')).parse("aaaa"), (Ok("aaaa".to_string()), ""))
+        assert_eq!(many(token('a')).parse("aaaa"), (Ok("aaaa".to_string()), ""));
+        assert_eq!(
+            many(many1(token('a'))).parse("aaabcd"),
+            (Ok(vec!["aaa".to_string()]), "bcd")
+        );
+        assert_eq!(
+            many(many1(token('b'))).parse("aaabcd"),
+            (Ok(Vec::<String>::new()), "aaabcd")
+        );
     }
 
     #[test]
