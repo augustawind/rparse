@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use parser::{Error, Input, ParseResult, Parser};
 
 #[derive(Copy, Clone)]
@@ -65,22 +67,12 @@ pub fn any<I: Input>(mut i: I) -> ParseResult<I, I::Item> {
     }
 }
 
-pub fn cond<I: Input, F>(mut i: I, f: F) -> ParseResult<I, I::Item>
+pub struct TokenCond<I: Input, F>(F, PhantomData<Fn(&I::Item) -> bool>);
+
+impl<I: Input, F> Parser for TokenCond<I, F>
 where
     F: Fn(&I::Item) -> bool,
 {
-    match i.peek() {
-        Some(ref t) if f(t) => {
-            i.pop();
-            i.ok(*t)
-        }
-        _ => i.err(Error::end()),
-    }
-}
-
-pub struct CondParser<I: Input>(Fn(&I::Item) -> bool);
-
-impl<I: Input> Parser for CondParser<I> {
     type Input = I;
     type Output = I::Item;
 
@@ -93,6 +85,13 @@ impl<I: Input> Parser for CondParser<I> {
             _ => i.err(Error::end()),
         }
     }
+}
+
+pub fn token_if<I: Input, F>(f: F) -> TokenCond<I, F>
+where
+    F: Fn(&I::Item) -> bool,
+{
+    TokenCond(f, PhantomData)
 }
 
 #[cfg(test)]
@@ -113,10 +112,16 @@ mod test {
     }
 
     #[test]
-    fn test_cond() {
+    fn test_token_if() {
         let input = "123abc";
-        assert_eq!(cond(input, |&c| c.is_numeric()), (Ok('1'), "23abc"));
+        assert_eq!(
+            token_if(|&c: &char| c.is_numeric()).parse(input),
+            (Ok('1'), "23abc")
+        );
         let input = "123abc";
-        assert_eq!(cond(input, |&c| c.is_alphabetic()).1, input);
+        assert_eq!(
+            token_if(|&c: &char| c.is_alphabetic()).parse(input).1,
+            input
+        );
     }
 }
