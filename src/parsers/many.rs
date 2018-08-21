@@ -55,14 +55,15 @@ mod test {
 
     #[test]
     fn test_many() {
-        let input = "aaabcdef";
         assert_eq!(
-            many(token('a')).parse(input),
-            (Ok("aaa".to_string()), "bcdef")
+            many(token('a')).parse("aaabcd"),
+            (Ok("aaa".to_string()), "bcd")
         );
         assert_eq!(
-            many(token('a')).parse(input),
-            (Ok(vec!['a', 'a', 'a']), "bcdef")
+            many(token('a')).parse("aaabcd"),
+            (Ok(vec!['a', 'a', 'a']), "bcd")
         );
+        assert_eq!(many(token('b')).parse("abcd"), (Ok("".to_string()), "abcd"));
+        assert_eq!(many(token('a')).parse("aaaa"), (Ok("aaaa".to_string()), ""))
     }
 }
