@@ -2,10 +2,17 @@ use std::marker::PhantomData;
 
 use parser::{Error, Input, ParseResult, Parser};
 
-#[derive(Copy, Clone)]
-pub struct Token<I: Input> {
-    c: I::Item,
+impl<I: Input, O> Parser for Fn(&mut I) -> ParseResult<I, O> {
+    type Input = I;
+    type Output = O;
+
+    fn parse(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
+        self(&mut input)
+    }
 }
+
+#[derive(Copy, Clone)]
+pub struct Token<I: Input>(I::Item);
 
 impl<I: Input> Parser for Token<I>
 where
@@ -14,19 +21,19 @@ where
     type Input = I;
     type Output = I::Item;
 
-    fn parse(&mut self, mut i: Self::Input) -> ParseResult<Self::Input, Self::Output> {
-        match i.peek() {
-            Some(item) if item == self.c => {
-                i.pop();
-                i.ok(item)
+    fn parse(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
+        match input.peek() {
+            Some(item) if item == self.0 => {
+                input.pop();
+                input.ok(item)
             }
-            _ => i.err(Error::end()),
+            _ => input.err(Error::end()),
         }
     }
 }
 
-pub fn token<I: Input>(c: I::Item) -> Token<I> {
-    Token { c: c }
+pub fn token<I: Input>(item: I::Item) -> Token<I> {
+    Token(item)
 }
 
 #[derive(Copy, Clone)]
