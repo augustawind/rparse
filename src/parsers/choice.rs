@@ -125,8 +125,8 @@ mod test {
             many1(ascii::digit()),
             sep_by(ascii::digit(), ascii::whitespace()),
         );
-        assert_eq!(parser.parse("123 45 6"), (Ok("123".to_string()), " 45 6"));
-        assert_eq!(parser.parse(" 1 2 3"), (Ok("123".to_string()), ""));
+        assert_eq!(parser.parse("123 45 6"), (Ok(vec!['1', '2', '3']), " 45 6"));
+        assert_eq!(parser.parse(" 1 2 3"), (Ok(vec!['1', '2', '3']), ""));
     }
 
     #[test]
