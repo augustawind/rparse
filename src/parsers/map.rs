@@ -32,10 +32,8 @@ mod test {
 
     #[test]
     fn test_map() {
-        let mut parser = map(ascii::digit(), |c: char| {
-            c.to_string().parse::<i64>().unwrap()
-        });
-        assert_eq!(parser.parse("3"), (Ok(3 as i64), ""));
+        let mut parser = map(ascii::digit(), |c: char| c.to_string());
+        assert_eq!(parser.parse("3"), (Ok("3".to_string()), ""));
         assert_eq!(parser.parse("a3").1, "a3");
 
         let mut parser = map(many1(ascii::letter()), |s: String| s.to_uppercase());
