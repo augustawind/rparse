@@ -107,6 +107,21 @@ pub fn rpn(s: &str) -> Result<f64> {
     lex(s).and_then(parse)
 }
 
+fn main() {
+    use std::env;
+    let eq = match env::args().nth(1) {
+        Some(eq) => eq,
+        None => {
+            println!("missing argument");
+            return;
+        }
+    };
+    match rpn(eq.as_str()) {
+        Ok(result) => println!("({}) = {}", eq, result),
+        Err(error) => println!("{}", error.to_string()),
+    };
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
