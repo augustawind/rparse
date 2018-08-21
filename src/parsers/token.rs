@@ -13,7 +13,7 @@ impl<I: Input> Parser for Any<I> {
     fn parse(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
         match input.pop() {
             Some(t) => input.ok(t),
-            _ => input.err(Error::Expected(Info::AnyToken)),
+            _ => input.err(Error::Expected(Info::Description("a token"))),
         }
     }
 }
@@ -51,6 +51,7 @@ pub struct Cond<I: Input, F>(F, PhantomData<Fn(&I::Item) -> bool>);
 
 impl<I: Input, F> Parser for Cond<I, F>
 where
+    // TODO: add err message (maybe add to Parser?)
     F: Fn(&I::Item) -> bool,
 {
     type Input = I;
@@ -62,8 +63,7 @@ where
                 input.pop();
                 input.ok(*t)
             }
-            Some(ref t) => input.err(Error::Unexpected(Info::Token(*t))),
-            None => input.err(Error::Expected(Info::AnyToken)),
+            _ => input.err(Error::Expected(Info::Description("condition not met"))),
         }
     }
 }
@@ -127,10 +127,8 @@ pub mod ascii {
         #[test]
         fn test_digit() {
             assert_eq!(digit().parse("1ab23"), (Ok('1'), "ab23"));
-            assert_eq!(
-                digit().parse("a1b23"),
-                (Err(Error::Unexpected(Info::Token('a'))), "a1b23")
-            );
+            // TODO: rewrite this to match (Error, input) [i.e. remove the `.1`]
+            assert_eq!(digit().parse("a1b23").1, "a1b23");
         }
     }
 }
@@ -168,10 +166,8 @@ pub mod unicode {
         fn test_letter() {
             assert_eq!(letter().parse("京34a"), (Ok('京'), "34a"));
             assert_eq!(letter().parse("a京34"), (Ok('a'), "京34"));
-            assert_eq!(
-                letter().parse("3京4a"),
-                (Err(Error::Unexpected(Info::Token('3'))), "3京4a")
-            );
+            // TODO: rewrite this to match (Error, input) [i.e. remove the `.1`]
+            assert_eq!(letter().parse("3京4a").1, "3京4a");
         }
     }
 }
@@ -189,6 +185,7 @@ mod test {
     fn test_token() {
         let mut parser = token('c');
         assert_eq!(parser.parse("cat"), (Ok('c'), "at"));
+        // TODO: rewrite this to match (Error, input) [i.e. remove the `.1`]
         assert_eq!(parser.parse("ace").1, "ace");
     }
 
@@ -199,8 +196,8 @@ mod test {
             (Ok('1'), "23abc")
         );
         assert_eq!(
-            cond(|&c: &char| c.is_alphabetic()).parse("123abc"),
-            (Err(Error::Unexpected(Info::Token('1'))), "123abc")
+            cond(|&c: &char| c.is_alphabetic()).parse("123abc").1,
+            "123abc"
         );
     }
 }
