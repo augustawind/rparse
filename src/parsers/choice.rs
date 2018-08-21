@@ -106,9 +106,11 @@ mod test {
 
     #[test]
     fn test_or() {
-        assert_eq!(or(token('a'), token('b')).parse("bcd"), (Ok('b'), "cd"));
-        assert_eq!(or(token('a'), token('b')).parse("a"), (Ok('a'), ""));
-        assert_eq!(or(token('a'), token('b')).parse("def").1, "def");
+        let mut parser = or(token('a'), token('b'));
+        assert_eq!(parser.parse("bcd"), (Ok('b'), "cd"));
+        assert_eq!(parser.parse("a"), (Ok('a'), ""));
+        assert_eq!(parser.parse("def").1, "def");
+
         let mut parser = or(
             many1(ascii::digit()),
             sep_by(ascii::digit(), ascii::whitespace()),
