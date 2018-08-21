@@ -48,6 +48,19 @@ where
     }
 }
 
+pub fn many1<P, O>(p: P) -> Many<P, O>
+where
+    P: Parser,
+    O: FromIterator<P::Output>,
+{
+    Many {
+        p,
+        min: 1,
+        max: None,
+        _marker: PhantomData,
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -65,5 +78,23 @@ mod test {
         );
         assert_eq!(many(token('b')).parse("abcd"), (Ok("".to_string()), "abcd"));
         assert_eq!(many(token('a')).parse("aaaa"), (Ok("aaaa".to_string()), ""))
+    }
+
+    #[test]
+    fn test_many1() {
+        assert_eq!(
+            many1(token('a')).parse("aaabcd"),
+            (Ok("aaa".to_string()), "bcd")
+        );
+        assert_eq!(
+            many1(token('a')).parse("aaaa"),
+            (Ok(vec!['a', 'a', 'a', 'a']), "")
+        );
+
+        let mut parser: Many<_, String> = many1(token('b'));
+        assert_eq!(
+            parser.parse("abcd"),
+            (Err(Error::Expected(Info::Token('b'))), "abcd")
+        )
     }
 }
