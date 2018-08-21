@@ -5,9 +5,9 @@ use std::marker::PhantomData;
 
 use parser::{Error, Info, Input, ParseResult, Parser};
 
-pub struct TokenCond<I: Input, F>(F, PhantomData<Fn(&I::Item) -> bool>);
+pub struct Cond<I: Input, F>(F, PhantomData<Fn(&I::Item) -> bool>);
 
-impl<I: Input, F> Parser for TokenCond<I, F>
+impl<I: Input, F> Parser for Cond<I, F>
 where
     F: Fn(&I::Item) -> bool,
 {
@@ -26,11 +26,11 @@ where
     }
 }
 
-pub fn token_if<I: Input, F>(f: F) -> TokenCond<I, F>
+pub fn cond<I: Input, F>(f: F) -> Cond<I, F>
 where
     F: Fn(&I::Item) -> bool,
 {
-    TokenCond(f, PhantomData)
+    Cond(f, PhantomData)
 }
 
 #[cfg(test)]
@@ -38,16 +38,13 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_token_if() {
+    fn test_cond() {
         let input = "123abc";
         assert_eq!(
-            token_if(|&c: &char| c.is_numeric()).parse(input),
+            cond(|&c: &char| c.is_numeric()).parse(input),
             (Ok('1'), "23abc")
         );
         let input = "123abc";
-        assert_eq!(
-            token_if(|&c: &char| c.is_alphabetic()).parse(input).1,
-            input
-        );
+        assert_eq!(cond(|&c: &char| c.is_alphabetic()).parse(input).1, input);
     }
 }
