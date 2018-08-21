@@ -1,5 +1,45 @@
 use parser::{Error, Info, Input, ParseResult, Parser};
 
+pub struct Or<L, R> {
+    left: L,
+    right: R,
+}
+
+impl<I: Input, O, L, R> Parser for Or<L, R>
+where
+    L: Parser<Input = I, Output = O>,
+    R: Parser<Input = I, Output = O>,
+{
+    type Input = I;
+    type Output = O;
+
+    fn parse(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
+        match self.left.parse(input) {
+            (Ok(result), remaining) => return (Ok(result), remaining),
+            (Err(Error::Expected(_)), remaining) => {
+                input = remaining;
+            }
+            err => return err,
+        };
+        match self.right.parse(input) {
+            (Ok(result), remaining) => (Ok(result), remaining),
+            (Err(Error::Expected(_)), remaining) => {
+                let err = Error::Expected(Info::Description("none of the given parsers matched"));
+                (Err(err), remaining)
+            }
+            err => err,
+        }
+    }
+}
+
+pub fn or<I: Input, O, L, R>(left: L, right: R) -> Or<L, R>
+where
+    L: Parser<Input = I, Output = O>,
+    R: Parser<Input = I, Output = O>,
+{
+    Or { left, right }
+}
+
 pub struct Choice<I: Input, O> {
     parsers: Vec<Box<Parser<Input = I, Output = O>>>,
 }
