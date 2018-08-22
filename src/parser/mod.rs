@@ -1,3 +1,7 @@
+//! A collection of various parsers and combinators.
+//!
+//! Defines the `Parser` trait.
+
 pub mod combinator;
 pub mod token;
 pub mod transform;
