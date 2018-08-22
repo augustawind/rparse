@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use super::{Error, ParseResult};
+use parser::{Error, ParseResult};
 
 pub struct Tokens<'a, I: Input>(Box<Iterator<Item = I::Item> + 'a>);
 

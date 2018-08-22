@@ -53,8 +53,9 @@ pub fn bind<P: Parser, F: Fn(P::Output, P::Input) -> O, O>(p: P, f: F) -> Bind<P
 #[cfg(test)]
 mod test {
     use super::*;
+    use parser::combinator::*;
+    use parser::token::ascii;
     use parser::Error;
-    use parsers::*;
 
     #[test]
     fn test_map() {

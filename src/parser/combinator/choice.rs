@@ -54,7 +54,7 @@ macro_rules! choice {
 #[cfg(test)]
 mod test {
     use super::*;
-    use parsers::*;
+    use parser::*;
 
     //     #[test]
     //     fn test_choice() {

@@ -64,8 +64,8 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use parsers::many::*;
-    use parsers::token::ascii::*;
+    use parser::combinator::many1;
+    use parser::token::ascii::*;
 
     #[test]
     fn test_sep_by() {

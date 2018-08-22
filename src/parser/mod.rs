@@ -1,8 +1,15 @@
+pub mod combinator;
+pub mod token;
+pub mod transform;
+
+pub use self::combinator::*;
+pub use self::token::*;
+pub use self::transform::*;
+
 use std::error::Error as StdError;
 use std::fmt::Debug;
 
 use input::Input;
-use parsers::{map, or, Map, Or};
 
 #[derive(Debug)]
 pub enum Info<I: Input> {

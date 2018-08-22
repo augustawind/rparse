@@ -70,8 +70,8 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
+    use parser::token::token;
     use parser::Info;
-    use parsers::token::*;
 
     #[test]
     fn test_many() {
