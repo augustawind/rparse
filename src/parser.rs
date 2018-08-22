@@ -1,9 +1,7 @@
-mod input;
-
 use std::error::Error as StdError;
 use std::fmt::Debug;
 
-pub use self::input::Input;
+use input::Input;
 use parsers::{map, or, Map, Or};
 
 #[derive(Debug)]

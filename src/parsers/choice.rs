@@ -1,4 +1,5 @@
-use parser::{Error, Info, Input, ParseResult, Parser};
+use input::Input;
+use parser::{Error, Info, ParseResult, Parser};
 
 pub struct Or<L, R> {
     left: L,
