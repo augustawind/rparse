@@ -1,4 +1,5 @@
-//! Defines single-token parsers.
+//! Parsers that parse a single token.
+
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
@@ -90,7 +91,8 @@ macro_rules! char_parser {
 }
 
 pub mod ascii {
-    //! Defines parsers for ASCII characters.
+    //! Parsers for ASCII characters.
+
     use super::*;
 
     char_parser!(
@@ -135,7 +137,8 @@ pub mod ascii {
 }
 
 pub mod unicode {
-    //! Defines parsers for Unicode characters.
+    //! Parsers for unicode characters.
+
     use super::*;
 
     char_parser!(

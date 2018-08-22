@@ -1,3 +1,5 @@
+//! Types that represent parsable input.
+
 use std::fmt::Debug;
 
 use parser::{Error, ParseResult};

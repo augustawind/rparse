@@ -1,3 +1,5 @@
+//! Parsers that transform the output of other parsers.
+
 use parser::{ParseResult, Parser};
 
 pub struct Map<P, F> {

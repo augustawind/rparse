@@ -1,3 +1,5 @@
+//! Parsers that combine other parsers.
+
 pub mod choice;
 pub mod many;
 pub mod sep_by;
