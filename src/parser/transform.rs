@@ -1,6 +1,7 @@
 //! Parsers that transform the output of other parsers.
 
-use parser::{ParseResult, Parser};
+use error::ParseResult;
+use parser::Parser;
 
 pub struct Map<P, F> {
     parser: P,
@@ -55,9 +56,9 @@ pub fn bind<P: Parser, F: Fn(P::Output, P::Input) -> O, O>(p: P, f: F) -> Bind<P
 #[cfg(test)]
 mod test {
     use super::*;
-    use parser::combinator::*;
+    use error::Error;
+    use parser::combinator::many1;
     use parser::token::ascii;
-    use parser::Error;
 
     #[test]
     fn test_map() {

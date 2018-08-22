@@ -3,8 +3,9 @@
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
+use error::{Error, Info, ParseResult};
 use input::Input;
-use parser::{Error, Info, ParseResult, Parser};
+use parser::Parser;
 
 pub struct Any<I: Input>(PhantomData<I>);
 

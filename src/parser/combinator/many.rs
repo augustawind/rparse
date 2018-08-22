@@ -1,7 +1,8 @@
 use std::iter::FromIterator;
 use std::marker::PhantomData;
 
-use parser::{Error, ParseResult, Parser};
+use error::{Error, ParseResult};
+use parser::Parser;
 
 pub struct Many<P, O> {
     p: P,
@@ -70,8 +71,8 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
+    use error::Info;
     use parser::token::token;
-    use parser::Info;
 
     #[test]
     fn test_many() {

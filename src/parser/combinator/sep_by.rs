@@ -1,7 +1,8 @@
 use std::iter::FromIterator;
 use std::marker::PhantomData;
 
-use parser::{Error, ParseResult, Parser};
+use error::{Error, ParseResult};
+use parser::Parser;
 
 pub struct SepBy<P, S, O> {
     parser: P,

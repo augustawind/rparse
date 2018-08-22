@@ -2,7 +2,7 @@
 
 use std::fmt::Debug;
 
-use parser::{Error, ParseResult};
+use error::{Error, ParseResult};
 
 pub struct Tokens<'a, I: Input>(Box<Iterator<Item = I::Item> + 'a>);
 
