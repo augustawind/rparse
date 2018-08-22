@@ -46,7 +46,7 @@ macro_rules! choice {
     ($head : expr) => {
         $head
     };
-    ($head : expr, $($tail : expr),+) => {
+    ($head : expr, $($tail : expr),+ $(,)*) => {
         or($head, choice!($($tail),+))
     };
 }
@@ -56,33 +56,6 @@ mod test {
     use super::*;
     use parser::combinator::{many1, sep_by};
     use parser::token::{ascii, token};
-
-    //     #[test]
-    //     fn test_choice() {
-    //         assert_eq!(
-    //             choice(vec![Box::new(token('a')), Box::new(token('b'))]).parse("a"),
-    //             (Ok('a'), "")
-    //         );
-
-    //         let mut parser = choice(vec![
-    //             Box::new(token('a')),
-    //             Box::new(token('b')),
-    //             Box::new(token('c')),
-    //         ]);
-    //         assert_eq!(parser.parse("bcd"), (Ok('b'), "cd"));
-    //         assert_eq!(parser.parse("def").1, "def");
-
-    //         let mut parser = choice(vec![Box::new(ascii::letter())]);
-    //         assert_eq!(parser.parse("Z"), (Ok('Z'), ""));
-    //         assert_eq!(parser.parse("9").1, "9");
-
-    //         let mut parser = choice(vec![
-    //             Box::new(many1(ascii::digit())),
-    //             Box::new(sep_by(ascii::digit(), ascii::whitespace())),
-    //         ]);
-    //         assert_eq!(parser.parse("123 45 6"), (Ok("123".to_string()), " 45 6"));
-    //         assert_eq!(parser.parse(" 1 2 3"), (Ok("123".to_string()), ""));
-    //     }
 
     #[test]
     fn test_or() {
@@ -100,11 +73,28 @@ mod test {
     }
 
     #[test]
-    fn test_choice_macro() {
+    fn test_choice() {
+        assert_eq!(choice!(token('a'), token('b')).parse("a"), (Ok('a'), ""));
+
         let mut parser = choice!(token('a'), ascii::digit(), ascii::punctuation());
         assert_eq!(parser.parse("a9."), (Ok('a'), "9."));
         assert_eq!(parser.parse("9.a"), (Ok('9'), ".a"));
         assert_eq!(parser.parse(".a9"), (Ok('.'), "a9"));
         assert_eq!(parser.parse("ba9.").1, "ba9.");
+
+        let mut parser = choice!(token('a'), token('b'), token('c'));
+        assert_eq!(parser.parse("bcd"), (Ok('b'), "cd"));
+        assert_eq!(parser.parse("def").1, "def");
+
+        let mut parser = choice!(ascii::letter());
+        assert_eq!(parser.parse("Z"), (Ok('Z'), ""));
+        assert_eq!(parser.parse("9").1, "9");
+
+        let mut parser = choice!(
+            many1(ascii::digit()),
+            sep_by(ascii::digit(), ascii::whitespace()),
+        );
+        assert_eq!(parser.parse("123 45 6"), (Ok("123".to_string()), " 45 6"));
+        assert_eq!(parser.parse(" 1 2 3"), (Ok("123".to_string()), ""));
     }
 }
