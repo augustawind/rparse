@@ -77,7 +77,7 @@ where
     Cond(f, PhantomData)
 }
 
-macro_rules! char_parser {
+macro_rules! def_char_parser {
     ($(#[$attr:meta])* $name:ident, $f:ident) => {
         $(#[$attr])*
         pub fn $name<I, T>() -> Cond<I, fn(&I::Item) -> bool>
@@ -95,29 +95,29 @@ pub mod ascii {
 
     use super::*;
 
-    char_parser!(
+    def_char_parser!(
         /// Parses an ASCII letter.
         letter,
         is_ascii_alphabetic
     );
-    char_parser!(
+    def_char_parser!(
         /// Parses a digit according to [`std::char::is_ascii_digit`].
         ///
         /// [`std::char::is_ascii_digit`]: https://doc.rust-lang.org/std/primitive.char.html#method.is_ascii_digit
         digit,
         is_ascii_digit
     );
-    char_parser!(
+    def_char_parser!(
         /// Parses an ASCII letter or digit.
         alpha_num,
         is_ascii_alphanumeric
     );
-    char_parser!(
+    def_char_parser!(
         /// Parses an ASCII whitespace character.
         whitespace,
         is_ascii_whitespace
     );
-    char_parser!(
+    def_char_parser!(
         /// Parses an ASCII punctuation character.
         punctuation,
         is_ascii_punctuation
@@ -141,22 +141,22 @@ pub mod unicode {
 
     use super::*;
 
-    char_parser!(
+    def_char_parser!(
         /// Parses a Unicode alphabetic character.
         letter,
         is_alphabetic
     );
-    char_parser!(
+    def_char_parser!(
         /// Parses a Unicode numeric character.
         numeric,
         is_numeric
     );
-    char_parser!(
+    def_char_parser!(
         /// Parses a Unicode alphabetic or numeric character.
         alpha_num,
         is_alphanumeric
     );
-    char_parser!(
+    def_char_parser!(
         /// Parses a Unicode whitespace character.
         whitespace,
         is_whitespace
