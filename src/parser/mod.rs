@@ -4,6 +4,7 @@ use std::error::Error as StdError;
 use std::fmt::Debug;
 
 pub use self::input::Input;
+use parsers::{map, or, Map, Or};
 
 #[derive(Debug)]
 pub enum Info<I: Input> {
@@ -56,6 +57,22 @@ pub trait Parser {
     type Output;
 
     fn parse(&mut self, Self::Input) -> ParseResult<Self::Input, Self::Output>;
+
+    fn map<F, O>(self, f: F) -> Map<Self, F>
+    where
+        Self: Sized,
+        F: Fn(Self::Output) -> O,
+    {
+        map(self, f)
+    }
+
+    fn or<P>(self, other: P) -> Or<Self, P>
+    where
+        Self: Sized,
+        P: Parser<Input = Self::Input, Output = Self::Output>,
+    {
+        or(self, other)
+    }
 }
 
 impl<'a, I: Input, O> Parser for FnMut(I) -> ParseResult<I, O> + 'a {
