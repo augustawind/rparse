@@ -1,8 +1,9 @@
 pub mod bind;
-pub mod choice;
-pub mod many;
+pub mod combinators;
 pub mod map;
-pub mod sep_by;
 pub mod token;
 
-pub use parsers::{bind::*, choice::*, many::*, map::*, sep_by::*, token::*};
+pub use self::bind::*;
+pub use self::combinators::*;
+pub use self::map::*;
+pub use self::token::*;
