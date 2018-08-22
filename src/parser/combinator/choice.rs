@@ -54,7 +54,8 @@ macro_rules! choice {
 #[cfg(test)]
 mod test {
     use super::*;
-    use parser::*;
+    use parser::combinator::{many1, sep_by};
+    use parser::token::{ascii, token};
 
     //     #[test]
     //     fn test_choice() {
