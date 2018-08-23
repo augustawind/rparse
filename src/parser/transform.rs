@@ -124,15 +124,8 @@ where
         match self.parser.parse(input) {
             (Ok(s), input) => (
                 s.from_utf8()
-                    .map_err(|_| {
-                        Error::Message(Info::Description(
-                            "could not interpret input as str".to_string(),
-                        ))
-                    })
-                    .and_then(|s| {
-                        s.parse()
-                            .map_err(|e: O::Err| Error::Message(Info::Description(e.to_string())))
-                    }),
+                    .map_err(|_| "could not ".into())
+                    .and_then(|s| s.parse().map_err(|e: O::Err| e.to_string().into())),
                 input,
             ),
             (Err(err), input) => (Err(err), input),

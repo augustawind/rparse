@@ -26,7 +26,9 @@ pub fn any<I: Input>() -> Any<I> {
 }
 
 #[derive(Copy, Clone)]
-pub struct Token<I: Input>(I::Item);
+pub struct Token<I: Input> {
+    token: I::Item,
+}
 
 impl<I: Input> Parser for Token<I>
 where
@@ -37,20 +39,26 @@ where
 
     fn parse_input(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
         match input.peek() {
-            Some(item) if item == self.0 => {
+            Some(item) if item == self.token => {
                 input.pop();
                 input.ok(item)
             }
-            _ => input.err(Error::Expected(Info::Token(self.0))),
+            _ => input.err(Error::Expected(Info::Token(self.token))),
         }
     }
 }
 
-pub fn token<I: Input>(item: I::Item) -> Token<I> {
-    Token(item)
+pub fn token<I: Input>(token: I::Item) -> Token<I> {
+    Token { token }
 }
 
-pub struct Cond<I: Input, F>(F, PhantomData<Fn(&I::Item) -> bool>);
+pub struct Cond<I: Input, F>
+where
+    F: Fn(&I::Item) -> bool,
+{
+    f: F,
+    _marker: PhantomData<I>,
+}
 
 impl<I: Input, F> Parser for Cond<I, F>
 where
@@ -62,7 +70,7 @@ where
 
     fn parse_input(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
         match input.peek() {
-            Some(ref t) if (self.0)(t) => {
+            Some(ref t) if (self.f)(t) => {
                 input.pop();
                 input.ok(*t)
             }
@@ -77,7 +85,10 @@ pub fn cond<I: Input, F>(f: F) -> Cond<I, F>
 where
     F: Fn(&I::Item) -> bool,
 {
-    Cond(f, PhantomData)
+    Cond {
+        f,
+        _marker: PhantomData,
+    }
 }
 
 macro_rules! def_char_parser {
@@ -88,7 +99,10 @@ macro_rules! def_char_parser {
             I: Input<Item = T>,
             T: Copy + PartialEq + Debug + Into<char>,
         {
-            Cond(|&c: &T| c.into().$f(), PhantomData)
+            Cond {
+                f: |&c: &T| c.into().$f(),
+                _marker: PhantomData,
+            }
         }
     };
 }

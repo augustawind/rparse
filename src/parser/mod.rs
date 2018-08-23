@@ -5,7 +5,7 @@
 #[cfg(test)]
 macro_rules! assert_parse_err {
     ($result:expr, $input:expr) => {
-        let (result, input): ParseResult<_, _> = $result;
+        let (result, input) = $result;
         assert!(result.is_err());
         assert_eq!(input, $input);
     };
