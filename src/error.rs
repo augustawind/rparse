@@ -2,7 +2,6 @@
 
 use std::error::Error as StdError;
 use std::fmt::Debug;
-use std::iter::FromIterator;
 
 use input::Input;
 
@@ -11,6 +10,18 @@ pub enum Info<I: Input> {
     Token(I::Item),
     Range(I),
     Description(String),
+}
+
+impl<I: Input> From<&'static str> for Info<I> {
+    fn from(s: &str) -> Self {
+        Info::Description(s.to_string())
+    }
+}
+
+impl<I: Input> From<String> for Info<I> {
+    fn from(s: String) -> Self {
+        Info::Description(s)
+    }
 }
 
 impl<I, T> PartialEq for Info<I>
@@ -45,6 +56,25 @@ pub enum Error<I: Input> {
     Expected(Info<I>),
     Message(Info<I>),
     Other(Box<StdError + Send + Sync>),
+    Errors(Vec<Error<I>>),
+}
+
+impl<I, T> Error<I>
+where
+    I: Input<Item = T>,
+    T: Copy + PartialEq + Debug,
+{
+    pub fn expected_token(token: T) -> Self {
+        Error::Expected(Info::Token(token))
+    }
+
+    pub fn add_error(&mut self, error: Error<I>) {
+        if let Error::Errors(v) = self {
+            v.push(error);
+        } else {
+            *self = error;
+        }
+    }
 }
 
 impl<I: Input> From<&'static str> for Error<I> {

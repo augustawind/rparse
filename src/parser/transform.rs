@@ -4,7 +4,7 @@ use std::fmt::Display;
 use std::marker::PhantomData;
 use std::str;
 
-use error::{Error, Info, ParseResult};
+use error::ParseResult;
 use parser::Parser;
 
 pub struct Map<P, F> {
