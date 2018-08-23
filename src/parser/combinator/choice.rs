@@ -15,7 +15,7 @@ where
     type Input = I;
     type Output = O;
 
-    fn parse(&mut self, input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
+    fn parse_input(&mut self, input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
         match self.left.parse(input) {
             (Ok(_), remaining) => self.right.parse(remaining),
             err => err,
@@ -44,7 +44,7 @@ where
     type Input = I;
     type Output = O;
 
-    fn parse(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
+    fn parse_input(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
         match self.left.parse(input) {
             (Ok(result), remaining) => return (Ok(result), remaining),
             (Err(Error::Expected(_)), remaining) => {
@@ -73,10 +73,10 @@ where
 
 #[macro_export]
 macro_rules! choice {
-    ($head : expr) => {
+    ($head:expr) => {
         $head
     };
-    ($head : expr, $($tail : expr),+ $(,)*) => {
+    ($head:expr, $($tail:expr),+ $(,)*) => {
         or($head, choice!($($tail),+))
     };
 }
@@ -93,18 +93,15 @@ mod test {
         assert_eq!(parser.parse("abcd"), (Ok('b'), "cd"));
         assert_eq!(parser.parse("ab"), (Ok('b'), ""));
         assert_eq!(parser.parse("def").1, "def");
-        // TODO: the following lines consume the first char of input even though it fails
-        // assert_eq!(parser.parse("aab").1, "aab");
-        assert!(parser.parse("aab").0.is_err());
-        // assert_eq!(parser.parse("bcd").1, "bcd");
-        assert!(parser.parse("bcd").0.is_err());
+
+        assert_parse_err!(parser, "aab");
+        assert_parse_err!(parser, "bcd");
 
         let mut parser = and(many1(ascii::digit()), many1(ascii::letter()));
         assert_eq!(parser.parse("123abc456"), (Ok(vec!['a', 'b', 'c']), "456"));
         assert_eq!(parser.parse(" 1 2 3").1, " 1 2 3");
-        // TODO: the following lines consume the first char of input even though it fails
-        // assert_eq!(parser.parse("123 abc").1, "123 abc");
-        assert!(parser.parse("123").0.is_err());
+
+        assert_parse_err!(parser, "123 abc");
     }
 
     #[test]

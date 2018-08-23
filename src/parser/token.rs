@@ -13,7 +13,7 @@ impl<I: Input> Parser for Any<I> {
     type Input = I;
     type Output = I::Item;
 
-    fn parse(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
+    fn parse_input(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
         match input.pop() {
             Some(t) => input.ok(t),
             _ => input.err(Error::Expected(Info::Description("a token"))),
@@ -35,7 +35,7 @@ where
     type Input = I;
     type Output = I::Item;
 
-    fn parse(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
+    fn parse_input(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
         match input.peek() {
             Some(item) if item == self.0 => {
                 input.pop();
@@ -60,7 +60,7 @@ where
     type Input = I;
     type Output = I::Item;
 
-    fn parse(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
+    fn parse_input(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
         match input.peek() {
             Some(ref t) if (self.0)(t) => {
                 input.pop();
@@ -131,8 +131,7 @@ pub mod ascii {
         #[test]
         fn test_digit() {
             assert_eq!(digit().parse("1ab23"), (Ok('1'), "ab23"));
-            // TODO: rewrite this to match (Error, input) [i.e. remove the `.1`]
-            assert_eq!(digit().parse("a1b23").1, "a1b23");
+            assert_parse_err!(digit(), "a1b23");
         }
     }
 }
@@ -171,8 +170,7 @@ pub mod unicode {
         fn test_letter() {
             assert_eq!(letter().parse("京34a"), (Ok('京'), "34a"));
             assert_eq!(letter().parse("a京34"), (Ok('a'), "京34"));
-            // TODO: rewrite this to match (Error, input) [i.e. remove the `.1`]
-            assert_eq!(letter().parse("3京4a").1, "3京4a");
+            assert_parse_err!(letter(), "3京4a");
         }
     }
 }
@@ -190,8 +188,7 @@ mod test {
     fn test_token() {
         let mut parser = token('c');
         assert_eq!(parser.parse("cat"), (Ok('c'), "at"));
-        // TODO: rewrite this to match (Error, input) [i.e. remove the `.1`]
-        assert_eq!(parser.parse("ace").1, "ace");
+        assert_parse_err!(parser, "ace");
     }
 
     #[test]

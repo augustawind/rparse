@@ -20,12 +20,21 @@ impl<'a, I: Input> Iterator for Tokens<'a, I> {
     }
 }
 
-pub trait Input: Sized + Debug {
+pub trait Input: Sized + Debug + Clone {
     type Item: Copy + PartialEq + Debug;
 
     fn peek(&self) -> Option<Self::Item>;
     fn pop(&mut self) -> Option<Self::Item>;
+
     fn tokens(&self) -> Tokens<Self>;
+
+    fn backup(&self) -> Self {
+        self.clone()
+    }
+
+    fn restore(&mut self, backup: Self) {
+        *self = backup;
+    }
 
     fn ok<O>(self, result: O) -> ParseResult<Self, O> {
         (Ok(result), self)

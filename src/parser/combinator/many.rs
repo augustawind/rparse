@@ -18,7 +18,7 @@ where
     type Input = P::Input;
     type Output = O;
 
-    fn parse(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
+    fn parse_input(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
         let mut output = Vec::new();
         let mut i = 0;
         loop {

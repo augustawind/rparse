@@ -16,7 +16,7 @@ where
     type Input = P::Input;
     type Output = O;
 
-    fn parse(&mut self, input: Self::Input) -> ParseResult<Self::Input, O> {
+    fn parse_input(&mut self, input: Self::Input) -> ParseResult<Self::Input, O> {
         match self.parser.parse(input) {
             (Ok(result), remaining) => (Ok((self.f)(result)), remaining),
             (Err(err), remaining) => (Err(err), remaining),
@@ -45,7 +45,7 @@ where
     type Input = P::Input;
     type Output = O;
 
-    fn parse(&mut self, input: Self::Input) -> ParseResult<Self::Input, O> {
+    fn parse_input(&mut self, input: Self::Input) -> ParseResult<Self::Input, O> {
         match self.parser.parse(input) {
             (Ok(result), remaining) => (self.f)(result, remaining),
             (Err(err), remaining) => (Err(err), remaining),
@@ -92,8 +92,10 @@ mod test {
         assert_eq!(parser.parse("3"), (Ok("3".to_string()), ""));
         assert_eq!(parser.parse("a3").1, "a3");
 
-        // let mut parser = bind(many1(ascii::letter()), |s: String| s.to_uppercase());
-        // assert_eq!(parser.parse("aBcD12e"), (Ok("ABCD".to_string()), "12e"));
+        let mut parser = bind(many1(ascii::letter()), |s: String, rest| {
+            (Ok(s.to_uppercase()), rest)
+        });
+        assert_eq!(parser.parse("aBcD12e"), (Ok("ABCD".to_string()), "12e"));
 
         let mut parser = bind(many1(ascii::alpha_num()), |s: String, rest: String| match s
             .parse::<usize>()

@@ -2,6 +2,15 @@
 //!
 //! Defines the `Parser` trait.
 
+#[cfg(test)]
+macro_rules! assert_parse_err {
+    ($parser:expr, $input:expr) => {
+        let (result, input): ParseResult<_, _> = $parser.parse($input);
+        assert!(result.is_err());
+        assert_eq!(input, $input);
+    };
+}
+
 pub mod combinator;
 pub mod token;
 pub mod transform;
@@ -15,7 +24,19 @@ pub trait Parser {
     type Input: Input;
     type Output;
 
-    fn parse(&mut self, Self::Input) -> ParseResult<Self::Input, Self::Output>;
+    fn parse_input(&mut self, Self::Input) -> ParseResult<Self::Input, Self::Output>;
+
+    fn parse(&mut self, input: Self::Input) -> ParseResult<Self::Input, Self::Output>
+    where
+        Self: Sized,
+    {
+        let backup = input.backup();
+        let mut result = self.parse_input(input);
+        if let (Err(_), ref mut input) = result {
+            input.restore(backup);
+        }
+        result
+    }
 
     fn map<F, O>(self, f: F) -> Map<Self, F>
     where
@@ -46,7 +67,7 @@ impl<'a, I: Input, O> Parser for FnMut(I) -> ParseResult<I, O> + 'a {
     type Input = I;
     type Output = O;
 
-    fn parse(&mut self, input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
+    fn parse_input(&mut self, input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
         self(input)
     }
 }
@@ -55,7 +76,7 @@ impl<I: Input, O> Parser for fn(I) -> ParseResult<I, O> {
     type Input = I;
     type Output = O;
 
-    fn parse(&mut self, input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
+    fn parse_input(&mut self, input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
         self(input)
     }
 }
