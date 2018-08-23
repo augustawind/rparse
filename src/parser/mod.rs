@@ -7,7 +7,7 @@ pub mod token;
 pub mod transform;
 
 use self::combinator::{or, Or};
-use self::transform::{map, Map};
+use self::transform::{bind, map, Bind, Map};
 use error::ParseResult;
 use input::Input;
 
@@ -23,6 +23,14 @@ pub trait Parser {
         F: Fn(Self::Output) -> O,
     {
         map(self, f)
+    }
+
+    fn bind<F, O>(self, f: F) -> Bind<Self, F>
+    where
+        Self: Sized,
+        F: Fn(Self::Output, Self::Input) -> O,
+    {
+        bind(self, f)
     }
 
     fn or<P>(self, other: P) -> Or<Self, P>

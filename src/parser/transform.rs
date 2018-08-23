@@ -24,7 +24,11 @@ where
     }
 }
 
-pub fn map<P: Parser, F: Fn(P::Output) -> O, O>(p: P, f: F) -> Map<P, F> {
+pub fn map<P, F, O>(p: P, f: F) -> Map<P, F>
+where
+    P: Parser,
+    F: Fn(P::Output) -> O,
+{
     Map { parser: p, f }
 }
 
@@ -49,7 +53,11 @@ where
     }
 }
 
-pub fn bind<P: Parser, F: Fn(P::Output, P::Input) -> O, O>(p: P, f: F) -> Bind<P, F> {
+pub fn bind<P, F, O>(p: P, f: F) -> Bind<P, F>
+where
+    P: Parser,
+    F: Fn(P::Output, P::Input) -> O,
+{
     Bind { parser: p, f }
 }
 
