@@ -106,10 +106,10 @@ mod test {
 
         let mut parser = or(
             many1(ascii::digit()),
-            sep_by(ascii::digit(), ascii::whitespace()),
+            sep_by(ascii::letter(), ascii::whitespace()),
         );
-        assert_eq!(parser.parse("123 45 6"), (Ok(vec!['1', '2', '3']), " 45 6"));
-        assert_eq!(parser.parse(" 1 2 3"), (Ok(vec!['1', '2', '3']), ""));
+        assert_eq!(parser.parse("123a bc"), (Ok("123".to_string()), "a bc"));
+        assert_eq!(parser.parse("a b c"), (Ok("abc".to_string()), ""));
     }
 
     #[test]
@@ -132,9 +132,9 @@ mod test {
 
         let mut parser = choice!(
             many1(ascii::digit()),
-            sep_by(ascii::digit(), ascii::whitespace()),
+            sep_by(ascii::letter(), ascii::whitespace()),
         );
-        assert_eq!(parser.parse("123 45 6"), (Ok("123".to_string()), " 45 6"));
-        assert_eq!(parser.parse(" 1 2 3"), (Ok("123".to_string()), ""));
+        assert_eq!(parser.parse("123a bc"), (Ok("123".to_string()), "a bc"));
+        assert_eq!(parser.parse("a b c"), (Ok("abc".to_string()), ""));
     }
 }

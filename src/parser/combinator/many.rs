@@ -1,7 +1,7 @@
 use std::iter::FromIterator;
 use std::marker::PhantomData;
 
-use error::{Error, ParseResult};
+use error::ParseResult;
 use input::Input;
 use parser::Parser;
 

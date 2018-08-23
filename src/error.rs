@@ -80,6 +80,10 @@ where
         Error::Expected(Info::Token(token))
     }
 
+    pub fn unexpected_token(token: T) -> Self {
+        Error::Unexpected(Info::Token(token))
+    }
+
     pub fn add_error(&mut self, error: Error<I>) {
         if let Error::Errors(v) = self {
             v.push(error);

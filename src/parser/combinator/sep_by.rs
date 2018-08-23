@@ -1,7 +1,8 @@
 use std::iter::FromIterator;
 use std::marker::PhantomData;
 
-use error::{Error, ParseResult};
+use error::ParseResult;
+use input::Input;
 use parser::Parser;
 
 pub struct SepBy<P, S, O> {
@@ -22,27 +23,21 @@ where
 
     fn parse_input(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
         let mut output = Vec::new();
-        let mut sep = true;
         loop {
-            let p = if sep {
-                self.separator.parse(input)
-            } else {
-                self.parser.parse(input)
-            };
-            match p {
-                (Ok(result), remaining) => {
-                    if !sep {
-                        output.push(result);
+            input = match self.parser.parse(input) {
+                (Ok(result), input) => {
+                    output.push(result);
+
+                    // TODO: use .skip here
+                    match self.separator.parse(input) {
+                        (Ok(_), input) => input,
+                        (Err(_), input) => {
+                            break input.ok(output.into_iter().collect());
+                        }
                     }
-                    input = remaining;
-                    sep = !sep;
                 }
-                (Err(Error::Expected(_)), remaining) => {
-                    input = remaining;
-                    break (Ok(output.into_iter().collect()), input);
-                }
-                (Err(err), remaining) => {
-                    break (Err(err), remaining);
+                (Err(_), input) => {
+                    break input.ok(output.into_iter().collect());
                 }
             }
         }
@@ -71,7 +66,7 @@ mod test {
     #[test]
     fn test_sep_by() {
         assert_eq!(
-            sep_by(many1(digit()), many1(whitespace())).parse(" 1 23\t4\n\nabc"),
+            sep_by(many1(digit()), many1(whitespace())).parse("1 23\t4\n\nabc"),
             (
                 Ok(vec!["1".to_string(), "23".to_string(), "4".to_string()]),
                 "abc"
