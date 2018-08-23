@@ -2,6 +2,7 @@ use std::iter::FromIterator;
 use std::marker::PhantomData;
 
 use error::{Error, ParseResult};
+use input::Input;
 use parser::Parser;
 
 pub struct Many<P, O> {
@@ -23,19 +24,16 @@ where
         let mut i = 0;
         loop {
             match self.p.parse(input) {
-                (Ok(result), remaining) => {
+                (Ok(result), rest) => {
                     output.push(result);
-                    input = remaining;
+                    input = rest;
                 }
-                (Err(Error::Expected(info)), remaining) => {
+                (Err(err), rest) => {
                     if i < self.min {
-                        break (Err(Error::Expected(info)), remaining);
+                        break rest.err(err);
                     }
-                    input = remaining;
-                    break (Ok(output.into_iter().collect()), input);
-                }
-                (Err(err), remaining) => {
-                    break (Err(err), remaining);
+                    input = rest;
+                    break input.ok(output.into_iter().collect());
                 }
             }
 
@@ -110,9 +108,6 @@ mod test {
             many1(token('a')).parse("aaaa"),
             (Ok(vec!['a', 'a', 'a', 'a']), "")
         );
-        assert_eq!(
-            many1(token('b')).parse("abcd"),
-            (Err(Error::Expected(Info::Token('b'))), "abcd") as ParseResult<&str, String>
-        );
+        assert_parse_err!(many1::<_, String>(token('b')).parse("abcd"), "abcd");
     }
 }

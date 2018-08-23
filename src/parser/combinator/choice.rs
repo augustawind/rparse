@@ -1,4 +1,4 @@
-use error::{Error, Info, ParseResult};
+use error::{Error, ParseResult};
 use input::Input;
 use parser::Parser;
 
@@ -44,23 +44,16 @@ where
     type Input = I;
     type Output = O;
 
-    fn parse_input(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
-        match self.left.parse(input) {
-            (Ok(result), remaining) => return (Ok(result), remaining),
-            (Err(Error::Expected(_)), remaining) => {
-                input = remaining;
-            }
-            err => return err,
+    fn parse_input(&mut self, input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
+        let (err, input) = match self.left.parse(input) {
+            (Ok(result), input) => return input.ok(result),
+            (Err(Error::EOF), input) => return input.err(Error::EOF),
+            (Err(err), input) => (err, input),
         };
         match self.right.parse(input) {
-            (Ok(result), remaining) => (Ok(result), remaining),
-            (Err(Error::Expected(_)), remaining) => {
-                let err = Error::Expected(Info::Description(
-                    "none of the given parsers matched".to_string(),
-                ));
-                (Err(err), remaining)
-            }
-            err => err,
+            (Ok(result), input) => input.ok(result),
+            (Err(Error::EOF), input) => input.err(err),
+            (Err(err), input) => input.err(err),
         }
     }
 }

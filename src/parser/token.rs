@@ -16,7 +16,7 @@ impl<I: Input> Parser for Any<I> {
     fn parse_input(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
         match input.pop() {
             Some(t) => input.ok(t),
-            _ => input.err(Error::Expected("a token".into())),
+            _ => input.err(Error::EOF),
         }
     }
 }
@@ -38,9 +38,13 @@ where
     type Output = I::Item;
 
     fn parse_input(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
-        match input.pop() {
-            Some(item) if item == self.token => input.ok(item),
-            _ => input.err(Error::expected_token(self.token)),
+        match input.peek() {
+            Some(t) if t == self.token => {
+                input.pop();
+                input.ok(t)
+            }
+            Some(t) => input.err(Error::unexpected_token(t)),
+            _ => input.err(Error::EOF),
         }
     }
 }
@@ -66,9 +70,13 @@ where
     type Output = I::Item;
 
     fn parse_input(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
-        match input.pop() {
-            Some(ref t) if (self.f)(t) => input.ok(*t),
-            _ => input.err(Error::Expected("condition not met".into())),
+        match input.peek() {
+            Some(ref t) if (self.f)(t) => {
+                input.pop();
+                input.ok(*t)
+            }
+            Some(t) => input.err(Error::unexpected_token(t)),
+            _ => input.err(Error::EOF),
         }
     }
 }
