@@ -20,7 +20,7 @@ where
     type Input = P::Input;
     type Output = O;
 
-    fn parse_input(&mut self, input: Self::Input) -> ParseResult<Self::Input, O> {
+    fn parse_input(&mut self, input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
         match self.parser.parse(input) {
             (Ok(result), remaining) => (Ok((self.f)(result)), remaining),
             (Err(err), remaining) => (Err(err), remaining),
@@ -36,12 +36,12 @@ where
     Map { parser: p, f }
 }
 
-pub struct Bind<'a, P: 'a, F> {
-    parser: &'a mut P,
+pub struct Bind<P, F> {
+    parser: P,
     f: F,
 }
 
-impl<'a, P: 'a, F, O> Parser for Bind<'a, P, F>
+impl<P, F, O> Parser for Bind<P, F>
 where
     P: Parser,
     F: Fn(P::Output, P::Input) -> ParseResult<P::Input, O>,
@@ -49,7 +49,7 @@ where
     type Input = P::Input;
     type Output = O;
 
-    fn parse_input(&mut self, input: Self::Input) -> ParseResult<Self::Input, O> {
+    fn parse_input(&mut self, input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
         match self.parser.parse(input) {
             (Ok(result), remaining) => (self.f)(result, remaining),
             (Err(err), remaining) => (Err(err), remaining),
@@ -57,7 +57,7 @@ where
     }
 }
 
-pub fn bind<'a, P: 'a, F, O>(p: &'a mut P, f: F) -> Bind<'a, P, F>
+pub fn bind<P, F, O>(p: P, f: F) -> Bind<P, F>
 where
     P: Parser,
     F: Fn(P::Output, P::Input) -> O,
@@ -105,14 +105,13 @@ impl StrLike for [u8] {
     }
 }
 
-pub struct FromStr<'a, P: 'a, O> {
-    parser: &'a P,
+pub struct FromStr<P, O> {
+    parser: P,
     _marker: PhantomData<O>,
 }
 
-impl<'a, P: 'a, O> Parser for FromStr<'a, P, O>
+impl<P, O> Parser for FromStr<P, O>
 where
-    Self: Clone,
     P: Parser,
     P::Output: StrLike,
     O: str::FromStr,
@@ -121,25 +120,23 @@ where
     type Input = P::Input;
     type Output = O;
 
-    fn parse_input(&mut self, input: Self::Input) -> ParseResult<Self::Input, O> {
-        self.parser
-            .bind(|s, input| {
-                (
-                    s.from_utf8()
-                        .map_err(|_| {
-                            Error::Message(Info::Description(
-                                "could not interpret input as str".to_string(),
-                            ))
-                        })
-                        .and_then(|s| {
-                            s.parse().map_err(|e: O::Err| {
-                                Error::Message(Info::Description(e.to_string()))
-                            })
-                        }),
-                    input,
-                )
-            })
-            .parse(input)
+    fn parse_input(&mut self, input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
+        match self.parser.parse(input) {
+            (Ok(s), input) => (
+                s.from_utf8()
+                    .map_err(|_| {
+                        Error::Message(Info::Description(
+                            "could not interpret input as str".to_string(),
+                        ))
+                    })
+                    .and_then(|s| {
+                        s.parse()
+                            .map_err(|e: O::Err| Error::Message(Info::Description(e.to_string())))
+                    }),
+                input,
+            ),
+            (Err(err), input) => (Err(err), input),
+        }
     }
 }
 
