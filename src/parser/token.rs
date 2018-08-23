@@ -84,7 +84,7 @@ macro_rules! def_char_parser {
         pub fn $name<I, T>() -> Cond<I, fn(&I::Item) -> bool>
         where
             I: Input<Item = T>,
-            T: Copy + Debug + Into<char>,
+            T: Copy + PartialEq + Debug + Into<char>,
         {
             Cond(|&c: &T| c.into().$f(), PhantomData)
         }

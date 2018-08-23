@@ -21,7 +21,7 @@ impl<'a, I: Input> Iterator for Tokens<'a, I> {
 }
 
 pub trait Input: Sized + Debug {
-    type Item: Copy + Debug;
+    type Item: Copy + PartialEq + Debug;
 
     fn peek(&self) -> Option<Self::Item>;
     fn pop(&mut self) -> Option<Self::Item>;

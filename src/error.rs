@@ -2,6 +2,7 @@
 
 use std::error::Error as StdError;
 use std::fmt::Debug;
+use std::iter::FromIterator;
 
 use input::Input;
 
@@ -46,6 +47,39 @@ where
             (&Error::Other(ref l), &Error::Other(ref r)) => l.to_string() == r.to_string(),
             _ => false,
         }
+    }
+}
+
+type Position = (usize, usize);
+
+#[derive(Debug)]
+pub struct Errors<I: Input> {
+    position: Position,
+    errors: Vec<Error<I>>,
+}
+
+impl<I: Input> Errors<I> {
+    pub fn from_error(position: Position, error: Error<I>) -> Self {
+        Errors {
+            position,
+            errors: vec![error],
+        }
+    }
+
+    pub fn from_errors<E>(position: Position, errors: E) -> Self
+    where
+        E: IntoIterator<Item = Error<I>>,
+    {
+        Errors {
+            position,
+            errors: Vec::from_iter(errors.into_iter()),
+        }
+    }
+
+    pub fn add_error(&mut self, error: Error<I>) {
+        if !self.errors.contains(&error) {
+            self.errors.push(error);
+        };
     }
 }
 
