@@ -79,7 +79,7 @@ macro_rules! choice {
         $head
     };
     ($head:expr, $($tail:expr),+ $(,)*) => {
-        or($head, choice!($($tail),+))
+        $head.or(choice!($($tail),+))
     };
 }
 

@@ -1,5 +1,6 @@
 //! Parsers that combine other parsers.
 
+#[macro_use]
 pub mod choice;
 pub mod many;
 pub mod sep_by;

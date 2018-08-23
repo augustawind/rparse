@@ -140,12 +140,25 @@ where
     }
 }
 
+pub fn from_str<P, O>(parser: P) -> FromStr<P, O>
+where
+    P: Parser,
+    P::Output: StrLike,
+    O: str::FromStr,
+    O::Err: Display,
+{
+    FromStr {
+        parser,
+        _marker: PhantomData,
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
     use error::Error;
     use parser::combinator::many1;
-    use parser::token::ascii;
+    use parser::token::{ascii, token};
 
     #[test]
     fn test_map() {
@@ -182,7 +195,25 @@ mod test {
                 Err(e) => (Err(Error::Other(Box::new(e))), rest),
             }
         });
-        assert_eq!(parser.parse("324 dogs"), (Ok(324 as usize), " dogs"));
+        assert_eq!(parser.parse("324 dogs"), (Ok(324usize), " dogs"));
         assert_parse_err!(parser.parse("324dogs"), "324dogs");
+    }
+
+    #[test]
+    fn test_from_str() {
+        let mut parser = from_str::<_, u32>(many1::<_, String>(ascii::digit()));
+        assert_eq!(parser.parse("369"), (Ok(369u32), ""));
+        assert_eq!(parser.parse("369abc"), (Ok(369u32), "abc"));
+        assert_parse_err!(parser.parse("abc"), "abc");
+
+        let mut parser = from_str(many1::<_, String>(choice!(
+            token('-'),
+            token('.'),
+            ascii::digit()
+        )));
+        assert_eq!(parser.parse("12e"), (Ok(12f32), "e"));
+        assert_eq!(parser.parse("-12e"), (Ok(-12f32), "e"));
+        assert_eq!(parser.parse("-12.5e"), (Ok(-12.5f32), "e"));
+        assert_parse_err!(parser.parse("12.5.9"), "12.5.9");
     }
 }

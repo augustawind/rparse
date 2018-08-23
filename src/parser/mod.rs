@@ -11,6 +11,7 @@ macro_rules! assert_parse_err {
     };
 }
 
+#[macro_use]
 pub mod combinator;
 pub mod token;
 pub mod transform;
