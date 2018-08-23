@@ -46,12 +46,12 @@ pub trait Parser {
         map(self, f)
     }
 
-    fn bind<F, O>(self, f: F) -> Bind<Self, F>
+    fn bind<'a, F, O>(&'a self, f: F) -> Bind<'a, Self, F>
     where
         Self: Sized,
         F: Fn(Self::Output, Self::Input) -> O,
     {
-        bind(self, f)
+        bind(&self, f)
     }
 
     fn and<P>(self, other: P) -> And<Self, P>
