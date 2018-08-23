@@ -215,5 +215,6 @@ mod test {
             parser.parse("12e".into()),
             (Ok(12f32), State::<_, LinePosition>::new("e", (0, 2)))
         );
+        assert_parse_err!(parser.parse("e12".into()), State::new("e12", (0, 0)));
     }
 }
