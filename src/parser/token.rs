@@ -16,7 +16,7 @@ impl<I: Input> Parser for Any<I> {
     fn parse_input(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
         match input.pop() {
             Some(t) => input.ok(t),
-            _ => input.err(Error::Expected(Info::Description("a token"))),
+            _ => input.err(Error::Expected(Info::Description("a token".to_string()))),
         }
     }
 }
@@ -66,7 +66,9 @@ where
                 input.pop();
                 input.ok(*t)
             }
-            _ => input.err(Error::Expected(Info::Description("condition not met"))),
+            _ => input.err(Error::Expected(Info::Description(
+                "condition not met".to_string(),
+            ))),
         }
     }
 }

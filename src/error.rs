@@ -10,7 +10,7 @@ use input::Input;
 pub enum Info<I: Input> {
     Token(I::Item),
     Range(I),
-    Description(&'static str),
+    Description(String),
 }
 
 impl<I, T> PartialEq for Info<I>
@@ -33,6 +33,12 @@ pub enum Error<I: Input> {
     Expected(Info<I>),
     Message(Info<I>),
     Other(Box<StdError + Send + Sync>),
+}
+
+impl<I: Input> From<Box<StdError + Send + Sync>> for Error<I> {
+    fn from(error: Box<StdError + Send + Sync>) -> Self {
+        Error::Other(error)
+    }
 }
 
 impl<I, T> PartialEq for Error<I>

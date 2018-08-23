@@ -55,7 +55,9 @@ where
         match self.right.parse(input) {
             (Ok(result), remaining) => (Ok(result), remaining),
             (Err(Error::Expected(_)), remaining) => {
-                let err = Error::Expected(Info::Description("none of the given parsers matched"));
+                let err = Error::Expected(Info::Description(
+                    "none of the given parsers matched".to_string(),
+                ));
                 (Err(err), remaining)
             }
             err => err,
