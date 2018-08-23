@@ -20,6 +20,28 @@ impl<'a, I: Input> Iterator for Tokens<'a, I> {
     }
 }
 
+pub trait Input: Sized + Debug + Clone {
+    type Item: Copy + PartialEq + Debug;
+
+    fn peek(&self) -> Option<Self::Item>;
+    fn pop(&mut self) -> Option<Self::Item>;
+    fn tokens<I: Input<Item = Self::Item>>(&self) -> Tokens<I>;
+
+    fn backup(&self) -> Self {
+        self.clone()
+    }
+    fn restore(&mut self, backup: Self) {
+        *self = backup;
+    }
+
+    fn ok<O>(self, result: O) -> ParseResult<Self, O> {
+        (Ok(result), self)
+    }
+    fn err<O>(self, error: Error<Self>) -> ParseResult<Self, O> {
+        (Err(error), self)
+    }
+}
+
 pub trait Position<T>: Debug + Default + Clone {
     type Position: Clone + Ord;
 
@@ -70,37 +92,14 @@ impl<I: Input, X: Position<I::Item>> Input for State<I, X> {
     }
 
     fn pop(&mut self) -> Option<Self::Item> {
-        let item = self.input.pop();
-        if let Some(item) = item {
+        self.input.pop().map(|item| {
             self.position.update(&item);
-        }
-        item
+            item
+        })
     }
 
     fn tokens<T: Input<Item = Self::Item>>(&self) -> Tokens<T> {
         self.input.tokens()
-    }
-}
-
-pub trait Input: Sized + Debug + Clone {
-    type Item: Copy + PartialEq + Debug;
-
-    fn peek(&self) -> Option<Self::Item>;
-    fn pop(&mut self) -> Option<Self::Item>;
-    fn tokens<I: Input<Item = Self::Item>>(&self) -> Tokens<I>;
-
-    fn backup(&self) -> Self {
-        self.clone()
-    }
-    fn restore(&mut self, backup: Self) {
-        *self = backup;
-    }
-
-    fn ok<O>(self, result: O) -> ParseResult<Self, O> {
-        (Ok(result), self)
-    }
-    fn err<O>(self, error: Error<Self>) -> ParseResult<Self, O> {
-        (Err(error), self)
     }
 }
 
