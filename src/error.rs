@@ -47,6 +47,18 @@ pub enum Error<I: Input> {
     Other(Box<StdError + Send + Sync>),
 }
 
+impl<I: Input> From<&'static str> for Error<I> {
+    fn from(s: &str) -> Self {
+        Error::Message(Info::Description(s.to_string()))
+    }
+}
+
+impl<I: Input> From<String> for Error<I> {
+    fn from(s: String) -> Self {
+        Error::Message(Info::Description(s))
+    }
+}
+
 impl<I: Input> From<Box<StdError + Send + Sync>> for Error<I> {
     fn from(error: Box<StdError + Send + Sync>) -> Self {
         Error::Other(error)
