@@ -124,7 +124,7 @@ where
         match self.parser.parse(input) {
             (Ok(s), input) => (
                 s.from_utf8()
-                    .map_err(|_| "invalid utf-8".into())
+                    .map_err(|_| "could not ".into())
                     .and_then(|s| s.parse().map_err(|e: O::Err| e.to_string().into())),
                 input,
             ),
@@ -215,15 +215,12 @@ mod test {
             parser.parse("12e".into()),
             (Ok(12f32), State::<_, LinePosition>::new("e", (0, 2)))
         );
-        test_parser!(parser.parse("12e".into()), {
-            ok => 12f32,
+        assert_parse_ok!(parser.parse("12e".into()), {
+            output => 12f32,
             stream => "e",
             position => LinePosition | (0, 2),
         });
-        test_parser!(parser.parse("e12".into()), {
-            err => Unexpected(Token('e')),
-            stream => "e12",
-            position => LinePosition | (0, 0),
-        });
+        assert_parse_err!(parser.parse("e12".into()), State::new("e12", (0, 0)));
+        assert_parse_err!(parser.parse("e12".into()), "e12", LinePosition | (0, 0));
     }
 }

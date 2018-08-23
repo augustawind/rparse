@@ -3,27 +3,10 @@
 //! Defines the `Parser` trait.
 
 #[cfg(test)]
-macro_rules! assert_match {
-    ($pattern:pat, $value:expr) => {{
-        let value = $value;
-        match value {
-            $pattern => (),
-            _ => panic!(
-                "assertion failed: pattern doesn't match value
- pattern: `{}`,
-   value: `{:?}`,",
-                stringify!($pattern),
-                value
-            ),
-        };
-    }};
-}
-
-#[cfg(test)]
 #[cfg_attr(rustfmt, rustfmt_skip)]
-macro_rules! test_parser {
+macro_rules! assert_parse_ok {
     ($parsed:expr, {
-        ok => $output:expr,
+        output => $output:expr,
         stream => $input:expr,
         position => $pos_type:ty | $pos:expr,
     }) => {
@@ -32,17 +15,19 @@ macro_rules! test_parser {
         assert_eq!(parsed.unwrap(), $output);
         assert_eq!(input, State::<_, $pos_type>::new($input, $pos));
     };
+}
 
-    ($parsed:expr, {
-        err => $error:pat,
-        stream => $input:expr,
-        position => $pos_type:ty | $pos:expr,
-    }) => {
-        use error::{Error::*, Info::*};
+#[cfg(test)]
+macro_rules! assert_parse_err {
+    ($parsed:expr, $input:expr) => {
         let (parsed, input) = $parsed;
         assert!(parsed.is_err());
-        assert_match!($error, parsed.unwrap_err());
-        assert_eq!(input, State::<_, $pos_type>::new($input, $pos));
+        assert_eq!(input, $input);
+    };
+    ($parsed:expr, $input:expr, $type:ty | $position:expr) => {
+        let (parsed, input) = $parsed;
+        assert!(parsed.is_err());
+        assert_eq!(input, State::<_, $type>::new($input, $position));
     };
 }
 
