@@ -44,7 +44,7 @@ where
     fn eq(&self, other: &Info<I>) -> bool {
         match (self, other) {
             (&Info::Token(ref l), &Info::Token(ref r)) => l == r,
-            (&Info::Range(ref l), &Info::Range(ref r)) => l.tokens().eq(r.tokens()),
+            (&Info::Range(ref l), &Info::Range(ref r)) => l.tokens::<I>().eq(r.tokens::<I>()),
             (&Info::Description(ref l), &Info::Description(ref r)) => l == r,
             _ => false,
         }

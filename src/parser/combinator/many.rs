@@ -69,7 +69,6 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use error::Info;
     use parser::token::token;
 
     #[test]
