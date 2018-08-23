@@ -51,24 +51,14 @@ where
     }
 }
 
-type Position = (usize, usize);
-
-pub trait ParseError<I: Input>: PartialEq {
-    type Error: ParseError<I>;
-
-    fn from_error(position: Position, error: Self::Error) -> Self;
-    fn add(&mut self, error: Self::Error);
-    fn is_eof(&self) -> bool;
-}
-
 #[derive(Debug)]
 pub enum Error<I: Input> {
     EOF,
     Unexpected(Info<I>),
     Expected(Info<I>),
     Message(Info<I>),
-    Other(Box<StdError + Send + Sync>),
     Errors(Vec<Error<I>>),
+    Other(Box<StdError + Send + Sync>),
 }
 
 impl<I, T> Error<I>
@@ -125,62 +115,6 @@ where
             (&Error::Other(ref l), &Error::Other(ref r)) => l.to_string() == r.to_string(),
             _ => false,
         }
-    }
-}
-
-impl<I: Input> ParseError<I> for Error<I> {
-    type Error = Self;
-
-    fn from_error(_: Position, error: Self::Error) -> Self {
-        error
-    }
-
-    fn add(&mut self, error: Self::Error) {
-        *self = error;
-    }
-
-    fn is_eof(&self) -> bool {
-        match self {
-            Error::EOF => true,
-            _ => false,
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct Errors<I: Input> {
-    position: Position,
-    errors: Vec<Error<I>>,
-}
-
-impl<I, T> PartialEq for Errors<I>
-where
-    I: Input<Item = T>,
-    T: Copy + Debug + PartialEq,
-{
-    fn eq(&self, other: &Self) -> bool {
-        self.position == other.position && self.errors == other.errors
-    }
-}
-
-impl<I: Input> ParseError<I> for Errors<I> {
-    type Error = Error<I>;
-
-    fn from_error(position: Position, error: Self::Error) -> Self {
-        Errors {
-            position,
-            errors: vec![error],
-        }
-    }
-
-    fn add(&mut self, error: Self::Error) {
-        if !self.errors.contains(&error) {
-            self.errors.push(error);
-        }
-    }
-
-    fn is_eof(&self) -> bool {
-        self.errors.iter().any(|e| e.is_eof())
     }
 }
 
