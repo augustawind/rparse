@@ -131,7 +131,7 @@ pub mod ascii {
         #[test]
         fn test_digit() {
             assert_eq!(digit().parse("1ab23"), (Ok('1'), "ab23"));
-            assert_parse_err!(digit(), "a1b23");
+            assert_parse_err!(digit().parse("a1b23"), "a1b23");
         }
     }
 }
@@ -170,7 +170,7 @@ pub mod unicode {
         fn test_letter() {
             assert_eq!(letter().parse("京34a"), (Ok('京'), "34a"));
             assert_eq!(letter().parse("a京34"), (Ok('a'), "京34"));
-            assert_parse_err!(letter(), "3京4a");
+            assert_parse_err!(letter().parse("3京4a"), "3京4a");
         }
     }
 }
@@ -188,7 +188,7 @@ mod test {
     fn test_token() {
         let mut parser = token('c');
         assert_eq!(parser.parse("cat"), (Ok('c'), "at"));
-        assert_parse_err!(parser, "ace");
+        assert_parse_err!(parser.parse("ace"), "ace");
     }
 
     #[test]

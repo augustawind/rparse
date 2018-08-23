@@ -94,14 +94,14 @@ mod test {
         assert_eq!(parser.parse("ab"), (Ok('b'), ""));
         assert_eq!(parser.parse("def").1, "def");
 
-        assert_parse_err!(parser, "aab");
-        assert_parse_err!(parser, "bcd");
+        assert_parse_err!(parser.parse("aab"), "aab");
+        assert_parse_err!(parser.parse("bcd"), "bcd");
 
         let mut parser = and(many1(ascii::digit()), many1(ascii::letter()));
         assert_eq!(parser.parse("123abc456"), (Ok(vec!['a', 'b', 'c']), "456"));
         assert_eq!(parser.parse(" 1 2 3").1, " 1 2 3");
 
-        assert_parse_err!(parser, "123 abc");
+        assert_parse_err!(parser.parse("123 abc"), "123 abc");
     }
 
     #[test]

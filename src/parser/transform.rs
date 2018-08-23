@@ -72,7 +72,7 @@ mod test {
     fn test_map() {
         let mut parser = map(ascii::digit(), |c: char| c.to_string());
         assert_eq!(parser.parse("3"), (Ok("3".to_string()), ""));
-        assert_eq!(parser.parse("a3").1, "a3");
+        assert_parse_err!(parser.parse("a3"), "a3");
 
         let mut parser = map(many1(ascii::letter()), |s: String| s.to_uppercase());
         assert_eq!(parser.parse("aBcD12e"), (Ok("ABCD".to_string()), "12e"));
@@ -90,23 +90,20 @@ mod test {
             (Ok(c.to_string()), rest)
         });
         assert_eq!(parser.parse("3"), (Ok("3".to_string()), ""));
-        assert_eq!(parser.parse("a3").1, "a3");
+        assert_parse_err!(parser.parse("a3"), "a3");
 
         let mut parser = bind(many1(ascii::letter()), |s: String, rest| {
             (Ok(s.to_uppercase()), rest)
         });
         assert_eq!(parser.parse("aBcD12e"), (Ok("ABCD".to_string()), "12e"));
 
-        let mut parser = bind(many1(ascii::alpha_num()), |s: String, rest: String| match s
-            .parse::<usize>()
-        {
-            Ok(n) => (Ok(n), rest),
-            Err(e) => (Err(Error::Other(Box::new(e))), s + &rest),
+        let mut parser = bind(many1(ascii::alpha_num()), |s: String, rest| {
+            match s.parse::<usize>() {
+                Ok(n) => (Ok(n), rest),
+                Err(e) => (Err(Error::Other(Box::new(e))), rest),
+            }
         });
-        assert_eq!(
-            parser.parse("324 dogs".to_string()),
-            (Ok(324 as usize), " dogs".to_string())
-        );
-        assert_eq!(parser.parse("324dogs".to_string()).1, "324dogs".to_string());
+        assert_eq!(parser.parse("324 dogs"), (Ok(324 as usize), " dogs"));
+        assert_parse_err!(parser.parse("324dogs"), "324dogs");
     }
 }
