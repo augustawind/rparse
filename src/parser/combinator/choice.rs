@@ -92,15 +92,13 @@ mod test {
         let mut parser = and(token('a'), token('b'));
         assert_eq!(parser.parse("abcd"), (Ok('b'), "cd"));
         assert_eq!(parser.parse("ab"), (Ok('b'), ""));
-        assert_eq!(parser.parse("def").1, "def");
-
+        assert_parse_err!(parser.parse("def"), "def");
         assert_parse_err!(parser.parse("aab"), "aab");
         assert_parse_err!(parser.parse("bcd"), "bcd");
 
         let mut parser = and(many1(ascii::digit()), many1(ascii::letter()));
         assert_eq!(parser.parse("123abc456"), (Ok(vec!['a', 'b', 'c']), "456"));
-        assert_eq!(parser.parse(" 1 2 3").1, " 1 2 3");
-
+        assert_parse_err!(parser.parse(" 1 2 3"), " 1 2 3");
         assert_parse_err!(parser.parse("123 abc"), "123 abc");
     }
 
@@ -109,7 +107,7 @@ mod test {
         let mut parser = or(token('a'), token('b'));
         assert_eq!(parser.parse("bcd"), (Ok('b'), "cd"));
         assert_eq!(parser.parse("a"), (Ok('a'), ""));
-        assert_eq!(parser.parse("def").1, "def");
+        assert_parse_err!(parser.parse("def"), "def");
 
         let mut parser = or(
             many1(ascii::digit()),
@@ -127,15 +125,15 @@ mod test {
         assert_eq!(parser.parse("a9."), (Ok('a'), "9."));
         assert_eq!(parser.parse("9.a"), (Ok('9'), ".a"));
         assert_eq!(parser.parse(".a9"), (Ok('.'), "a9"));
-        assert_eq!(parser.parse("ba9.").1, "ba9.");
+        assert_parse_err!(parser.parse("ba9."), "ba9.");
 
         let mut parser = choice!(token('a'), token('b'), token('c'));
         assert_eq!(parser.parse("bcd"), (Ok('b'), "cd"));
-        assert_eq!(parser.parse("def").1, "def");
+        assert_parse_err!(parser.parse("def"), "def");
 
         let mut parser = choice!(ascii::letter());
         assert_eq!(parser.parse("Z"), (Ok('Z'), ""));
-        assert_eq!(parser.parse("9").1, "9");
+        assert_parse_err!(parser.parse("9"), "9");
 
         let mut parser = choice!(
             many1(ascii::digit()),

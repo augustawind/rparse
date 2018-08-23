@@ -197,8 +197,8 @@ mod test {
             cond(|&c: &char| c.is_numeric()).parse("123abc"),
             (Ok('1'), "23abc")
         );
-        assert_eq!(
-            cond(|&c: &char| c.is_alphabetic()).parse("123abc").1,
+        assert_parse_err!(
+            cond(|&c: &char| c.is_alphabetic()).parse("123abc"),
             "123abc"
         );
     }
