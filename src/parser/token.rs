@@ -38,11 +38,8 @@ where
     type Output = I::Item;
 
     fn parse_input(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
-        match input.peek() {
-            Some(item) if item == self.token => {
-                input.pop();
-                input.ok(item)
-            }
+        match input.pop() {
+            Some(item) if item == self.token => input.ok(item),
             _ => input.err(Error::expected_token(self.token)),
         }
     }
@@ -69,11 +66,8 @@ where
     type Output = I::Item;
 
     fn parse_input(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
-        match input.peek() {
-            Some(ref t) if (self.f)(t) => {
-                input.pop();
-                input.ok(*t)
-            }
+        match input.pop() {
+            Some(ref t) if (self.f)(t) => input.ok(*t),
             _ => input.err(Error::Expected("condition not met".into())),
         }
     }

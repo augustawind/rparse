@@ -24,6 +24,18 @@ impl<I: Input> From<String> for Info<I> {
     }
 }
 
+impl<I: Input<Item = char>> From<char> for Info<I> {
+    fn from(c: char) -> Self {
+        Info::Token(c)
+    }
+}
+
+impl<I: Input<Item = u8>> From<u8> for Info<I> {
+    fn from(b: u8) -> Self {
+        Info::Token(b)
+    }
+}
+
 impl<I, T> PartialEq for Info<I>
 where
     I: Input<Item = T>,
