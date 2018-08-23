@@ -61,6 +61,12 @@ impl Default for LinePosition {
     }
 }
 
+impl From<(u32, u32)> for LinePosition {
+    fn from((line, column): (u32, u32)) -> Self {
+        LinePosition { line, column }
+    }
+}
+
 impl Position<char> for LinePosition {
     type Position = Self;
 
@@ -78,10 +84,28 @@ impl Position<char> for LinePosition {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct State<I: Input, X: Position<I::Item>> {
-    input: I,
-    position: X,
+    pub input: I,
+    pub position: X,
+}
+
+impl<I: Input, X: Position<I::Item>> State<I, X> {
+    pub fn new<Y: Into<X>>(input: I, position: Y) -> Self {
+        State {
+            input,
+            position: position.into(),
+        }
+    }
+}
+
+impl<I: Input, X: Position<I::Item>> From<I> for State<I, X> {
+    fn from(input: I) -> Self {
+        State {
+            input,
+            position: Default::default(),
+        }
+    }
 }
 
 impl<I: Input, X: Position<I::Item>> Input for State<I, X> {

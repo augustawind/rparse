@@ -150,6 +150,7 @@ where
 mod test {
     use super::*;
     use error::Error;
+    use input::{LinePosition, State};
     use parser::combinator::many1;
     use parser::token::{ascii, token};
 
@@ -208,5 +209,11 @@ mod test {
         assert_eq!(parser.parse("-12e"), (Ok(-12f32), "e"));
         assert_eq!(parser.parse("-12.5e"), (Ok(-12.5f32), "e"));
         assert_parse_err!(parser.parse("12.5.9"), "12.5.9");
+
+        let mut parser = from_str(many1::<_, String>(ascii::digit()));
+        assert_eq!(
+            parser.parse("12e".into()),
+            (Ok(12f32), State::<_, LinePosition>::new("e", (0, 2)))
+        );
     }
 }
