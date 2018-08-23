@@ -30,6 +30,8 @@ where
 
 #[derive(Debug)]
 pub enum Error<I: Input> {
+    EOF,
+    Unexpected(Info<I>),
     Expected(Info<I>),
     Message(Info<I>),
     Other(Box<StdError + Send + Sync>),
@@ -48,6 +50,8 @@ where
 {
     fn eq(&self, other: &Error<I>) -> bool {
         match (self, other) {
+            (&Error::EOF, &Error::EOF) => true,
+            (&Error::Unexpected(ref l), &Error::Unexpected(ref r)) => l == r,
             (&Error::Expected(ref l), &Error::Expected(ref r)) => l == r,
             (&Error::Message(ref l), &Error::Message(ref r)) => l == r,
             (&Error::Other(ref l), &Error::Other(ref r)) => l.to_string() == r.to_string(),
