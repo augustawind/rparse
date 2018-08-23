@@ -215,6 +215,12 @@ mod test {
             parser.parse("12e".into()),
             (Ok(12f32), State::<_, LinePosition>::new("e", (0, 2)))
         );
+        assert_parse_ok!(parser.parse("12e".into()), {
+            output => 12f32,
+            stream => "e",
+            position => LinePosition | (0, 2),
+        });
         assert_parse_err!(parser.parse("e12".into()), State::new("e12", (0, 0)));
+        assert_parse_err!(parser.parse("e12".into()), "e12", LinePosition | (0, 0));
     }
 }
