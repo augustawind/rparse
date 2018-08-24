@@ -50,6 +50,33 @@ pub trait Position<T>: Debug + Default + Clone {
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord)]
+pub struct IndexPosition(usize);
+
+impl Default for IndexPosition {
+    fn default() -> Self {
+        IndexPosition(0)
+    }
+}
+
+impl<T> Position<T> for IndexPosition {
+    type Position = usize;
+
+    fn position(&self) -> Self::Position {
+        self.0
+    }
+
+    fn update(&mut self, _: &T) {
+        self.0 += 1;
+    }
+}
+
+impl<X: Into<usize>> From<X> for IndexPosition {
+    fn from(x: X) -> Self {
+        IndexPosition(x.into())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord)]
 pub struct LinePosition {
     pub line: u32,
     pub column: u32,
@@ -58,12 +85,6 @@ pub struct LinePosition {
 impl Default for LinePosition {
     fn default() -> Self {
         LinePosition { line: 0, column: 0 }
-    }
-}
-
-impl From<(u32, u32)> for LinePosition {
-    fn from((line, column): (u32, u32)) -> Self {
-        LinePosition { line, column }
     }
 }
 
@@ -81,6 +102,12 @@ impl Position<char> for LinePosition {
         } else {
             self.column += 1;
         }
+    }
+}
+
+impl From<(u32, u32)> for LinePosition {
+    fn from((line, column): (u32, u32)) -> Self {
+        LinePosition { line, column }
     }
 }
 
@@ -126,6 +153,8 @@ impl<I: Input, X: Position<I::Item>> Input for State<I, X> {
         self.input.tokens()
     }
 }
+
+pub type SourceCode<I> = State<I, LinePosition>;
 
 impl<'a> Input for &'a str {
     type Item = char;
