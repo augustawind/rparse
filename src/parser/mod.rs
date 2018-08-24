@@ -110,3 +110,7 @@ impl<I: Input, O> Parser for fn(I) -> ParseResult<I, O> {
         self(input)
     }
 }
+
+pub fn parser<I: Input, O>(f: fn(I) -> ParseResult<I, O>) -> fn(I) -> ParseResult<I, O> {
+    f
+}

@@ -5,24 +5,17 @@ use std::marker::PhantomData;
 
 use error::{Error, ParseResult};
 use input::Input;
-use parser::Parser;
+use parser::{parser, Parser};
 
-pub struct Any<I: Input>(PhantomData<I>);
-
-impl<I: Input> Parser for Any<I> {
-    type Input = I;
-    type Output = I::Item;
-
-    fn parse_input(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
-        match input.pop() {
-            Some(t) => input.ok(t),
-            _ => input.err(Error::EOF),
-        }
-    }
-}
-
-pub fn any<I: Input>() -> Any<I> {
-    Any(PhantomData)
+pub fn any<I, O>() -> fn(I) -> ParseResult<I, O>
+where
+    I: Input<Item = O>,
+    O: Copy + PartialEq + Debug,
+{
+    parser(|mut input| match input.pop() {
+        Some(t) => input.ok(t),
+        _ => input.err(Error::EOF),
+    })
 }
 
 #[derive(Copy, Clone)]
