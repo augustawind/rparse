@@ -32,11 +32,12 @@ macro_rules! assert_parse_err {
 }
 
 #[macro_use]
+pub mod choice;
 pub mod combinator;
 pub mod token;
 pub mod transform;
 
-use self::combinator::{and, or, And, Or};
+use self::choice::{and, or, And, Or};
 use self::transform::{bind, map, Bind, Map};
 use error::ParseResult;
 use input::Input;
