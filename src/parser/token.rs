@@ -56,7 +56,6 @@ where
 
 impl<I: Input, F> Parser for Cond<I, F>
 where
-    // TODO: add err message (maybe add to Parser?)
     F: Fn(&I::Item) -> bool,
 {
     type Input = I;

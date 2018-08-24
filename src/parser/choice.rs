@@ -98,8 +98,8 @@ macro_rules! choice {
 #[cfg(test)]
 mod test {
     use super::*;
-    use parser::combinator::{many1, sep_by};
-    use parser::token::{ascii, token};
+    use parser::combinator::{many, many1, sep_by};
+    use parser::token::{any, ascii, token};
 
     #[test]
     fn test_optional() {
@@ -112,6 +112,11 @@ mod test {
         let mut parser = optional(many1::<_, String>(ascii::alpha_num()));
         assert_eq!(parser.parse(""), (Err(Error::EOF), ""));
         assert_eq!(parser.parse("abc123"), (Ok(Some("abc123".into())), ""));
+
+        assert_eq!(
+            optional(many::<_, String>(any())).parse(""),
+            (Ok(Some("".into())), "")
+        );
     }
 
     #[test]
