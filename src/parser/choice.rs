@@ -2,6 +2,25 @@ use error::{Error, ParseResult};
 use input::Input;
 use parser::Parser;
 
+pub struct Optional<P>(P);
+
+impl<P: Parser> Parser for Optional<P> {
+    type Input = P::Input;
+    type Output = Option<P::Output>;
+
+    fn parse_input(&mut self, input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
+        match self.0.parse(input) {
+            (Ok(output), input) => input.ok(Some(output)),
+            (Err(Error::EOF), input) => input.err(Error::EOF),
+            (Err(_), input) => input.ok(None),
+        }
+    }
+}
+
+pub fn optional<P: Parser>(p: P) -> Optional<P> {
+    Optional(p)
+}
+
 pub struct And<L, R> {
     left: L,
     right: R,
@@ -81,6 +100,19 @@ mod test {
     use super::*;
     use parser::combinator::{many1, sep_by};
     use parser::token::{ascii, token};
+
+    #[test]
+    fn test_optional() {
+        let mut parser = optional(token('x'));
+        assert_eq!(parser.parse(""), (Err(Error::EOF), ""));
+        assert_eq!(parser.parse("y"), (Ok(None), "y"));
+        assert_eq!(parser.parse("x"), (Ok(Some('x')), ""));
+        assert_eq!(parser.parse("xyz"), (Ok(Some('x')), "yz"));
+
+        let mut parser = optional(many1::<_, String>(ascii::alpha_num()));
+        assert_eq!(parser.parse(""), (Err(Error::EOF), ""));
+        assert_eq!(parser.parse("abc123"), (Ok(Some("abc123".into())), ""));
+    }
 
     #[test]
     fn test_and() {
