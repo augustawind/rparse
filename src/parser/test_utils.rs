@@ -1,10 +1,15 @@
+#[cfg_attr(rustfmt, rustfmt_skip)]
 macro_rules! assert_parse {
-    (from $input_type:ty | $parsed:expr, { $output:expr => $input:expr }) => {
-        let (parsed, input): ParseResult<$input_type, _> = $parsed;
+    (from $input_type:ty | $parser:expr, {
+        $input:expr => $output:expr
+    }) => {
+        let input: $input_type = $input.into();
+        let (parsed, rest): ParseResult<$input_type, _> = $parser.parse(input);
         assert!(parsed.is_ok());
-        assert_eq!(parsed.unwrap(), $output);
-        let state: $input_type = $input.into();
-        assert_eq!(input, state);
+
+        let (output, into_rest) = $output;
+        assert_eq!(parsed.unwrap(), output);
+        assert_eq!(rest, into_rest);
     };
 }
 
