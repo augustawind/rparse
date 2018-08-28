@@ -210,7 +210,7 @@ mod test {
         assert_eq!(parser.parse("-12.5e"), (Ok(-12.5f32), "e"));
         assert_parse_err!(parser.parse("12.5.9"), "12.5.9");
 
-        let mut parser = from_str(many1::<_, String>(ascii::digit()));
+        let mut parser = from_str::<_, f32>(many1::<_, String>(ascii::digit()));
         assert_parse!(from SourceCode | parser.parse("12e".into()), {
             12f32 => ("e", (0, 2))
         });
