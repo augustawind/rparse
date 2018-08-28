@@ -200,19 +200,21 @@ mod test {
         assert_eq!(parser.parse("369abc"), (Ok(369u32), "abc"));
         assert_parse_err!(parser.parse("abc"), "abc");
 
-        let mut parser = from_str(many1::<_, String>(choice!(
+        let mut parser = from_str::<_, f32>(many1::<_, String>(choice!(
             token('-'),
             token('.'),
             ascii::digit()
         )));
-        assert_eq!(parser.parse("12e"), (Ok(12f32), "e"));
-        assert_eq!(parser.parse("-12e"), (Ok(-12f32), "e"));
-        assert_eq!(parser.parse("-12.5e"), (Ok(-12.5f32), "e"));
+        test_parser!(from &str | parser, {
+            "12e" => (12 as f32, "e"),
+            "-12e" => (-12 as f32, "e"),
+            "-12.5e" => (-12.5 as f32, "e"),
+        });
         assert_parse_err!(parser.parse("12.5.9"), "12.5.9");
 
         let mut parser = from_str::<_, f32>(many1::<_, String>(ascii::digit()));
-        assert_parse!(from SourceCode | parser, {
-            "12e" => (12f32, ("e", (0, 2)).into())
+        test_parser!(from SourceCode | parser, {
+            "12e" => (12f32, ("e", (0, 2)).into()),
         });
         assert_parse_err!(parser.parse("e12".into()), State::new("e12", (0, 0)));
         assert_parse_err!(parser.parse("e12".into()), "e12", LinePosition | (0, 0));

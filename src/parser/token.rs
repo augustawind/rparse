@@ -189,8 +189,7 @@ mod test {
 
     #[test]
     fn test_any() {
-        assert_eq!(any().parse("hello, world."), (Ok('h'), "ello, world."));
-        assert_parse!(from &str | any(), {
+        test_parser!(from &str | any(), {
             "hello, world." => ('h', "ello, world.")
         });
     }

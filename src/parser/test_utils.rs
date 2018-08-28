@@ -1,15 +1,16 @@
-#[cfg_attr(rustfmt, rustfmt_skip)]
-macro_rules! assert_parse {
+macro_rules! test_parser {
     (from $input_type:ty | $parser:expr, {
-        $input:expr => $output:expr
+        $($input:expr => $result:expr),+
+        $(,)*
     }) => {
-        let input: $input_type = $input.into();
-        let (parsed, rest): ParseResult<$input_type, _> = $parser.parse(input);
-        assert!(parsed.is_ok());
+        $(
+            let (parsed, input): ParseResult<$input_type, _> = $parser.parse($input.into());
+            assert!(parsed.is_ok());
 
-        let (output, into_rest) = $output;
-        assert_eq!(parsed.unwrap(), output);
-        assert_eq!(rest, into_rest);
+            let (output, rest) = $result;
+            assert_eq!(parsed.unwrap(), output);
+            assert_eq!(input, rest);
+        )+
     };
 }
 
