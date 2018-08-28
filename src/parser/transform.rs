@@ -150,7 +150,7 @@ where
 mod test {
     use super::*;
     use error::Error;
-    use input::{LinePosition, State};
+    use input::{LinePosition, SourceCode, State};
     use parser::combinator::many1;
     use parser::token::{ascii, token};
 
@@ -211,14 +211,8 @@ mod test {
         assert_parse_err!(parser.parse("12.5.9"), "12.5.9");
 
         let mut parser = from_str(many1::<_, String>(ascii::digit()));
-        assert_eq!(
-            parser.parse("12e".into()),
-            (Ok(12f32), State::<_, LinePosition>::new("e", (0, 2)))
-        );
-        assert_parse_ok!(parser.parse("12e".into()), {
-            output => 12f32,
-            stream => "e",
-            position => LinePosition | (0, 2),
+        assert_parse!(from SourceCode | parser.parse("12e".into()), {
+            12f32 => ("e", (0, 2))
         });
         assert_parse_err!(parser.parse("e12".into()), State::new("e12", (0, 0)));
         assert_parse_err!(parser.parse("e12".into()), "e12", LinePosition | (0, 0));

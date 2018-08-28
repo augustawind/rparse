@@ -135,6 +135,15 @@ impl<I: Input, X: Position<I::Item>> From<I> for State<I, X> {
     }
 }
 
+impl<I: Input, X: Position<I::Item>, F: Into<X>> From<(I, F)> for State<I, X> {
+    fn from((input, pos): (I, F)) -> Self {
+        State {
+            input,
+            position: pos.into(),
+        }
+    }
+}
+
 impl<I: Input, X: Position<I::Item>> Input for State<I, X> {
     type Item = I::Item;
 
@@ -154,7 +163,7 @@ impl<I: Input, X: Position<I::Item>> Input for State<I, X> {
     }
 }
 
-pub type SourceCode<I> = State<I, LinePosition>;
+pub type SourceCode = State<&'static str, LinePosition>;
 
 impl<'a> Input for &'a str {
     type Item = char;

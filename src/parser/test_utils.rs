@@ -1,11 +1,26 @@
+#[cfg_attr(rustfmt, rustfmt_skip)]
 macro_rules! assert_parse_ok {
     (
-        $parsed:expr, { output => $output:expr,stream => $input:expr,position => $pos_type:ty | $pos:expr, }
+        $parsed:expr, {
+            output => $output:expr,
+            stream => $input:expr,
+            position => $pos_type:ty | $pos:expr,
+        }
     ) => {
         let (parsed, input) = $parsed;
         assert!(parsed.is_ok());
         assert_eq!(parsed.unwrap(), $output);
         assert_eq!(input, State::<_, $pos_type>::new($input, $pos));
+    };
+}
+
+macro_rules! assert_parse {
+    (from $input_type:ty | $parsed:expr, { $output:expr => $input:expr }) => {
+        let (parsed, input) = $parsed;
+        assert!(parsed.is_ok());
+        assert_eq!(parsed.unwrap(), $output);
+        let state: $input_type = $input.into();
+        assert_eq!(input, state);
     };
 }
 
