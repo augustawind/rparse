@@ -70,9 +70,9 @@ impl<T> Position<T> for IndexPosition {
     }
 }
 
-impl<X: Into<usize>> From<X> for IndexPosition {
-    fn from(x: X) -> Self {
-        IndexPosition(x.into())
+impl From<usize> for IndexPosition {
+    fn from(x: usize) -> Self {
+        IndexPosition(x)
     }
 }
 
@@ -164,6 +164,8 @@ impl<I: Input, X: Position<I::Item>> Input for State<I, X> {
 }
 
 pub type SourceCode = State<&'static str, LinePosition>;
+
+pub type IndexedInput<I> = State<I, IndexPosition>;
 
 impl<'a> Input for &'a str {
     type Item = char;

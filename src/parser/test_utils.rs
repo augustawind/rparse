@@ -1,5 +1,5 @@
 macro_rules! test_parser {
-    (from $input_type:ty | $parser:expr, {
+    ($input_type:ty | $parser:expr, {
         $($input:expr => $expected:expr),+
         $(,)*
     }) => {

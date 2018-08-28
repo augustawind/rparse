@@ -196,7 +196,7 @@ mod test {
     #[test]
     fn test_from_str() {
         let mut parser = from_str::<_, u32>(many1::<_, String>(ascii::digit()));
-        test_parser!(from &str | parser, {
+        test_parser!(&str | parser, {
             "369" => (Ok(369 as u32), ""),
             "369abc" => (Ok(369 as u32), "abc"),
             "abc" => (Err(Error::unexpected_token('a')), "abc"),
@@ -207,7 +207,7 @@ mod test {
             token('.'),
             ascii::digit()
         )));
-        test_parser!(from &str | parser, {
+        test_parser!(&str | parser, {
             "12e" => (Ok(12 as f32), "e"),
             "-12e" => (Ok(-12 as f32), "e"),
             "-12.5e" => (Ok(-12.5 as f32), "e"),
@@ -215,7 +215,7 @@ mod test {
         });
 
         let mut parser = from_str::<_, f32>(many1::<_, String>(ascii::digit()));
-        test_parser!(from SourceCode | parser, {
+        test_parser!(SourceCode | parser, {
             "12e" => (Ok(12f32), ("e", (0, 2)).into()),
             "e12" => (Err(Error::unexpected_token('e')), ("e12", (0, 0)).into()),
         });

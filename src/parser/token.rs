@@ -186,11 +186,12 @@ pub mod unicode {
 #[cfg(test)]
 mod test {
     use super::*;
+    use input::IndexedInput;
 
     #[test]
     fn test_any() {
-        test_parser!(from &str | any(), {
-            "hello, world." => (Ok('h'), "ello, world.")
+        test_parser!(IndexedInput<&str> | any(), {
+            "hello, world." => (Ok('h'), ("ello, world.", 1).into())
         });
     }
 
