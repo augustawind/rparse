@@ -124,7 +124,7 @@ where
         match self.parser.parse(input) {
             (Ok(s), input) => (
                 s.from_utf8()
-                    .map_err(|_| "could not ".into())
+                    .map_err(|_| "invalid UTF-8".into())
                     .and_then(|s| s.parse().map_err(|e: O::Err| e.to_string().into())),
                 input,
             ),
@@ -150,7 +150,7 @@ where
 mod test {
     use super::*;
     use error::Error;
-    use input::{LinePosition, SourceCode, State};
+    use input::SourceCode;
     use parser::combinator::many1;
     use parser::token::{ascii, token};
 
@@ -196,9 +196,11 @@ mod test {
     #[test]
     fn test_from_str() {
         let mut parser = from_str::<_, u32>(many1::<_, String>(ascii::digit()));
-        assert_eq!(parser.parse("369"), (Ok(369u32), ""));
-        assert_eq!(parser.parse("369abc"), (Ok(369u32), "abc"));
-        assert_parse_err!(parser.parse("abc"), "abc");
+        test_parser!(from &str | parser, {
+            "369" => (Ok(369 as u32), ""),
+            "369abc" => (Ok(369 as u32), "abc"),
+            "abc" => (Err(Error::unexpected_token('a')), "abc"),
+        });
 
         let mut parser = from_str::<_, f32>(many1::<_, String>(choice!(
             token('-'),
@@ -206,17 +208,16 @@ mod test {
             ascii::digit()
         )));
         test_parser!(from &str | parser, {
-            "12e" => (12 as f32, "e"),
-            "-12e" => (-12 as f32, "e"),
-            "-12.5e" => (-12.5 as f32, "e"),
+            "12e" => (Ok(12 as f32), "e"),
+            "-12e" => (Ok(-12 as f32), "e"),
+            "-12.5e" => (Ok(-12.5 as f32), "e"),
+            "12.5.9" => (Err("invalid float literal".into()), "12.5.9"),
         });
-        assert_parse_err!(parser.parse("12.5.9"), "12.5.9");
 
         let mut parser = from_str::<_, f32>(many1::<_, String>(ascii::digit()));
         test_parser!(from SourceCode | parser, {
-            "12e" => (12f32, ("e", (0, 2)).into()),
+            "12e" => (Ok(12f32), ("e", (0, 2)).into()),
+            "e12" => (Err(Error::unexpected_token('e')), ("e12", (0, 0)).into()),
         });
-        assert_parse_err!(parser.parse("e12".into()), State::new("e12", (0, 0)));
-        assert_parse_err!(parser.parse("e12".into()), "e12", LinePosition | (0, 0));
     }
 }

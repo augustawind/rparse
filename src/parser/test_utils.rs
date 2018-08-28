@@ -1,15 +1,13 @@
 macro_rules! test_parser {
     (from $input_type:ty | $parser:expr, {
-        $($input:expr => $result:expr),+
+        $($input:expr => $expected:expr),+
         $(,)*
     }) => {
         $(
-            let (parsed, input): ParseResult<$input_type, _> = $parser.parse($input.into());
-            assert!(parsed.is_ok());
-
-            let (output, rest) = $result;
-            assert_eq!(parsed.unwrap(), output);
-            assert_eq!(input, rest);
+            let (parsed_result, parsed_input): ParseResult<$input_type, _> = $parser.parse($input.into());
+            let (result, input) = $expected;
+            assert_eq!(parsed_result, result);
+            assert_eq!(parsed_input, input);
         )+
     };
 }

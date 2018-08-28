@@ -190,7 +190,7 @@ mod test {
     #[test]
     fn test_any() {
         test_parser!(from &str | any(), {
-            "hello, world." => ('h', "ello, world.")
+            "hello, world." => (Ok('h'), "ello, world.")
         });
     }
 
