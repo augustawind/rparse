@@ -1,7 +1,9 @@
 //! Error and Result types that are used by parsers.
 
 use std::error::Error as StdError;
+use std::fmt;
 use std::fmt::Debug;
+use std::iter::FromIterator;
 
 use input::Input;
 
@@ -10,6 +12,16 @@ pub enum Info<I: Input> {
     Token(I::Item),
     Range(I),
     Description(String),
+}
+
+impl<I: Input> fmt::Display for Info<I> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Info::Token(token) => write!(f, "token {:?}", token),
+            Info::Range(range) => write!(f, "range {:?}", range),
+            Info::Description(msg) => write!(f, "{}", msg),
+        }
+    }
 }
 
 impl<I: Input> From<&'static str> for Info<I> {
@@ -74,14 +86,39 @@ where
         Error::Unexpected(Info::Token(token))
     }
 
-    pub fn add_error(&mut self, error: Error<I>) {
-        if let Error::Errors(v) = self {
-            v.push(error);
+    pub fn add_error(&mut self, child: Error<I>) {
+        if let Error::Errors(errs) = self {
+            errs.push(child);
         } else {
-            *self = error;
+            *self = child;
         }
     }
 }
+
+impl<I: Input> fmt::Display for Error<I> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Error::EOF => write!(f, "unexpected end of input"),
+            Error::Unexpected(info) => write!(f, "unexpected {}", info),
+            Error::Expected(info) => write!(f, "expected {}", info),
+            Error::Message(info) => write!(f, "{}", info),
+            Error::Errors(errs) => {
+                // TODO: nested identation
+                write!(
+                    f,
+                    "{}",
+                    errs.iter()
+                        .map(|e| e.to_string())
+                        .collect::<Vec<String>>()
+                        .join("\n")
+                )
+            }
+            Error::Other(err) => write!(f, "{}", err),
+        }
+    }
+}
+
+impl<I: Input> StdError for Error<I> {}
 
 impl<I: Input> From<&'static str> for Error<I> {
     fn from(s: &str) -> Self {
@@ -101,6 +138,18 @@ impl<I: Input> From<Box<StdError + Send + Sync>> for Error<I> {
     }
 }
 
+impl<I: Input> FromIterator<Error<I>> for Error<I> {
+    fn from_iter<T: IntoIterator<Item = Error<I>>>(iter: T) -> Self {
+        Error::Errors(iter.into_iter().collect())
+    }
+}
+
+impl<I: Input> From<Vec<Error<I>>> for Error<I> {
+    fn from(v: Vec<Error<I>>) -> Self {
+        FromIterator::from_iter(v)
+    }
+}
+
 impl<I, T> PartialEq for Error<I>
 where
     I: Input<Item = T>,
@@ -112,6 +161,7 @@ where
             (&Error::Unexpected(ref l), &Error::Unexpected(ref r)) => l == r,
             (&Error::Expected(ref l), &Error::Expected(ref r)) => l == r,
             (&Error::Message(ref l), &Error::Message(ref r)) => l == r,
+            (&Error::Errors(ref l), &Error::Errors(ref r)) => l == r,
             (&Error::Other(ref l), &Error::Other(ref r)) => l.to_string() == r.to_string(),
             _ => false,
         }
