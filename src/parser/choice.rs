@@ -36,7 +36,7 @@ where
 
     fn parse_input(&mut self, input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
         match self.left.parse(input) {
-            (Ok(_), remaining) => self.right.parse(remaining),
+            (Ok(_), input) => self.right.parse(input),
             err => err,
         }
     }
