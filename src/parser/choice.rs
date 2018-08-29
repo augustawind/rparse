@@ -1,18 +1,18 @@
 use error::{Error, ParseResult};
-use input::Input;
+use input::Stream;
 use parser::Parser;
 
 pub struct Optional<P>(P);
 
 impl<P: Parser> Parser for Optional<P> {
-    type Input = P::Input;
+    type Stream = P::Stream;
     type Output = Option<P::Output>;
 
-    fn parse_input(&mut self, input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
-        match self.0.parse(input) {
-            (Ok(output), input) => input.ok(Some(output)),
-            (Err(Error::EOF), input) => input.err(Error::EOF),
-            (Err(_), input) => input.ok(None),
+    fn parse_stream(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        match self.0.parse(stream) {
+            (Ok(output), stream) => stream.ok(Some(output)),
+            (Err(Error::EOF), stream) => stream.err(Error::EOF),
+            (Err(_), stream) => stream.ok(None),
         }
     }
 }
@@ -26,26 +26,26 @@ pub struct And<L, R> {
     right: R,
 }
 
-impl<I: Input, O, L, R> Parser for And<L, R>
+impl<I: Stream, O, L, R> Parser for And<L, R>
 where
-    L: Parser<Input = I, Output = O>,
-    R: Parser<Input = I, Output = O>,
+    L: Parser<Stream = I, Output = O>,
+    R: Parser<Stream = I, Output = O>,
 {
-    type Input = I;
+    type Stream = I;
     type Output = O;
 
-    fn parse_input(&mut self, input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
-        match self.left.parse(input) {
-            (Ok(_), input) => self.right.parse(input),
+    fn parse_stream(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        match self.left.parse(stream) {
+            (Ok(_), stream) => self.right.parse(stream),
             err => err,
         }
     }
 }
 
-pub fn and<I: Input, O, L, R>(left: L, right: R) -> And<L, R>
+pub fn and<I: Stream, O, L, R>(left: L, right: R) -> And<L, R>
 where
-    L: Parser<Input = I, Output = O>,
-    R: Parser<Input = I, Output = O>,
+    L: Parser<Stream = I, Output = O>,
+    R: Parser<Stream = I, Output = O>,
 {
     And { left, right }
 }
@@ -55,32 +55,32 @@ pub struct Or<L, R> {
     right: R,
 }
 
-impl<I: Input, O, L, R> Parser for Or<L, R>
+impl<I: Stream, O, L, R> Parser for Or<L, R>
 where
-    L: Parser<Input = I, Output = O>,
-    R: Parser<Input = I, Output = O>,
+    L: Parser<Stream = I, Output = O>,
+    R: Parser<Stream = I, Output = O>,
 {
-    type Input = I;
+    type Stream = I;
     type Output = O;
 
-    fn parse_input(&mut self, input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
-        let (err, input) = match self.left.parse(input) {
-            (Ok(result), input) => return input.ok(result),
-            (Err(Error::EOF), input) => return input.err(Error::EOF),
-            (Err(err), input) => (err, input),
+    fn parse_stream(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        let (err, stream) = match self.left.parse(stream) {
+            (Ok(result), stream) => return stream.ok(result),
+            (Err(Error::EOF), stream) => return stream.err(Error::EOF),
+            (Err(err), stream) => (err, stream),
         };
-        match self.right.parse(input) {
-            (Ok(result), input) => input.ok(result),
-            (Err(Error::EOF), input) => input.err(err),
-            (Err(err), input) => input.err(err),
+        match self.right.parse(stream) {
+            (Ok(result), stream) => stream.ok(result),
+            (Err(Error::EOF), stream) => stream.err(err),
+            (Err(err), stream) => stream.err(err),
         }
     }
 }
 
-pub fn or<I: Input, O, L, R>(left: L, right: R) -> Or<L, R>
+pub fn or<I: Stream, O, L, R>(left: L, right: R) -> Or<L, R>
 where
-    L: Parser<Input = I, Output = O>,
-    R: Parser<Input = I, Output = O>,
+    L: Parser<Stream = I, Output = O>,
+    R: Parser<Stream = I, Output = O>,
 {
     Or { left, right }
 }

@@ -2,7 +2,7 @@ use std::iter::FromIterator;
 use std::marker::PhantomData;
 
 use error::ParseResult;
-use input::Input;
+use input::Stream;
 use parser::Parser;
 
 pub struct Many<P, O> {
@@ -16,24 +16,27 @@ where
     P: Parser,
     O: FromIterator<P::Output>,
 {
-    type Input = P::Input;
+    type Stream = P::Stream;
     type Output = O;
 
-    fn parse_input(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
+    fn parse_stream(
+        &mut self,
+        mut stream: Self::Stream,
+    ) -> ParseResult<Self::Stream, Self::Output> {
         let mut output = Vec::new();
         let mut i = 0;
         loop {
-            match self.p.parse(input) {
+            match self.p.parse(stream) {
                 (Ok(result), rest) => {
                     output.push(result);
-                    input = rest;
+                    stream = rest;
                 }
                 (Err(err), rest) => {
                     if i < self.min {
                         break rest.err(err);
                     }
-                    input = rest;
-                    break input.ok(output.into_iter().collect());
+                    stream = rest;
+                    break stream.ok(output.into_iter().collect());
                 }
             }
 

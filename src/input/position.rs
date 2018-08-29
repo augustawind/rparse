@@ -1,9 +1,9 @@
-//! Traits and implementations representing positions in an `Input` stream.
+//! Traits and implementations representing positions in an `Stream` stream.
 
 use std::fmt::Debug;
 
 /// The Position trait defines types that keep track of the cursor position while parsing an
-/// `Input` stream.
+/// `Stream` stream.
 pub trait Position<T>: Debug + Default + Clone {
     type Position: Clone + Ord;
 

@@ -17,11 +17,11 @@ where
     P: Parser,
     F: Fn(P::Output) -> O,
 {
-    type Input = P::Input;
+    type Stream = P::Stream;
     type Output = O;
 
-    fn parse_input(&mut self, input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
-        match self.parser.parse(input) {
+    fn parse_stream(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        match self.parser.parse(stream) {
             (Ok(result), remaining) => (Ok((self.f)(result)), remaining),
             (Err(err), remaining) => (Err(err), remaining),
         }
@@ -44,13 +44,13 @@ pub struct Bind<P, F> {
 impl<P, F, O> Parser for Bind<P, F>
 where
     P: Parser,
-    F: Fn(P::Output, P::Input) -> ParseResult<P::Input, O>,
+    F: Fn(P::Output, P::Stream) -> ParseResult<P::Stream, O>,
 {
-    type Input = P::Input;
+    type Stream = P::Stream;
     type Output = O;
 
-    fn parse_input(&mut self, input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
-        match self.parser.parse(input) {
+    fn parse_stream(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        match self.parser.parse(stream) {
             (Ok(result), remaining) => (self.f)(result, remaining),
             (Err(err), remaining) => (Err(err), remaining),
         }
@@ -60,7 +60,7 @@ where
 pub fn bind<P, F, O>(p: P, f: F) -> Bind<P, F>
 where
     P: Parser,
-    F: Fn(P::Output, P::Input) -> O,
+    F: Fn(P::Output, P::Stream) -> O,
 {
     Bind { parser: p, f }
 }
@@ -117,18 +117,18 @@ where
     O: str::FromStr,
     O::Err: Display,
 {
-    type Input = P::Input;
+    type Stream = P::Stream;
     type Output = O;
 
-    fn parse_input(&mut self, input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
-        match self.parser.parse(input) {
-            (Ok(s), input) => (
+    fn parse_stream(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        match self.parser.parse(stream) {
+            (Ok(s), stream) => (
                 s.from_utf8()
                     .map_err(|_| "invalid UTF-8".into())
                     .and_then(|s| s.parse().map_err(|e: O::Err| e.to_string().into())),
-                input,
+                stream,
             ),
-            (Err(err), input) => (Err(err), input),
+            (Err(err), stream) => (Err(err), stream),
         }
     }
 }

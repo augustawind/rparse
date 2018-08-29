@@ -20,22 +20,22 @@ use self::choice::{and, or, And, Or};
 use self::combinator::{then, Then};
 use self::transform::{bind, from_str, map, Bind, FromStr, Map, StrLike};
 use error::ParseResult;
-use input::Input;
+use input::Stream;
 
 pub trait Parser {
-    type Input: Input;
+    type Stream: Stream;
     type Output;
 
-    fn parse_input(&mut self, Self::Input) -> ParseResult<Self::Input, Self::Output>;
+    fn parse_stream(&mut self, Self::Stream) -> ParseResult<Self::Stream, Self::Output>;
 
-    fn parse(&mut self, input: Self::Input) -> ParseResult<Self::Input, Self::Output>
+    fn parse(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output>
     where
         Self: Sized,
     {
-        let backup = input.backup();
-        let mut result = self.parse_input(input);
-        if let (Err(_), ref mut input) = result {
-            input.restore(backup);
+        let backup = stream.backup();
+        let mut result = self.parse_stream(stream);
+        if let (Err(_), ref mut stream) = result {
+            stream.restore(backup);
         }
         result
     }
@@ -51,7 +51,7 @@ pub trait Parser {
     fn bind<F, O>(self, f: F) -> Bind<Self, F>
     where
         Self: Sized,
-        F: Fn(Self::Output, Self::Input) -> O,
+        F: Fn(Self::Output, Self::Stream) -> O,
     {
         bind(self, f)
     }
@@ -69,7 +69,7 @@ pub trait Parser {
     fn and<P>(self, other: P) -> And<Self, P>
     where
         Self: Sized,
-        P: Parser<Input = Self::Input, Output = Self::Output>,
+        P: Parser<Stream = Self::Stream, Output = Self::Output>,
     {
         and(self, other)
     }
@@ -77,7 +77,7 @@ pub trait Parser {
     fn or<P>(self, other: P) -> Or<Self, P>
     where
         Self: Sized,
-        P: Parser<Input = Self::Input, Output = Self::Output>,
+        P: Parser<Stream = Self::Stream, Output = Self::Output>,
     {
         or(self, other)
     }
@@ -85,31 +85,31 @@ pub trait Parser {
     fn then<P, O>(self, other: P) -> Then<Self, P, O>
     where
         Self: Sized,
-        P: Parser<Input = Self::Input, Output = Self::Output>,
+        P: Parser<Stream = Self::Stream, Output = Self::Output>,
         O: FromIterator<Self::Output>,
     {
         then(self, other)
     }
 }
 
-impl<'a, I: Input, O> Parser for FnMut(I) -> ParseResult<I, O> + 'a {
-    type Input = I;
+impl<'a, I: Stream, O> Parser for FnMut(I) -> ParseResult<I, O> + 'a {
+    type Stream = I;
     type Output = O;
 
-    fn parse_input(&mut self, input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
-        self(input)
+    fn parse_stream(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        self(stream)
     }
 }
 
-impl<I: Input, O> Parser for fn(I) -> ParseResult<I, O> {
-    type Input = I;
+impl<I: Stream, O> Parser for fn(I) -> ParseResult<I, O> {
+    type Stream = I;
     type Output = O;
 
-    fn parse_input(&mut self, input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
-        self(input)
+    fn parse_stream(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        self(stream)
     }
 }
 
-pub fn parser<I: Input, O>(f: fn(I) -> ParseResult<I, O>) -> fn(I) -> ParseResult<I, O> {
+pub fn parser<I: Stream, O>(f: fn(I) -> ParseResult<I, O>) -> fn(I) -> ParseResult<I, O> {
     f
 }

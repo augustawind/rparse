@@ -4,49 +4,52 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 
 use error::{Error, ParseResult};
-use input::Input;
+use input::Stream;
 use parser::{parser, Parser};
 
 pub fn any<I, O>() -> fn(I) -> ParseResult<I, O>
 where
-    I: Input<Item = O>,
+    I: Stream<Item = O>,
     O: Copy + PartialEq + Debug,
 {
-    parser(|mut input| match input.pop() {
-        Some(t) => input.ok(t),
-        _ => input.err(Error::EOF),
+    parser(|mut stream| match stream.pop() {
+        Some(t) => stream.ok(t),
+        _ => stream.err(Error::EOF),
     })
 }
 
 #[derive(Copy, Clone)]
-pub struct Token<I: Input> {
+pub struct Token<I: Stream> {
     token: I::Item,
 }
 
-impl<I: Input> Parser for Token<I>
+impl<I: Stream> Parser for Token<I>
 where
     I::Item: PartialEq,
 {
-    type Input = I;
+    type Stream = I;
     type Output = I::Item;
 
-    fn parse_input(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
-        match input.peek() {
+    fn parse_stream(
+        &mut self,
+        mut stream: Self::Stream,
+    ) -> ParseResult<Self::Stream, Self::Output> {
+        match stream.peek() {
             Some(t) if t == self.token => {
-                input.pop();
-                input.ok(t)
+                stream.pop();
+                stream.ok(t)
             }
-            Some(_) => input.err(Error::expected_token(self.token)),
-            _ => input.err(Error::EOF),
+            Some(_) => stream.err(Error::expected_token(self.token)),
+            _ => stream.err(Error::EOF),
         }
     }
 }
 
-pub fn token<I: Input>(token: I::Item) -> Token<I> {
+pub fn token<I: Stream>(token: I::Item) -> Token<I> {
     Token { token }
 }
 
-pub struct Cond<I: Input, F>
+pub struct Cond<I: Stream, F>
 where
     F: Fn(&I::Item) -> bool,
 {
@@ -54,26 +57,29 @@ where
     _marker: PhantomData<I>,
 }
 
-impl<I: Input, F> Parser for Cond<I, F>
+impl<I: Stream, F> Parser for Cond<I, F>
 where
     F: Fn(&I::Item) -> bool,
 {
-    type Input = I;
+    type Stream = I;
     type Output = I::Item;
 
-    fn parse_input(&mut self, mut input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
-        match input.peek() {
+    fn parse_stream(
+        &mut self,
+        mut stream: Self::Stream,
+    ) -> ParseResult<Self::Stream, Self::Output> {
+        match stream.peek() {
             Some(ref t) if (self.f)(t) => {
-                input.pop();
-                input.ok(*t)
+                stream.pop();
+                stream.ok(*t)
             }
-            Some(t) => input.err(Error::unexpected_token(t)),
-            _ => input.err(Error::EOF),
+            Some(t) => stream.err(Error::unexpected_token(t)),
+            _ => stream.err(Error::EOF),
         }
     }
 }
 
-pub fn cond<I: Input, F>(f: F) -> Cond<I, F>
+pub fn cond<I: Stream, F>(f: F) -> Cond<I, F>
 where
     F: Fn(&I::Item) -> bool,
 {
@@ -88,7 +94,7 @@ macro_rules! def_char_parser {
         $(#[$attr])*
         pub fn $name<I, T>() -> Cond<I, fn(&I::Item) -> bool>
         where
-            I: Input<Item = T>,
+            I: Stream<Item = T>,
             T: Copy + PartialEq + Debug + Into<char>,
         {
             Cond {
@@ -205,11 +211,11 @@ pub mod unicode {
 #[cfg(test)]
 mod test {
     use super::*;
-    use input::IndexedInput;
+    use stream::IndexedStream;
 
     #[test]
     fn test_any() {
-        test_parser!(IndexedInput<&str> | any(), {
+        test_parser!(IndexedStream<&str> | any(), {
             "hello, world." => (Ok('h'), "ello, world.", 1)
         });
     }

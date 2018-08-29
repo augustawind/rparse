@@ -1,39 +1,39 @@
 macro_rules! test_parser {
-    ($input_type:ty | $parser:expr, {
-        $($input:expr => $expected:tt),+
+    ($stream_type:ty | $parser:expr, {
+        $($stream:expr => $expected:tt),+
         $(,)*
     }) => {
         $(
-            let result: ParseResult<$input_type, _> =
-                $parser.parse($input.into());
+            let result: ParseResult<$stream_type, _> =
+                $parser.parse($stream.into());
             assert_parse_result_eq!(result => $expected);
         )+
     };
 }
 
 macro_rules! assert_parse_result_eq {
-    ($result:expr => ($expected_result:expr, $expected_input:expr, $expected_pos:expr)) => {
-        let (parsed_result, parsed_input) = $result;
+    ($result:expr => ($expected_result:expr, $expected_stream:expr, $expected_pos:expr)) => {
+        let (parsed_result, parsed_stream) = $result;
         assert_eq!(parsed_result, $expected_result);
-        let expected_input = $crate::input::State::new($expected_input, $expected_pos);
-        assert_eq!(parsed_input, expected_input);
+        let expected_stream = $crate::stream::State::new($expected_stream, $expected_pos);
+        assert_eq!(parsed_stream, expected_stream);
     };
-    ($result:expr => ($expected_result:expr, $expected_input:expr)) => {
-        let (parsed_result, parsed_input) = $result;
+    ($result:expr => ($expected_result:expr, $expected_stream:expr)) => {
+        let (parsed_result, parsed_stream) = $result;
         assert_eq!(parsed_result, $expected_result);
-        assert_eq!(parsed_input, $expected_input);
+        assert_eq!(parsed_stream, $expected_stream);
     };
 }
 
 macro_rules! assert_parse_err {
-    ($parsed:expr, $input:expr) => {
-        let (parsed, input) = $parsed;
+    ($parsed:expr, $stream:expr) => {
+        let (parsed, stream) = $parsed;
         assert!(parsed.is_err());
-        assert_eq!(input, $input);
+        assert_eq!(stream, $stream);
     };
-    ($parsed:expr, $input:expr, $type:ty | $position:expr) => {
-        let (parsed, input) = $parsed;
+    ($parsed:expr, $stream:expr, $type:ty | $position:expr) => {
+        let (parsed, stream) = $parsed;
         assert!(parsed.is_err());
-        assert_eq!(input, State::<_, $type>::new($input, $position));
+        assert_eq!(stream, State::<_, $type>::new($stream, $position));
     };
 }

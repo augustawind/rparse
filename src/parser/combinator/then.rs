@@ -2,7 +2,7 @@ use std::iter;
 use std::marker::PhantomData;
 
 use error::ParseResult;
-use input::Input;
+use input::Stream;
 use parser::Parser;
 
 pub struct Then<L, R, S> {
@@ -11,33 +11,33 @@ pub struct Then<L, R, S> {
     __marker: PhantomData<S>,
 }
 
-impl<I: Input, O, S, L, R> Parser for Then<L, R, S>
+impl<I: Stream, O, S, L, R> Parser for Then<L, R, S>
 where
-    L: Parser<Input = I, Output = O>,
-    R: Parser<Input = I, Output = O>,
+    L: Parser<Stream = I, Output = O>,
+    R: Parser<Stream = I, Output = O>,
     S: iter::FromIterator<O>,
 {
-    type Input = I;
+    type Stream = I;
     type Output = S;
 
-    fn parse_input(&mut self, input: Self::Input) -> ParseResult<Self::Input, Self::Output> {
-        match self.left.parse(input) {
-            (Ok(first), input) => match self.right.parse(input) {
-                (Ok(second), input) => {
+    fn parse_stream(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        match self.left.parse(stream) {
+            (Ok(first), stream) => match self.right.parse(stream) {
+                (Ok(second), stream) => {
                     let result: S = iter::once(first).chain(iter::once(second)).collect();
-                    input.ok(result)
+                    stream.ok(result)
                 }
-                (Err(err), input) => input.err(err),
+                (Err(err), stream) => stream.err(err),
             },
-            (Err(err), input) => input.err(err),
+            (Err(err), stream) => stream.err(err),
         }
     }
 }
 
-pub fn then<I: Input, O, S, L, R>(left: L, right: R) -> Then<L, R, S>
+pub fn then<I: Stream, O, S, L, R>(left: L, right: R) -> Then<L, R, S>
 where
-    L: Parser<Input = I, Output = O>,
-    R: Parser<Input = I, Output = O>,
+    L: Parser<Stream = I, Output = O>,
+    R: Parser<Stream = I, Output = O>,
     S: iter::FromIterator<O>,
 {
     Then {
@@ -51,13 +51,13 @@ where
 mod test {
     use super::*;
     use error::Error;
-    use input::IndexedInput;
+    use input::IndexedStream;
     use parser::token::token;
 
     #[test]
     fn test_then() {
         // TODO: errors should show where the error occured
-        test_parser!(IndexedInput<&str> | token('X').then::<_, String>(token('O')), {
+        test_parser!(IndexedStream<&str> | token('X').then::<_, String>(token('O')), {
             "XO" => (Ok("XO".to_string()), "", 2),
             "XOXO" => (Ok("XO".to_string()), "XO", 2),
             "XY" => (Err(Error::expected_token('O')), "XY", 0),
