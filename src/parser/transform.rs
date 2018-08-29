@@ -36,12 +36,12 @@ where
     Map { parser: p, f }
 }
 
-pub struct Bind<P, F> {
+pub struct Then<P, F> {
     parser: P,
     f: F,
 }
 
-impl<P, F, O> Parser for Bind<P, F>
+impl<P, F, O> Parser for Then<P, F>
 where
     P: Parser,
     F: Fn(P::Output, P::Input) -> ParseResult<P::Input, O>,
@@ -57,12 +57,12 @@ where
     }
 }
 
-pub fn bind<P, F, O>(p: P, f: F) -> Bind<P, F>
+pub fn then<P, F, O>(p: P, f: F) -> Then<P, F>
 where
     P: Parser,
     F: Fn(P::Output, P::Input) -> O,
 {
-    Bind { parser: p, f }
+    Then { parser: p, f }
 }
 
 pub trait StrLike {
@@ -171,19 +171,19 @@ mod test {
     }
 
     #[test]
-    fn test_bind() {
-        let mut parser = bind(ascii::digit(), |c: char, rest: &str| {
+    fn test_then() {
+        let mut parser = then(ascii::digit(), |c: char, rest: &str| {
             (Ok(c.to_string()), rest)
         });
         assert_eq!(parser.parse("3"), (Ok("3".to_string()), ""));
         assert_parse_err!(parser.parse("a3"), "a3");
 
-        let mut parser = bind(many1(ascii::letter()), |s: String, rest| {
+        let mut parser = then(many1(ascii::letter()), |s: String, rest| {
             (Ok(s.to_uppercase()), rest)
         });
         assert_eq!(parser.parse("aBcD12e"), (Ok("ABCD".to_string()), "12e"));
 
-        let mut parser = bind(many1(ascii::alpha_num()), |s: String, rest| {
+        let mut parser = then(many1(ascii::alpha_num()), |s: String, rest| {
             match s.parse::<usize>() {
                 Ok(n) => (Ok(n), rest),
                 Err(e) => (Err(Error::Other(Box::new(e))), rest),
