@@ -137,9 +137,28 @@ pub mod ascii {
         use super::*;
 
         #[test]
+        fn test_letter() {
+            test_parser!(&str | letter(), {
+                "a" => (Ok('a'), ""),
+                "1" => (Err(Error::unexpected_token('1')), "1"),
+            });
+        }
+
+        #[test]
         fn test_digit() {
-            assert_eq!(digit().parse("1ab23"), (Ok('1'), "ab23"));
-            assert_parse_err!(digit().parse("a1b23"), "a1b23");
+            test_parser!(&str | digit(), {
+                "1" => (Ok('1'), ""),
+                "a" => (Err(Error::unexpected_token('a')), "a"),
+            });
+        }
+
+        #[test]
+        fn test_alpha_num() {
+            test_parser!(&str | alpha_num(), {
+                "a" => (Ok('a'), ""),
+                "1" => (Ok('1'), ""),
+                "." => (Err(Error::unexpected_token('.')), "."),
+            });
         }
     }
 }
