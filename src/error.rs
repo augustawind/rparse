@@ -137,8 +137,8 @@ impl<I: Input> From<String> for Error<I> {
     }
 }
 
-impl<I: Input> From<Box<StdError + Send + Sync>> for Error<I> {
-    fn from(error: Box<StdError + Send + Sync>) -> Self {
+impl<I: Input, E: StdError + Send + Sync + 'static> From<Box<E>> for Error<I> {
+    fn from(error: Box<E>) -> Self {
         Error::Other(error)
     }
 }
