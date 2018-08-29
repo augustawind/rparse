@@ -197,22 +197,19 @@ mod test {
 
     #[test]
     fn test_token() {
-        let mut parser = token('c');
         test_parser!(&str | token('c'), {
             "cat" => (Ok('c'), "at"),
+            "ace" => (Err(Error::unexpected_token('a')), "ace"),
         });
-        assert_parse_err!(parser.parse("ace"), "ace");
     }
 
     #[test]
     fn test_cond() {
-        assert_eq!(
-            cond(|&c: &char| c.is_numeric()).parse("123abc"),
-            (Ok('1'), "23abc")
-        );
-        assert_parse_err!(
-            cond(|&c: &char| c.is_alphabetic()).parse("123abc"),
-            "123abc"
-        );
+        test_parser!(&str | cond(|&c: &char| c.is_numeric()), {
+            "123abc" => (Ok('1'), "23abc")
+        });
+        test_parser!(&str | cond(|&c: &char| c.is_alphabetic()), {
+            "123abc" => (Err(Error::unexpected_token('1')), "123abc")
+        });
     }
 }
