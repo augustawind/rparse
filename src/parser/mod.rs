@@ -9,8 +9,8 @@ mod test_utils;
 #[macro_use]
 pub mod choice;
 pub mod combinator;
+pub mod function;
 pub mod token;
-pub mod transform;
 
 use std::fmt::Display;
 use std::iter::FromIterator;
@@ -18,7 +18,7 @@ use std::str;
 
 use self::choice::{and, or, And, Or};
 use self::combinator::{then, Then};
-use self::transform::{bind, from_str, map, Bind, FromStr, Map, StrLike};
+use self::function::{bind, from_str, map, Bind, FromStr, Map, StrLike};
 use error::ParseResult;
 use stream::Stream;
 

@@ -1,4 +1,4 @@
-//! Parsers that transform the output of other parsers.
+//! Parsers that transform the output of other Parsers with arbitrary functions.
 
 use std::fmt::Display;
 use std::marker::PhantomData;
