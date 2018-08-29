@@ -58,7 +58,7 @@ where
     fn eq(&self, other: &Info<I>) -> bool {
         match (self, other) {
             (&Info::Token(ref l), &Info::Token(ref r)) => l == r,
-            (&Info::Range(ref l), &Info::Range(ref r)) => l.tokens::<I>().eq(r.tokens::<I>()),
+            (&Info::Range(ref l), &Info::Range(ref r)) => l.tokens().eq(r.tokens()),
             (&Info::Msg(ref l), &Info::Msg(ref r)) => l == r,
             (&Info::MsgOwned(ref l), &Info::MsgOwned(ref r)) => l == r,
             (&Info::Msg(ref l), &Info::MsgOwned(ref r)) => l == r,

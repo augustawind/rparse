@@ -4,16 +4,16 @@ use std::fmt::Debug;
 
 use error::{Error, ParseResult};
 
-pub struct Tokens<'a, I: Input>(Box<Iterator<Item = I::Item> + 'a>);
+pub struct Tokens<'a, T>(Box<Iterator<Item = T> + 'a>);
 
-impl<'a, I: Input> Tokens<'a, I> {
-    fn new<T: Iterator<Item = I::Item> + 'a>(t: T) -> Self {
-        Tokens(Box::new(t))
+impl<'a, T> Tokens<'a, T> {
+    fn new<I: Iterator<Item = T> + 'a>(iter: I) -> Self {
+        Tokens(Box::new(iter))
     }
 }
 
-impl<'a, I: Input> Iterator for Tokens<'a, I> {
-    type Item = I::Item;
+impl<'a, T> Iterator for Tokens<'a, T> {
+    type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next()
@@ -22,10 +22,11 @@ impl<'a, I: Input> Iterator for Tokens<'a, I> {
 
 pub trait Input: Sized + Debug + Clone {
     type Item: Copy + PartialEq + Debug;
+    // type Position: Position<Self::Item>;
 
     fn peek(&self) -> Option<Self::Item>;
     fn pop(&mut self) -> Option<Self::Item>;
-    fn tokens<I: Input<Item = Self::Item>>(&self) -> Tokens<I>;
+    fn tokens(&self) -> Tokens<Self::Item>;
 
     fn backup(&self) -> Self {
         self.clone()
@@ -158,7 +159,7 @@ impl<I: Input, X: Position<I::Item>> Input for State<I, X> {
         })
     }
 
-    fn tokens<T: Input<Item = Self::Item>>(&self) -> Tokens<T> {
+    fn tokens(&self) -> Tokens<Self::Item> {
         self.input.tokens()
     }
 }
@@ -186,7 +187,7 @@ impl<'a> Input for &'a str {
         })
     }
 
-    fn tokens<I: Input<Item = Self::Item>>(&self) -> Tokens<I> {
+    fn tokens(&self) -> Tokens<Self::Item> {
         Tokens::new(self.chars())
     }
 }
@@ -206,7 +207,7 @@ impl Input for String {
         }
     }
 
-    fn tokens<I: Input<Item = Self::Item>>(&self) -> Tokens<I> {
+    fn tokens(&self) -> Tokens<Self::Item> {
         Tokens::new(self.chars())
     }
 }
