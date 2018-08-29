@@ -36,7 +36,7 @@ where
                 input.pop();
                 input.ok(t)
             }
-            Some(t) => input.err(Error::unexpected_token(t)),
+            Some(_) => input.err(Error::expected_token(self.token)),
             _ => input.err(Error::EOF),
         }
     }
@@ -218,7 +218,7 @@ mod test {
     fn test_token() {
         test_parser!(&str | token('c'), {
             "cat" => (Ok('c'), "at"),
-            "ace" => (Err(Error::unexpected_token('a')), "ace"),
+            "ace" => (Err(Error::expected_token('c')), "ace"),
         });
     }
 

@@ -12,7 +12,10 @@ pub mod combinator;
 pub mod token;
 pub mod transform;
 
+use std::iter::FromIterator;
+
 use self::choice::{and, or, And, Or};
+use self::combinator::{then, Then};
 use self::transform::{bind, map, Bind, Map};
 use error::ParseResult;
 use input::Input;
@@ -65,6 +68,15 @@ pub trait Parser {
         P: Parser<Input = Self::Input, Output = Self::Output>,
     {
         or(self, other)
+    }
+
+    fn then<P, O>(self, other: P) -> Then<Self, P, O>
+    where
+        Self: Sized,
+        P: Parser<Input = Self::Input, Output = Self::Output>,
+        O: FromIterator<Self::Output>,
+    {
+        then(self, other)
     }
 }
 
