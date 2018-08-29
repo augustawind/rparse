@@ -23,6 +23,10 @@ macro_rules! assert_parse_result_eq {
         assert_eq!(parsed_result, $expected_result);
         assert_eq!(parsed_input, $expected_input);
     };
+    ($result:expr => $expected_result:expr) => {
+        let (parsed_result, _parsed_input) = $result;
+        assert_eq!(parsed_result, $expected_result);
+    };
 }
 
 macro_rules! assert_parse_err {

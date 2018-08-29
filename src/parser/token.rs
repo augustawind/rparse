@@ -206,10 +206,8 @@ mod test {
     #[test]
     fn test_cond() {
         test_parser!(&str | cond(|&c: &char| c.is_numeric()), {
-            "123abc" => (Ok('1'), "23abc")
-        });
-        test_parser!(&str | cond(|&c: &char| c.is_alphabetic()), {
-            "123abc" => (Err(Error::unexpected_token('1')), "123abc")
+            "123abc" => (Ok('1'), "23abc"),
+            "abc123" => (Err(Error::unexpected_token('a')), "abc123"),
         });
     }
 }
