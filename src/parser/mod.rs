@@ -13,7 +13,7 @@ pub mod token;
 pub mod transform;
 
 use self::choice::{and, or, And, Or};
-use self::transform::{map, then, Map, Then};
+use self::transform::{bind, map, Bind, Map};
 use error::ParseResult;
 use input::Input;
 
@@ -43,12 +43,12 @@ pub trait Parser {
         map(self, f)
     }
 
-    fn then<F, O>(self, f: F) -> Then<Self, F>
+    fn bind<F, O>(self, f: F) -> Bind<Self, F>
     where
         Self: Sized,
         F: Fn(Self::Output, Self::Input) -> O,
     {
-        then(self, f)
+        bind(self, f)
     }
 
     fn and<P>(self, other: P) -> And<Self, P>
