@@ -11,7 +11,8 @@ use input::Input;
 pub enum Info<I: Input> {
     Token(I::Item),
     Range(I),
-    Description(String),
+    Msg(&'static str),
+    MsgOwned(String),
 }
 
 impl<I: Input> fmt::Display for Info<I> {
@@ -19,20 +20,21 @@ impl<I: Input> fmt::Display for Info<I> {
         match self {
             Info::Token(token) => write!(f, "token {:?}", token),
             Info::Range(range) => write!(f, "range {:?}", range),
-            Info::Description(msg) => write!(f, "{}", msg),
+            Info::Msg(msg) => write!(f, "{}", msg),
+            Info::MsgOwned(msg) => write!(f, "{}", msg),
         }
     }
 }
 
 impl<I: Input> From<&'static str> for Info<I> {
-    fn from(s: &str) -> Self {
-        Info::Description(s.to_string())
+    fn from(s: &'static str) -> Self {
+        Info::Msg(s)
     }
 }
 
 impl<I: Input> From<String> for Info<I> {
     fn from(s: String) -> Self {
-        Info::Description(s)
+        Info::MsgOwned(s)
     }
 }
 
@@ -57,7 +59,10 @@ where
         match (self, other) {
             (&Info::Token(ref l), &Info::Token(ref r)) => l == r,
             (&Info::Range(ref l), &Info::Range(ref r)) => l.tokens::<I>().eq(r.tokens::<I>()),
-            (&Info::Description(ref l), &Info::Description(ref r)) => l == r,
+            (&Info::Msg(ref l), &Info::Msg(ref r)) => l == r,
+            (&Info::MsgOwned(ref l), &Info::MsgOwned(ref r)) => l == r,
+            (&Info::Msg(ref l), &Info::MsgOwned(ref r)) => l == r,
+            (&Info::MsgOwned(ref l), &Info::Msg(ref r)) => l == r,
             _ => false,
         }
     }
@@ -121,14 +126,14 @@ impl<I: Input> fmt::Display for Error<I> {
 impl<I: Input> StdError for Error<I> {}
 
 impl<I: Input> From<&'static str> for Error<I> {
-    fn from(s: &str) -> Self {
-        Error::Message(Info::Description(s.to_string()))
+    fn from(s: &'static str) -> Self {
+        Error::Message(Info::Msg(s))
     }
 }
 
 impl<I: Input> From<String> for Error<I> {
     fn from(s: String) -> Self {
-        Error::Message(Info::Description(s))
+        Error::Message(Info::MsgOwned(s))
     }
 }
 
