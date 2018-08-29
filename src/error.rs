@@ -5,7 +5,7 @@ use std::fmt;
 use std::fmt::Debug;
 use std::iter::FromIterator;
 
-use input::Input;
+use input::{Input, Position};
 
 #[derive(Debug)]
 pub enum Info<I: Input> {
@@ -74,7 +74,6 @@ pub enum Error<I: Input> {
     Unexpected(Info<I>),
     Expected(Info<I>),
     Message(Info<I>),
-    Errors(Vec<Error<I>>),
     Other(Box<StdError + Send + Sync>),
 }
 
@@ -90,14 +89,6 @@ where
     pub fn unexpected_token(token: T) -> Self {
         Error::Unexpected(Info::Token(token))
     }
-
-    pub fn add_error(&mut self, child: Error<I>) {
-        if let Error::Errors(errs) = self {
-            errs.push(child);
-        } else {
-            *self = child;
-        }
-    }
 }
 
 impl<I: Input> fmt::Display for Error<I> {
@@ -107,17 +98,17 @@ impl<I: Input> fmt::Display for Error<I> {
             Error::Unexpected(info) => write!(f, "unexpected {}", info),
             Error::Expected(info) => write!(f, "expected {}", info),
             Error::Message(info) => write!(f, "{}", info),
-            Error::Errors(errs) => {
-                // TODO: nested identation
-                write!(
-                    f,
-                    "{}",
-                    errs.iter()
-                        .map(|e| e.to_string())
-                        .collect::<Vec<String>>()
-                        .join("\n")
-                )
-            }
+            // TODO: use this for Errors<I, X>
+            // Error::Errors(errs) => {
+            //     write!(
+            //         f,
+            //         "{}",
+            //         errs.iter()
+            //             .map(|e| e.to_string())
+            //             .collect::<Vec<String>>()
+            //             .join("\n")
+            //     )
+            // }
             Error::Other(err) => write!(f, "{}", err),
         }
     }
@@ -143,15 +134,45 @@ impl<I: Input, E: StdError + Send + Sync + 'static> From<Box<E>> for Error<I> {
     }
 }
 
-impl<I: Input> FromIterator<Error<I>> for Error<I> {
-    fn from_iter<T: IntoIterator<Item = Error<I>>>(iter: T) -> Self {
-        Error::Errors(iter.into_iter().collect())
+pub struct Errors<I: Input, X: Position<I::Item>> {
+    pub position: X,
+    pub errors: Vec<Error<I>>,
+}
+
+impl<I: Input, X: Position<I::Item>> Errors<I, X> {
+    pub fn new(error: Error<I>, position: X) -> Self {
+        Errors {
+            position,
+            errors: vec![error],
+        }
+    }
+
+    pub fn add_error(&mut self, error: Error<I>) {
+        self.errors.push(error);
     }
 }
 
-impl<I: Input> From<Vec<Error<I>>> for Error<I> {
+impl<I: Input, X: Position<I::Item>> From<Error<I>> for Errors<I, X> {
+    fn from(error: Error<I>) -> Self {
+        Errors {
+            position: Default::default(),
+            errors: vec![error],
+        }
+    }
+}
+
+impl<I: Input, X: Position<I::Item>> FromIterator<Error<I>> for Errors<I, X> {
+    fn from_iter<T: IntoIterator<Item = Error<I>>>(iter: T) -> Self {
+        Errors {
+            position: Default::default(),
+            errors: iter.into_iter().collect(),
+        }
+    }
+}
+
+impl<I: Input, X: Position<I::Item>> From<Vec<Error<I>>> for Errors<I, X> {
     fn from(v: Vec<Error<I>>) -> Self {
-        FromIterator::from_iter(v)
+        Self::from_iter(v)
     }
 }
 
@@ -166,7 +187,6 @@ where
             (&Error::Unexpected(ref l), &Error::Unexpected(ref r)) => l == r,
             (&Error::Expected(ref l), &Error::Expected(ref r)) => l == r,
             (&Error::Message(ref l), &Error::Message(ref r)) => l == r,
-            (&Error::Errors(ref l), &Error::Errors(ref r)) => l == r,
             (&Error::Other(ref l), &Error::Other(ref r)) => l.to_string() == r.to_string(),
             _ => false,
         }
