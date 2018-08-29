@@ -216,8 +216,8 @@ mod test {
 
         let mut parser = from_str::<_, f32>(many1::<_, String>(ascii::digit()));
         test_parser!(SourceCode | parser, {
-            "12e" => (Ok(12f32), ("e", (0, 2)).into()),
-            "e12" => (Err(Error::unexpected_token('e')), ("e12", (0, 0)).into()),
+            "12e" => (Ok(12f32), "e", (0, 2)),
+            "e12" => (Err(Error::unexpected_token('e')), "e12", (0, 0)),
         });
     }
 }

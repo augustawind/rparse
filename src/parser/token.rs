@@ -191,14 +191,16 @@ mod test {
     #[test]
     fn test_any() {
         test_parser!(IndexedInput<&str> | any(), {
-            "hello, world." => (Ok('h'), ("ello, world.", 1).into())
+            "hello, world." => (Ok('h'), "ello, world.", 1)
         });
     }
 
     #[test]
     fn test_token() {
         let mut parser = token('c');
-        assert_eq!(parser.parse("cat"), (Ok('c'), "at"));
+        test_parser!(&str | token('c'), {
+            "cat" => (Ok('c'), "at"),
+        });
         assert_parse_err!(parser.parse("ace"), "ace");
     }
 

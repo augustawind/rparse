@@ -1,14 +1,27 @@
 macro_rules! test_parser {
     ($input_type:ty | $parser:expr, {
-        $($input:expr => $expected:expr),+
+        $($input:expr => $expected:tt),+
         $(,)*
     }) => {
         $(
-            let (parsed_result, parsed_input): ParseResult<$input_type, _> = $parser.parse($input.into());
-            let (result, input) = $expected;
-            assert_eq!(parsed_result, result);
-            assert_eq!(parsed_input, input);
+            let result: ParseResult<$input_type, _> =
+                $parser.parse($input.into());
+            assert_parse_result_eq!(result => $expected);
         )+
+    };
+}
+
+macro_rules! assert_parse_result_eq {
+    ($result:expr => ($expected_result:expr, $expected_input:expr, $expected_pos:expr)) => {
+        let (parsed_result, parsed_input) = $result;
+        assert_eq!(parsed_result, $expected_result);
+        let expected_input = $crate::input::State::new($expected_input, $expected_pos);
+        assert_eq!(parsed_input, expected_input);
+    };
+    ($result:expr => ($expected_result:expr, $expected_input:expr)) => {
+        let (parsed_result, parsed_input) = $result;
+        assert_eq!(parsed_result, $expected_result);
+        assert_eq!(parsed_input, $expected_input);
     };
 }
 
