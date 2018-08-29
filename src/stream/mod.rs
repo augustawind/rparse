@@ -5,9 +5,8 @@ pub mod state;
 
 use std::fmt::Debug;
 
-pub use self::position::Position;
-use self::position::{IndexPosition, LinePosition};
-use self::state::State;
+pub use self::position::{IndexPosition, LinePosition, Position};
+pub use self::state::State;
 use error::{Error, ParseResult};
 
 /// SourceCode is a type alias for str `Stream` positioned by rows and columns.

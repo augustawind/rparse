@@ -98,7 +98,7 @@ macro_rules! choice {
 #[cfg(test)]
 mod test {
     use super::*;
-    use parser::combinator::{many, many1, sep_by};
+    use parser::combinator::{many, many1, then};
     use parser::token::{any, ascii, token};
 
     #[test]
@@ -143,10 +143,10 @@ mod test {
 
         let mut parser = or(
             many1(ascii::digit()),
-            sep_by(ascii::letter(), ascii::whitespace()),
+            then(ascii::letter(), ascii::whitespace()),
         );
         assert_eq!(parser.parse("123a bc"), (Ok("123".to_string()), "a bc"));
-        assert_eq!(parser.parse("a b c"), (Ok("abc".to_string()), ""));
+        assert_eq!(parser.parse("a b c"), (Ok("a ".to_string()), "b c"));
     }
 
     #[test]
@@ -169,9 +169,9 @@ mod test {
 
         let mut parser = choice!(
             many1(ascii::digit()),
-            sep_by(ascii::letter(), ascii::whitespace()),
+            then(ascii::letter(), ascii::whitespace()),
         );
         assert_eq!(parser.parse("123a bc"), (Ok("123".to_string()), "a bc"));
-        assert_eq!(parser.parse("a b c"), (Ok("abc".to_string()), ""));
+        assert_eq!(parser.parse("a b c"), (Ok("a ".to_string()), "b c"));
     }
 }
