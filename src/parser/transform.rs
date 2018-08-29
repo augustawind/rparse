@@ -195,7 +195,7 @@ mod test {
 
     #[test]
     fn test_from_str() {
-        let mut parser = from_str::<_, u32>(many1::<_, String>(ascii::digit()));
+        let mut parser = many1::<_, String>(ascii::digit()).from_str::<u32>();
         test_parser!(&str | parser, {
             "369" => (Ok(369 as u32), ""),
             "369abc" => (Ok(369 as u32), "abc"),
@@ -214,7 +214,7 @@ mod test {
             "12.5.9" => (Err("invalid float literal".into()), "12.5.9"),
         });
 
-        let mut parser = from_str::<_, f32>(many1::<_, String>(ascii::digit()));
+        let mut parser = many1::<_, String>(ascii::digit()).from_str::<f32>();
         test_parser!(SourceCode | parser, {
             "12e" => (Ok(12f32), "e", (0, 2)),
             "e12" => (Err(Error::unexpected_token('e')), "e12", (0, 0)),

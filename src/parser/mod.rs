@@ -12,11 +12,13 @@ pub mod combinator;
 pub mod token;
 pub mod transform;
 
+use std::fmt::Display;
 use std::iter::FromIterator;
+use std::str;
 
 use self::choice::{and, or, And, Or};
 use self::combinator::{then, Then};
-use self::transform::{bind, map, Bind, Map};
+use self::transform::{bind, from_str, map, Bind, FromStr, Map, StrLike};
 use error::ParseResult;
 use input::Input;
 
@@ -52,6 +54,16 @@ pub trait Parser {
         F: Fn(Self::Output, Self::Input) -> O,
     {
         bind(self, f)
+    }
+
+    fn from_str<O>(self) -> FromStr<Self, O>
+    where
+        Self: Sized,
+        Self::Output: StrLike,
+        O: str::FromStr,
+        O::Err: Display,
+    {
+        from_str(self)
     }
 
     fn and<P>(self, other: P) -> And<Self, P>
