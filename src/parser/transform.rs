@@ -150,9 +150,9 @@ where
 mod test {
     use super::*;
     use error::Error;
-    use input::SourceCode;
     use parser::combinator::many1;
     use parser::token::{ascii, token};
+    use stream::SourceCode;
 
     #[test]
     fn test_map() {

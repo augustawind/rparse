@@ -5,7 +5,7 @@ use std::fmt;
 use std::fmt::Debug;
 use std::iter::FromIterator;
 
-use input::{Position, Stream};
+use stream::{Position, Stream};
 
 #[derive(Debug)]
 pub enum Info<I: Stream> {

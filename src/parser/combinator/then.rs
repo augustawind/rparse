@@ -2,8 +2,8 @@ use std::iter;
 use std::marker::PhantomData;
 
 use error::ParseResult;
-use input::Stream;
 use parser::Parser;
+use stream::Stream;
 
 pub struct Then<L, R, S> {
     left: L,
@@ -51,8 +51,8 @@ where
 mod test {
     use super::*;
     use error::Error;
-    use input::IndexedStream;
     use parser::token::token;
+    use stream::IndexedStream;
 
     #[test]
     fn test_then() {

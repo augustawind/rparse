@@ -1,6 +1,6 @@
 use error::{Error, ParseResult};
-use input::Stream;
 use parser::Parser;
+use stream::Stream;
 
 pub struct Optional<P>(P);
 

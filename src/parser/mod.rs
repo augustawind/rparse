@@ -20,7 +20,7 @@ use self::choice::{and, or, And, Or};
 use self::combinator::{then, Then};
 use self::transform::{bind, from_str, map, Bind, FromStr, Map, StrLike};
 use error::ParseResult;
-use input::Stream;
+use stream::Stream;
 
 pub trait Parser {
     type Stream: Stream;

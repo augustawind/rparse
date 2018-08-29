@@ -4,8 +4,8 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 
 use error::{Error, ParseResult};
-use input::Stream;
 use parser::{parser, Parser};
+use stream::Stream;
 
 pub fn any<I, O>() -> fn(I) -> ParseResult<I, O>
 where

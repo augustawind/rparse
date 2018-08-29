@@ -1,8 +1,8 @@
 pub mod error;
-pub mod input;
+pub mod stream;
 #[macro_use]
 pub mod parser;
 
 pub use error::{Error, ParseResult};
-pub use input::Stream;
 pub use parser::Parser;
+pub use stream::Stream;

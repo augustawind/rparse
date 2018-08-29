@@ -2,8 +2,8 @@ use std::iter::FromIterator;
 use std::marker::PhantomData;
 
 use error::ParseResult;
-use input::Stream;
 use parser::Parser;
+use stream::Stream;
 
 pub struct Many<P, O> {
     p: P,
