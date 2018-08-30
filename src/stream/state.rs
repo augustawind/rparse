@@ -9,7 +9,7 @@ pub struct State<I: Stream, X: Position<I::Item>> {
 }
 
 impl<I: Stream, X: Position<I::Item>> State<I, X> {
-    pub fn new<Y: Into<X>>(stream: I, position: Y) -> Self {
+    pub fn new<T: Into<X>>(stream: I, position: T) -> Self {
         State {
             stream,
             position: position.into(),
@@ -30,8 +30,8 @@ impl<I: Stream, X: Position<I::Item>> From<I> for State<I, X> {
     }
 }
 
-impl<I: Stream, X: Position<I::Item>, F: Into<X>> From<(I, F)> for State<I, X> {
-    fn from((stream, pos): (I, F)) -> Self {
+impl<I: Stream, X: Position<I::Item>, T: Into<X>> From<(I, T)> for State<I, X> {
+    fn from((stream, pos): (I, T)) -> Self {
         State {
             stream,
             position: pos.into(),
