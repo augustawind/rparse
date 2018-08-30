@@ -8,14 +8,14 @@ use std::iter::FromIterator;
 use stream::{Position, Stream};
 
 #[derive(Debug)]
-pub enum Info<I: Stream> {
-    Token(I::Item),
-    Range(I),
+pub enum Info<S: Stream> {
+    Token(S::Item),
+    Range(S),
     Msg(&'static str),
     MsgOwned(String),
 }
 
-impl<I: Stream> fmt::Display for Info<I> {
+impl<S: Stream> fmt::Display for Info<S> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Info::Token(token) => write!(f, "token {:?}", token),
@@ -26,45 +26,45 @@ impl<I: Stream> fmt::Display for Info<I> {
     }
 }
 
-impl<I: Stream> From<&'static str> for Info<I> {
+impl<S: Stream> From<&'static str> for Info<S> {
     fn from(s: &'static str) -> Self {
         Info::Msg(s)
     }
 }
 
-impl<I: Stream> From<String> for Info<I> {
+impl<S: Stream> From<String> for Info<S> {
     fn from(s: String) -> Self {
         Info::MsgOwned(s)
     }
 }
 
-impl<I> From<char> for Info<I>
+impl<S> From<char> for Info<S>
 where
-    I: Stream<Item = char>,
-    I::Position: Position<char>,
+    S: Stream<Item = char>,
+    S::Position: Position<char>,
 {
     fn from(c: char) -> Self {
         Info::Token(c)
     }
 }
 
-impl<I> From<u8> for Info<I>
+impl<S> From<u8> for Info<S>
 where
-    I: Stream<Item = u8>,
-    I::Position: Position<u8>,
+    S: Stream<Item = u8>,
+    S::Position: Position<u8>,
 {
     fn from(b: u8) -> Self {
         Info::Token(b)
     }
 }
 
-impl<I, T> PartialEq for Info<I>
+impl<S, T> PartialEq for Info<S>
 where
-    I: Stream<Item = T>,
-    I::Position: Position<T>,
+    S: Stream<Item = T>,
+    S::Position: Position<T>,
     T: Copy + Debug + PartialEq,
 {
-    fn eq(&self, other: &Info<I>) -> bool {
+    fn eq(&self, other: &Info<S>) -> bool {
         match (self, other) {
             (&Info::Token(ref l), &Info::Token(ref r)) => l == r,
             (&Info::Range(ref l), &Info::Range(ref r)) => l.tokens().eq(r.tokens()),
@@ -78,18 +78,18 @@ where
 }
 
 #[derive(Debug)]
-pub enum Error<I: Stream> {
+pub enum Error<S: Stream> {
     EOF,
-    Unexpected(Info<I>),
-    Expected(Info<I>),
-    Message(Info<I>),
+    Unexpected(Info<S>),
+    Expected(Info<S>),
+    Message(Info<S>),
     Other(Box<StdError + Send + Sync>),
 }
 
-impl<I, T> Error<I>
+impl<S, T> Error<S>
 where
-    I: Stream<Item = T>,
-    I::Position: Position<T>,
+    S: Stream<Item = T>,
+    S::Position: Position<T>,
     T: Copy + PartialEq + Debug,
 {
     pub fn expected_token(token: T) -> Self {
@@ -101,10 +101,10 @@ where
     }
 }
 
-impl<I, T> PartialEq for Error<I>
+impl<S, T> PartialEq for Error<S>
 where
-    I: Stream<Item = T>,
-    I::Position: Position<T>,
+    S: Stream<Item = T>,
+    S::Position: Position<T>,
     T: Copy + Debug + PartialEq,
 {
     fn eq(&self, other: &Self) -> bool {
@@ -119,7 +119,7 @@ where
     }
 }
 
-impl<I: Stream> fmt::Display for Error<I> {
+impl<S: Stream> fmt::Display for Error<S> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Error::EOF => write!(f, "unexpected end of input"),
@@ -131,46 +131,46 @@ impl<I: Stream> fmt::Display for Error<I> {
     }
 }
 
-impl<I: Stream> StdError for Error<I> {}
+impl<S: Stream> StdError for Error<S> {}
 
-impl<I: Stream> From<&'static str> for Error<I> {
+impl<S: Stream> From<&'static str> for Error<S> {
     fn from(s: &'static str) -> Self {
         Error::Message(Info::Msg(s))
     }
 }
 
-impl<I: Stream> From<String> for Error<I> {
+impl<S: Stream> From<String> for Error<S> {
     fn from(s: String) -> Self {
         Error::Message(Info::MsgOwned(s))
     }
 }
 
-impl<I: Stream, E: StdError + Send + Sync + 'static> From<Box<E>> for Error<I> {
+impl<S: Stream, E: StdError + Send + Sync + 'static> From<Box<E>> for Error<S> {
     fn from(error: Box<E>) -> Self {
         Error::Other(error)
     }
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Errors<I: Stream, X: Position<I::Item>> {
+pub struct Errors<S: Stream, X: Position<S::Item>> {
     pub position: X,
-    pub errors: Vec<Error<I>>,
+    pub errors: Vec<Error<S>>,
 }
 
-impl<I: Stream, X: Position<I::Item>> Errors<I, X> {
-    pub fn new(position: X, error: Error<I>) -> Self {
+impl<S: Stream, X: Position<S::Item>> Errors<S, X> {
+    pub fn new(position: X, error: Error<S>) -> Self {
         Errors {
             position,
             errors: vec![error],
         }
     }
 
-    pub fn add_error(&mut self, error: Error<I>) {
+    pub fn add_error(&mut self, error: Error<S>) {
         self.errors.push(error);
     }
 }
 
-impl<I: Stream, X: Position<I::Item>> fmt::Display for Errors<I, X> {
+impl<S: Stream, X: Position<S::Item>> fmt::Display for Errors<S, X> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         writeln!(f, "{}:", self.position.fmt_msg("Parse error"))?;
         for error in self.errors.iter() {
@@ -180,7 +180,7 @@ impl<I: Stream, X: Position<I::Item>> fmt::Display for Errors<I, X> {
     }
 }
 
-impl<I: Stream, X: Position<I::Item>> StdError for Errors<I, X> {}
+impl<S: Stream, X: Position<S::Item>> StdError for Errors<S, X> {}
 
 impl<I: Stream, X: Position<I::Item>> From<Error<I>> for Errors<I, X> {
     fn from(error: Error<I>) -> Self {
