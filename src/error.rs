@@ -134,6 +134,7 @@ impl<I: Stream, E: StdError + Send + Sync + 'static> From<Box<E>> for Error<I> {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct Errors<I: Stream, X: Position<I::Item>> {
     pub position: X,
     pub errors: Vec<Error<I>>,
@@ -151,6 +152,18 @@ impl<I: Stream, X: Position<I::Item>> Errors<I, X> {
         self.errors.push(error);
     }
 }
+
+impl<I: Stream, X: Position<I::Item>> fmt::Display for Errors<I, X> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        writeln!(f, "Parse error at {}:", self.position)?;
+        for error in self.errors.iter() {
+            writeln!(f, "{}", error)?;
+        }
+        Ok(())
+    }
+}
+
+impl<I: Stream, X: Position<I::Item>> StdError for Errors<I, X> {}
 
 impl<I: Stream, X: Position<I::Item>> From<Error<I>> for Errors<I, X> {
     fn from(error: Error<I>) -> Self {

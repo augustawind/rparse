@@ -1,10 +1,11 @@
 //! Traits and implementations representing positions in an `Stream` stream.
 
-use std::fmt::Debug;
+use std::fmt;
+use std::fmt::{Debug, Display};
 
 /// The Position trait defines types that keep track of the cursor position while parsing an
 /// `Stream` stream.
-pub trait Position<T>: Debug + Default + Clone {
+pub trait Position<T>: Debug + Default + Display + Clone {
     type Position: Clone + Ord;
 
     fn position(&self) -> Self::Position;
@@ -19,6 +20,12 @@ pub struct IndexPosition(usize);
 impl Default for IndexPosition {
     fn default() -> Self {
         IndexPosition(0)
+    }
+}
+
+impl Display for IndexPosition {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "index {}", self.0)
     }
 }
 
@@ -51,6 +58,12 @@ pub struct LinePosition {
 impl Default for LinePosition {
     fn default() -> Self {
         LinePosition { line: 0, column: 0 }
+    }
+}
+
+impl Display for LinePosition {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "line {}, col {}", self.line, self.column)
     }
 }
 
