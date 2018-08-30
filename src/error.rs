@@ -141,7 +141,7 @@ pub struct Errors<I: Stream, X: Position<I::Item>> {
 }
 
 impl<I: Stream, X: Position<I::Item>> Errors<I, X> {
-    pub fn new(error: Error<I>, position: X) -> Self {
+    pub fn new(position: X, error: Error<I>) -> Self {
         Errors {
             position,
             errors: vec![error],

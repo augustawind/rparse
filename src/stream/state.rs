@@ -1,5 +1,6 @@
 use super::position::Position;
 use super::{Stream, Tokens};
+use error::{Error, Errors};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct State<I: Stream, X: Position<I::Item>> {
@@ -13,6 +14,10 @@ impl<I: Stream, X: Position<I::Item>> State<I, X> {
             stream,
             position: position.into(),
         }
+    }
+
+    pub fn conv_error<O>(self, error: Error<I>) -> Errors<I, X> {
+        Errors::new(self.position.clone(), error)
     }
 }
 
