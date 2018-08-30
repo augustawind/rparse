@@ -182,8 +182,8 @@ impl<S: Stream, X: Position<S::Item>> fmt::Display for Errors<S, X> {
 
 impl<S: Stream, X: Position<S::Item>> StdError for Errors<S, X> {}
 
-impl<I: Stream, X: Position<I::Item>> From<Error<I>> for Errors<I, X> {
-    fn from(error: Error<I>) -> Self {
+impl<S: Stream, X: Position<S::Item>> From<Error<S>> for Errors<S, X> {
+    fn from(error: Error<S>) -> Self {
         Errors {
             position: Default::default(),
             errors: vec![error],
@@ -191,8 +191,8 @@ impl<I: Stream, X: Position<I::Item>> From<Error<I>> for Errors<I, X> {
     }
 }
 
-impl<I: Stream, X: Position<I::Item>> FromIterator<Error<I>> for Errors<I, X> {
-    fn from_iter<T: IntoIterator<Item = Error<I>>>(iter: T) -> Self {
+impl<S: Stream, X: Position<S::Item>> FromIterator<Error<S>> for Errors<S, X> {
+    fn from_iter<T: IntoIterator<Item = Error<S>>>(iter: T) -> Self {
         Errors {
             position: Default::default(),
             errors: iter.into_iter().collect(),
@@ -200,10 +200,10 @@ impl<I: Stream, X: Position<I::Item>> FromIterator<Error<I>> for Errors<I, X> {
     }
 }
 
-impl<I: Stream, X: Position<I::Item>> From<Vec<Error<I>>> for Errors<I, X> {
-    fn from(v: Vec<Error<I>>) -> Self {
+impl<S: Stream, X: Position<S::Item>> From<Vec<Error<S>>> for Errors<S, X> {
+    fn from(v: Vec<Error<S>>) -> Self {
         Self::from_iter(v)
     }
 }
 
-pub type ParseResult<I, O> = (Result<O, Error<I>>, I);
+pub type ParseResult<S, O> = (Result<O, Error<S>>, S);
