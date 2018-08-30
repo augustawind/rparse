@@ -3,26 +3,26 @@ use super::{Stream, Tokens};
 use error::{Error, Errors};
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct State<I: Stream, X: Position<I::Item>> {
-    pub stream: I,
+pub struct State<S: Stream, X: Position<S::Item>> {
+    pub stream: S,
     pub position: X,
 }
 
-impl<I: Stream, X: Position<I::Item>> State<I, X> {
-    pub fn new<T: Into<X>>(stream: I, position: T) -> Self {
+impl<S: Stream, X: Position<S::Item>> State<S, X> {
+    pub fn new<T: Into<X>>(stream: S, position: T) -> Self {
         State {
             stream,
             position: position.into(),
         }
     }
 
-    pub fn conv_error<O>(self, error: Error<I>) -> Errors<I, X> {
+    pub fn conv_error<O>(self, error: Error<S>) -> Errors<S, X> {
         Errors::new(self.position.clone(), error)
     }
 }
 
-impl<I: Stream, X: Position<I::Item>> From<I> for State<I, X> {
-    fn from(stream: I) -> Self {
+impl<S: Stream, X: Position<S::Item>> From<S> for State<S, X> {
+    fn from(stream: S) -> Self {
         State {
             stream,
             position: Default::default(),
@@ -30,8 +30,8 @@ impl<I: Stream, X: Position<I::Item>> From<I> for State<I, X> {
     }
 }
 
-impl<I: Stream, X: Position<I::Item>, T: Into<X>> From<(I, T)> for State<I, X> {
-    fn from((stream, pos): (I, T)) -> Self {
+impl<S: Stream, X: Position<S::Item>, T: Into<X>> From<(S, T)> for State<S, X> {
+    fn from((stream, pos): (S, T)) -> Self {
         State {
             stream,
             position: pos.into(),
@@ -39,8 +39,8 @@ impl<I: Stream, X: Position<I::Item>, T: Into<X>> From<(I, T)> for State<I, X> {
     }
 }
 
-impl<I: Stream, X: Position<I::Item>> Stream for State<I, X> {
-    type Item = I::Item;
+impl<S: Stream, X: Position<S::Item>> Stream for State<S, X> {
+    type Item = S::Item;
     type Position = X;
 
     fn peek(&self) -> Option<Self::Item> {

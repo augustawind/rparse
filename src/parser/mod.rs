@@ -92,8 +92,8 @@ pub trait Parser {
     }
 }
 
-impl<'a, I: Stream, O> Parser for FnMut(I) -> ParseResult<I, O> + 'a {
-    type Stream = I;
+impl<'a, S: Stream, O> Parser for FnMut(S) -> ParseResult<S, O> + 'a {
+    type Stream = S;
     type Output = O;
 
     fn parse_stream(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
@@ -101,8 +101,8 @@ impl<'a, I: Stream, O> Parser for FnMut(I) -> ParseResult<I, O> + 'a {
     }
 }
 
-impl<I: Stream, O> Parser for fn(I) -> ParseResult<I, O> {
-    type Stream = I;
+impl<S: Stream, O> Parser for fn(S) -> ParseResult<S, O> {
+    type Stream = S;
     type Output = O;
 
     fn parse_stream(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
@@ -110,6 +110,6 @@ impl<I: Stream, O> Parser for fn(I) -> ParseResult<I, O> {
     }
 }
 
-pub fn parser<I: Stream, O>(f: fn(I) -> ParseResult<I, O>) -> fn(I) -> ParseResult<I, O> {
+pub fn parser<S: Stream, O>(f: fn(S) -> ParseResult<S, O>) -> fn(S) -> ParseResult<S, O> {
     f
 }

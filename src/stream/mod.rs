@@ -13,7 +13,7 @@ use error::{Error, ParseResult};
 pub type SourceCode = State<&'static str, LinePosition>;
 
 /// IndexedStream is a type alias for `Stream` positioned by its index.
-pub type IndexedStream<I> = State<I, IndexPosition>;
+pub type IndexedStream<S> = State<S, IndexPosition>;
 
 /// Tokens is an iterator over the tokens of some `Stream`.
 /// It is returned by the `tokens` method of `Stream`.

@@ -26,12 +26,12 @@ pub struct And<L, R> {
     right: R,
 }
 
-impl<I: Stream, O, L, R> Parser for And<L, R>
+impl<S: Stream, O, L, R> Parser for And<L, R>
 where
-    L: Parser<Stream = I, Output = O>,
-    R: Parser<Stream = I, Output = O>,
+    L: Parser<Stream = S, Output = O>,
+    R: Parser<Stream = S, Output = O>,
 {
-    type Stream = I;
+    type Stream = S;
     type Output = O;
 
     fn parse_stream(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
@@ -42,10 +42,10 @@ where
     }
 }
 
-pub fn and<I: Stream, O, L, R>(left: L, right: R) -> And<L, R>
+pub fn and<S: Stream, O, L, R>(left: L, right: R) -> And<L, R>
 where
-    L: Parser<Stream = I, Output = O>,
-    R: Parser<Stream = I, Output = O>,
+    L: Parser<Stream = S, Output = O>,
+    R: Parser<Stream = S, Output = O>,
 {
     And { left, right }
 }
@@ -55,12 +55,12 @@ pub struct Or<L, R> {
     right: R,
 }
 
-impl<I: Stream, O, L, R> Parser for Or<L, R>
+impl<S: Stream, O, L, R> Parser for Or<L, R>
 where
-    L: Parser<Stream = I, Output = O>,
-    R: Parser<Stream = I, Output = O>,
+    L: Parser<Stream = S, Output = O>,
+    R: Parser<Stream = S, Output = O>,
 {
-    type Stream = I;
+    type Stream = S;
     type Output = O;
 
     fn parse_stream(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
@@ -77,10 +77,10 @@ where
     }
 }
 
-pub fn or<I: Stream, O, L, R>(left: L, right: R) -> Or<L, R>
+pub fn or<S: Stream, O, L, R>(left: L, right: R) -> Or<L, R>
 where
-    L: Parser<Stream = I, Output = O>,
-    R: Parser<Stream = I, Output = O>,
+    L: Parser<Stream = S, Output = O>,
+    R: Parser<Stream = S, Output = O>,
 {
     Or { left, right }
 }
