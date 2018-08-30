@@ -5,7 +5,7 @@ pub mod state;
 
 use std::fmt::Debug;
 
-pub use self::position::{IndexPosition, LinePosition, Position};
+pub use self::position::{IndexPosition, LinePosition, NullPosition, Position};
 pub use self::state::State;
 use error::{Error, ParseResult};
 
@@ -37,6 +37,9 @@ impl<'a, T> Iterator for Tokens<'a, T> {
 pub trait Stream: Sized + Debug + Clone {
     /// The type of a single token.
     type Item: Copy + PartialEq + Debug;
+
+    /// The Position type used to track the current parsing position.
+    type Position: Position<Self::Item>;
 
     /// Returns the next token in the stream without consuming it.
     /// If there are no more tokens, returns `None`.
@@ -72,6 +75,7 @@ pub trait Stream: Sized + Debug + Clone {
 
 impl<'a> Stream for &'a str {
     type Item = char;
+    type Position = NullPosition;
 
     fn peek(&self) -> Option<Self::Item> {
         self.chars().next()
@@ -96,6 +100,7 @@ impl<'a> Stream for &'a str {
 
 impl Stream for String {
     type Item = char;
+    type Position = NullPosition;
 
     fn peek(&self) -> Option<Self::Item> {
         self.chars().next()

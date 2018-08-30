@@ -6,10 +6,39 @@ use std::fmt::{Debug, Display};
 /// The Position trait defines types that keep track of the cursor position while parsing an
 /// `Stream` stream.
 pub trait Position<T>: Debug + Default + Display + Clone {
-    type Position: Clone + Ord;
+    type Value: Ord;
 
-    fn position(&self) -> Self::Position;
+    fn value(&self) -> Self::Value;
     fn update(&mut self, item: &T);
+
+    fn fmt_msg(&self, msg: &str) -> String {
+        format!("{} at {}", msg, self)
+    }
+}
+
+/// NullPosition is a dummy `Position` for streams that don't keep track of their current position.
+/// This is provided so that primitive types such as `&str` can implement `Stream`.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct NullPosition;
+
+impl Display for NullPosition {
+    fn fmt(&self, _: &mut fmt::Formatter) -> fmt::Result {
+        Ok(())
+    }
+}
+
+impl<T> Position<T> for NullPosition {
+    type Value = ();
+
+    fn value(&self) -> Self::Value {
+        ()
+    }
+
+    fn update(&mut self, _: &T) {}
+
+    fn fmt_msg(&self, msg: &str) -> String {
+        msg.to_string()
+    }
 }
 
 /// IndexPosition is a `Position` which is represented as an index.
@@ -30,9 +59,9 @@ impl Display for IndexPosition {
 }
 
 impl<T> Position<T> for IndexPosition {
-    type Position = usize;
+    type Value = usize;
 
-    fn position(&self) -> Self::Position {
+    fn value(&self) -> Self::Value {
         self.0
     }
 
@@ -68,10 +97,10 @@ impl Display for LinePosition {
 }
 
 impl Position<char> for LinePosition {
-    type Position = Self;
+    type Value = (u32, u32);
 
-    fn position(&self) -> Self::Position {
-        self.clone()
+    fn value(&self) -> Self::Value {
+        (self.line, self.column)
     }
 
     fn update(&mut self, item: &char) {

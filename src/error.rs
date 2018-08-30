@@ -38,13 +38,21 @@ impl<I: Stream> From<String> for Info<I> {
     }
 }
 
-impl<I: Stream<Item = char>> From<char> for Info<I> {
+impl<I> From<char> for Info<I>
+where
+    I: Stream<Item = char>,
+    I::Position: Position<char>,
+{
     fn from(c: char) -> Self {
         Info::Token(c)
     }
 }
 
-impl<I: Stream<Item = u8>> From<u8> for Info<I> {
+impl<I> From<u8> for Info<I>
+where
+    I: Stream<Item = u8>,
+    I::Position: Position<u8>,
+{
     fn from(b: u8) -> Self {
         Info::Token(b)
     }
@@ -53,6 +61,7 @@ impl<I: Stream<Item = u8>> From<u8> for Info<I> {
 impl<I, T> PartialEq for Info<I>
 where
     I: Stream<Item = T>,
+    I::Position: Position<T>,
     T: Copy + Debug + PartialEq,
 {
     fn eq(&self, other: &Info<I>) -> bool {
@@ -80,6 +89,7 @@ pub enum Error<I: Stream> {
 impl<I, T> Error<I>
 where
     I: Stream<Item = T>,
+    I::Position: Position<T>,
     T: Copy + PartialEq + Debug,
 {
     pub fn expected_token(token: T) -> Self {
@@ -94,6 +104,7 @@ where
 impl<I, T> PartialEq for Error<I>
 where
     I: Stream<Item = T>,
+    I::Position: Position<T>,
     T: Copy + Debug + PartialEq,
 {
     fn eq(&self, other: &Self) -> bool {
@@ -161,7 +172,7 @@ impl<I: Stream, X: Position<I::Item>> Errors<I, X> {
 
 impl<I: Stream, X: Position<I::Item>> fmt::Display for Errors<I, X> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f, "Parse error at {}:", self.position)?;
+        writeln!(f, "{}:", self.position.fmt_msg("Parse error"))?;
         for error in self.errors.iter() {
             writeln!(f, "{}", error)?;
         }

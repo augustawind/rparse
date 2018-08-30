@@ -41,6 +41,7 @@ impl<I: Stream, X: Position<I::Item>, F: Into<X>> From<(I, F)> for State<I, X> {
 
 impl<I: Stream, X: Position<I::Item>> Stream for State<I, X> {
     type Item = I::Item;
+    type Position = X;
 
     fn peek(&self) -> Option<Self::Item> {
         self.stream.peek()
