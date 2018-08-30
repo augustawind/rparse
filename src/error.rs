@@ -91,6 +91,23 @@ where
     }
 }
 
+impl<I, T> PartialEq for Error<I>
+where
+    I: Stream<Item = T>,
+    T: Copy + Debug + PartialEq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (&Error::EOF, &Error::EOF) => true,
+            (&Error::Unexpected(ref l), &Error::Unexpected(ref r)) => l == r,
+            (&Error::Expected(ref l), &Error::Expected(ref r)) => l == r,
+            (&Error::Message(ref l), &Error::Message(ref r)) => l == r,
+            (&Error::Other(ref l), &Error::Other(ref r)) => l.to_string() == r.to_string(),
+            _ => false,
+        }
+    }
+}
+
 impl<I: Stream> fmt::Display for Error<I> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -98,17 +115,6 @@ impl<I: Stream> fmt::Display for Error<I> {
             Error::Unexpected(info) => write!(f, "unexpected {}", info),
             Error::Expected(info) => write!(f, "expected {}", info),
             Error::Message(info) => write!(f, "{}", info),
-            // TODO: use this for Errors<I, X>
-            // Error::Errors(errs) => {
-            //     write!(
-            //         f,
-            //         "{}",
-            //         errs.iter()
-            //             .map(|e| e.to_string())
-            //             .collect::<Vec<String>>()
-            //             .join("\n")
-            //     )
-            // }
             Error::Other(err) => write!(f, "{}", err),
         }
     }
@@ -186,23 +192,6 @@ impl<I: Stream, X: Position<I::Item>> FromIterator<Error<I>> for Errors<I, X> {
 impl<I: Stream, X: Position<I::Item>> From<Vec<Error<I>>> for Errors<I, X> {
     fn from(v: Vec<Error<I>>) -> Self {
         Self::from_iter(v)
-    }
-}
-
-impl<I, T> PartialEq for Error<I>
-where
-    I: Stream<Item = T>,
-    T: Copy + Debug + PartialEq,
-{
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (&Error::EOF, &Error::EOF) => true,
-            (&Error::Unexpected(ref l), &Error::Unexpected(ref r)) => l == r,
-            (&Error::Expected(ref l), &Error::Expected(ref r)) => l == r,
-            (&Error::Message(ref l), &Error::Message(ref r)) => l == r,
-            (&Error::Other(ref l), &Error::Other(ref r)) => l.to_string() == r.to_string(),
-            _ => false,
-        }
     }
 }
 
