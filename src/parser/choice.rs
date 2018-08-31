@@ -98,8 +98,10 @@ macro_rules! choice {
 #[cfg(test)]
 mod test {
     use super::*;
+    use error::Error;
     use parser::combinator::{many, many1, then};
     use parser::token::{any, ascii, token};
+    use stream::IndexedStream;
 
     #[test]
     fn test_optional() {
@@ -125,31 +127,45 @@ mod test {
     #[test]
     fn test_and() {
         let mut parser = and(token('a'), token('b'));
-        assert_eq!(parser.parse("abcd"), (Ok('b'), "cd"));
-        assert_eq!(parser.parse("ab"), (Ok('b'), ""));
-        assert_parse_err!(parser.parse("def"), "def");
-        assert_parse_err!(parser.parse("aab"), "aab");
-        assert_parse_err!(parser.parse("bcd"), "bcd");
+        test_parser!(IndexedStream<&str> | parser, {
+            "abcd" => (Ok('b'), "cd", 2),
+            "ab" => (Ok('b'), "", 2),
+        });
+        test_parser_errors!(IndexedStream<&str> | parser, {
+            "def" => at 0; (|e| e == &Error::expected_token('a')),
+            "aab" => at 1; (|e| e == &Error::expected_token('b')),
+            "bcd" => at 0; (|e| e == &Error::expected_token('a')),
+        });
 
         let mut parser = and(many1(ascii::digit()), many1(ascii::letter()));
-        assert_eq!(parser.parse("123abc456"), (Ok(vec!['a', 'b', 'c']), "456"));
-        assert_parse_err!(parser.parse(" 1 2 3"), " 1 2 3");
-        assert_parse_err!(parser.parse("123 abc"), "123 abc");
+        test_parser!(IndexedStream<&str> | parser, {
+            "123abc456" => (Ok(vec!['a', 'b', 'c']), "456", 6),
+        });
+        test_parser_errors!(IndexedStream<&str> | parser, {
+            " 1 2 3" => at 0; (|e| e == &Error::unexpected_token(' ')),
+            "123 abc" => at 3; (|e| e == &Error::unexpected_token(' ')),
+        });
     }
 
     #[test]
     fn test_or() {
         let mut parser = or(token('a'), token('b'));
-        assert_eq!(parser.parse("bcd"), (Ok('b'), "cd"));
-        assert_eq!(parser.parse("a"), (Ok('a'), ""));
-        assert_parse_err!(parser.parse("def"), "def");
+        test_parser!(IndexedStream<&str> | parser, {
+            "bcd" => (Ok('b'), "cd", 1),
+            "a" => (Ok('a'), "", 1),
+        });
+        test_parser_errors!(IndexedStream<&str> | parser, {
+            "def" => at 0; (|e| e == &Error::expected_token('a'))
+        });
 
         let mut parser = or(
             many1(ascii::digit()),
             then(ascii::letter(), ascii::whitespace()),
         );
-        assert_eq!(parser.parse("123a bc"), (Ok("123".to_string()), "a bc"));
-        assert_eq!(parser.parse("a b c"), (Ok("a ".to_string()), "b c"));
+        test_parser!(IndexedStream<&str> | parser, {
+            "123a bc" => (Ok("123".to_string()), "a bc", 4),
+            "a b c" => (Ok("a ".to_string()), "b c", 2),
+        });
     }
 
     #[test]
@@ -157,24 +173,29 @@ mod test {
         assert_eq!(choice!(token('a'), token('b')).parse("a"), (Ok('a'), ""));
 
         let mut parser = choice!(token('a'), ascii::digit(), ascii::punctuation());
-        assert_eq!(parser.parse("a9."), (Ok('a'), "9."));
-        assert_eq!(parser.parse("9.a"), (Ok('9'), ".a"));
-        assert_eq!(parser.parse(".a9"), (Ok('.'), "a9"));
-        assert_parse_err!(parser.parse("ba9."), "ba9.");
+        test_parser!(IndexedStream<&str> | parser, {
+            "a9." => (Ok('a'), "9.", 1),
+            "9.a" => (Ok('9'), ".a", 1),
+            ".a9" => (Ok('.'), "a9", 1),
+        });
+        test_parser_errors!(IndexedStream<&str> | parser, {
+            "ba9." => at 0; (|e| e == &Error::unexpected_token('b')),
+        });
 
-        let mut parser = choice!(token('a'), token('b'), token('c'));
-        assert_eq!(parser.parse("bcd"), (Ok('b'), "cd"));
-        assert_parse_err!(parser.parse("def"), "def");
+        assert_eq!(
+            choice!(token('a'), token('b'), token('c')).parse("bcd"),
+            (Ok('b'), "cd")
+        );
 
-        let mut parser = choice!(ascii::letter());
-        assert_eq!(parser.parse("Z"), (Ok('Z'), ""));
-        assert_parse_err!(parser.parse("9"), "9");
+        assert_eq!(choice!(ascii::letter()).parse("Z"), (Ok('Z'), ""));
 
         let mut parser = choice!(
             many1(ascii::digit()),
             then(ascii::letter(), ascii::whitespace()),
         );
-        assert_eq!(parser.parse("123a bc"), (Ok("123".to_string()), "a bc"));
-        assert_eq!(parser.parse("a b c"), (Ok("a ".to_string()), "b c"));
+        test_parser!(IndexedStream<&str> | parser, {
+            "123a bc" => (Ok("123".to_string()), "a bc", 4),
+            "a b c" => (Ok("a ".to_string()), "b c", 2),
+        });
     }
 }

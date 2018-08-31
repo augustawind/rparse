@@ -204,6 +204,7 @@ pub mod unicode {
     mod test {
         use super::*;
         use error::{Error::*, Info::*};
+        use stream::IndexedStream;
 
         #[test]
         fn test_letter() {
@@ -211,8 +212,8 @@ pub mod unicode {
                 "京34a" => (Ok('京'), "34a"),
                 "a京34" => (Ok('a'), "京34"),
             });
-            test_parser_errors!(&str | letter(), {
-                "3京4a" => at 0; (|e| is_match!(Unexpected(Token('3')) = e)),
+            test_parser_errors!(IndexedStream<&str> | letter(), {
+                "3京4a" => at 0; (|e| is_match!(&Unexpected(Token('3')) = e)),
             });
         }
     }

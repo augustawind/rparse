@@ -179,8 +179,8 @@ mod test {
 
     #[test]
     fn test_bind() {
-        let mut parser = bind(ascii::digit(), |c: char, rest: &str| {
-            (Ok(c.to_string()), rest)
+        let mut parser = bind(ascii::digit(), |c: char, stream: &str| {
+            stream.ok(c.to_string())
         });
         test_parser!(&str | parser, {
             "a" =>  (Ok("3".to_string()), ""),
@@ -188,19 +188,20 @@ mod test {
             "a3" => (|e| e == &Error::unexpected_token('a')),
         });
 
-        let mut parser = bind(many1(ascii::letter()), |s: String, rest| {
-            (Ok(s.to_uppercase()), rest)
+        let mut parser = bind(many1(ascii::letter()), |s: String, stream: &str| {
+            stream.ok(s.to_uppercase())
         });
         assert_eq!(parser.parse("aBcD12e"), (Ok("ABCD".to_string()), "12e"));
 
-        let mut parser = bind(many1(ascii::alpha_num()), |s: String, stream: &str| match s
-            .parse::<usize>()
-        {
-            Ok(n) => stream.ok(n),
-            Err(e) => stream.err(Box::new(e).into()),
-        });
+        let mut parser = bind(
+            many1(ascii::alpha_num()),
+            |s: String, stream: IndexedStream<&str>| match s.parse::<usize>() {
+                Ok(n) => stream.ok(n),
+                Err(e) => stream.err(Box::new(e).into()),
+            },
+        );
         test_parser!(IndexedStream<&str> | parser, {
-            "324 dogs" => (Ok(324 as usize), " dogs"),
+            "324 dogs" => (Ok(324 as usize), " dogs", 3),
         });
         test_parser_errors!(IndexedStream<&str> | parser, {
             "324dogs" => at 3; (|err| err == &"invalid digit found in string".into()),

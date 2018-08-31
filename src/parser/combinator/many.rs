@@ -100,13 +100,14 @@ mod test {
 
     #[test]
     fn test_many1() {
-        test_parser!(IndexedStream<&str> | many1(token('a')), {
+        let mut parser = many1(token('a'));
+        test_parser!(IndexedStream<&str> | parser, {
             "aaabcd" => (Ok("aaa".to_string()), "bcd", 3),
             "abcd" => (Ok("a".to_string()), "bcd", 1),
             "aaaa" => (Ok("aaaa".to_string()), "", 4),
         });
-        test_parser_errors!(IndexedStream<&str> | many1(token('a')), {
-            "baaa" => at 1; (|e| Error::expected_token('a')),
+        test_parser_errors!(IndexedStream<&str> | parser, {
+            "baaa" => at 1; (|e| e == &Error::expected_token('a')),
         });
     }
 }
