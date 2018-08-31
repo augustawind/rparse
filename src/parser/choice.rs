@@ -116,7 +116,7 @@ mod test {
         test_parser!(&str | parser, {
             "abc123" => (Ok(Some("abc123".to_string())), ""),
         }, {
-            "" => (|&err| is_match!(Error::EOF = err)),
+            "" => (|err| is_match!(&Error::EOF = err)),
         });
 
         assert_eq!(
