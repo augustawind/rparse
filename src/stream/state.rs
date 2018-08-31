@@ -1,6 +1,6 @@
 use super::position::Position;
 use super::{Stream, Tokens};
-use error::{Error, Errors};
+// use error::{Error, Errors};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct State<S: Stream, X: Position<S::Item>> {

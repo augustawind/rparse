@@ -63,13 +63,13 @@ where
     type Output = O;
 
     fn parse_stream(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        let (err, stream) = match self.left.parse(stream) {
+        let (mut err, stream) = match self.left.parse(stream) {
             (Ok(result), stream) => return stream.ok(result),
             (Err(err), stream) => (err, stream),
         };
         match self.right.parse(stream) {
             (Ok(result), stream) => stream.ok(result),
-            (Err(err2), stream) => {
+            (Err(mut err2), stream) => {
                 err.merge_errors(&mut err2);
                 stream.errs(err)
             }
