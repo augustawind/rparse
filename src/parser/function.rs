@@ -187,8 +187,8 @@ mod test {
 
         let mut parser = bind(many1(ascii::alpha_num()), |s: String, rest| {
             match s.parse::<usize>() {
-                Ok(n) => (Ok(n), rest),
-                Err(e) => (Err(Error::Other(Box::new(e))), rest),
+                Ok(n) => rest.ok(n),
+                Err(e) => rest.err(Box::new(e).into()),
             }
         });
         assert_eq!(parser.parse("324 dogs"), (Ok(324usize), " dogs"));

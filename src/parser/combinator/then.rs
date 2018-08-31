@@ -50,18 +50,20 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use error::Error;
+    use error::{Error, Info};
     use parser::token::token;
     use stream::IndexedStream;
 
     #[test]
     fn test_then() {
-        // TODO: errors should show where the error occured
-        test_parser!(IndexedStream<&str> | token('X').then::<_, String>(token('O')), {
+        let mut parser = token('X').then::<_, String>(token('O'));
+        test_parser!(IndexedStream<&str> | parser, {
             "XO" => (Ok("XO".to_string()), "", 2),
             "XOXO" => (Ok("XO".to_string()), "XO", 2),
-            "XY" => (Err(Error::expected_token('O')), "XY", 0),
-            "ZY" => (Err(Error::expected_token('X')), "ZY", 0),
+        });
+        test_parser_errors!(on IndexedStream<&str> | parser, {
+            "XY" => at 1; (|&err| err == Error::expected_token('O')),
+            "ZY" => at 0; (|&err| err == Error::expected_token('X')),
         });
     }
 }
