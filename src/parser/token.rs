@@ -226,15 +226,19 @@ mod test {
     fn test_token() {
         test_parser!(&str | token('c'), {
             "cat" => (Ok('c'), "at"),
-            "ace" => (Err(Error::expected_token('c')), "ace"),
+        }, {
+            "ace" => (|&err| err == Error::expected_token('c')),
         });
     }
 
     #[test]
     fn test_cond() {
-        test_parser!(&str | cond(|&c: &char| c.is_numeric()), {
+        let mut parser = cond(|&c: &char| c.is_numeric());
+        test_parser!(&str | parser, {
             "123abc" => (Ok('1'), "23abc"),
-            "abc123" => (Err(Error::unexpected_token('a')), "abc123"),
+        });
+        test_parser_errors!(&str | parser, {
+            "abc123" => (|&err| err == Error::expected_token('a')),
         });
     }
 }

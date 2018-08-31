@@ -50,7 +50,7 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use error::{Error, Info};
+    use error::Error;
     use parser::token::token;
     use stream::IndexedStream;
 
@@ -61,7 +61,7 @@ mod test {
             "XO" => (Ok("XO".to_string()), "", 2),
             "XOXO" => (Ok("XO".to_string()), "XO", 2),
         });
-        test_parser_errors!(on IndexedStream<&str> | parser, {
+        test_parser_errors!(IndexedStream<&str> | parser, {
             "XY" => at 1; (|&err| err == Error::expected_token('O')),
             "ZY" => at 0; (|&err| err == Error::expected_token('X')),
         });
