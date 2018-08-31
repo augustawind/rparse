@@ -159,12 +159,12 @@ impl<S: Stream, E: StdError + Send + Sync + 'static> From<Box<E>> for Error<S> {
 #[derive(Debug, PartialEq)]
 pub struct Errors<S: Stream, X: Position<S::Item>> {
     pub position: X,
-    pub errors: Vec<Error<S>>,
+    pub errors: Vec<Error<S::Stream>>,
     is_eof: bool,
 }
 
 impl<S: Stream, X: Position<S::Item>> Errors<S, X> {
-    pub fn new(position: X, error: Error<S>) -> Self {
+    pub fn new(position: X, error: Error<S::Stream>) -> Self {
         Errors {
             position,
             errors: vec![error],
@@ -172,7 +172,7 @@ impl<S: Stream, X: Position<S::Item>> Errors<S, X> {
         }
     }
 
-    pub fn from_errors(position: X, errors: Vec<Error<S>>) -> Self {
+    pub fn from_errors(position: X, errors: Vec<Error<S::Stream>>) -> Self {
         let is_eof = errors.iter().any(|err| err.is_eof());
         Errors {
             position,
@@ -185,14 +185,14 @@ impl<S: Stream, X: Position<S::Item>> Errors<S, X> {
         return self.is_eof;
     }
 
-    pub fn add_error(&mut self, error: Error<S>) {
+    pub fn add_error(&mut self, error: Error<S::Stream>) {
         if error.is_eof() {
             self.is_eof = true;
         }
         self.errors.push(error);
     }
 
-    pub fn add_errors(&mut self, mut errors: Vec<Error<S>>) {
+    pub fn add_errors(&mut self, mut errors: Vec<Error<S::Stream>>) {
         if errors.iter().any(|err| err.is_eof()) {
             self.is_eof = true;
         }
@@ -232,20 +232,20 @@ impl<S: Stream, X: Position<S::Item>> fmt::Display for Errors<S, X> {
 
 impl<S: Stream, X: Position<S::Item>> StdError for Errors<S, X> {}
 
-impl<S: Stream, X: Position<S::Item>> From<Error<S>> for Errors<S, X> {
-    fn from(error: Error<S>) -> Self {
+impl<S: Stream, X: Position<S::Item>> From<Error<S::Stream>> for Errors<S, X> {
+    fn from(error: Error<S::Stream>) -> Self {
         Self::new(Default::default(), error)
     }
 }
 
-impl<S: Stream, X: Position<S::Item>> FromIterator<Error<S>> for Errors<S, X> {
-    fn from_iter<T: IntoIterator<Item = Error<S>>>(iter: T) -> Self {
+impl<S: Stream, X: Position<S::Item>> FromIterator<Error<S::Stream>> for Errors<S, X> {
+    fn from_iter<T: IntoIterator<Item = Error<S::Stream>>>(iter: T) -> Self {
         Self::from_errors(Default::default(), iter.into_iter().collect())
     }
 }
 
-impl<S: Stream, X: Position<S::Item>> From<Vec<Error<S>>> for Errors<S, X> {
-    fn from(v: Vec<Error<S>>) -> Self {
+impl<S: Stream, X: Position<S::Item>> From<Vec<Error<S::Stream>>> for Errors<S, X> {
+    fn from(v: Vec<Error<S::Stream>>) -> Self {
         Self::from_iter(v)
     }
 }

@@ -38,6 +38,8 @@ pub trait Stream: Sized + Debug + Clone {
     /// The type of a single token.
     type Item: Copy + PartialEq + Debug;
 
+    type Stream: Stream<Item = Self::Item, Position = NullPosition>;
+
     /// The Position type used to track the current parsing position.
     type Position: Position<Self::Item>;
 
@@ -72,12 +74,12 @@ pub trait Stream: Sized + Debug + Clone {
     }
 
     // TODO: should support Error<I> since State has sub-error?
-    fn err_from(&self, error: Error<Self>) -> Errors<Self, Self::Position> {
+    fn err_from(&self, error: Error<Self::Stream>) -> Errors<Self, Self::Position> {
         Errors::new(self.position(), error)
     }
 
     /// Return the given parse error as a `ParseResult`, using `Self` as the `Stream` type.
-    fn err<O>(self, error: Error<Self>) -> ParseResult<Self, O> {
+    fn err<O>(self, error: Error<Self::Stream>) -> ParseResult<Self, O> {
         (Err(self.err_from(error)), self)
     }
 
@@ -88,6 +90,7 @@ pub trait Stream: Sized + Debug + Clone {
 
 impl<'a> Stream for &'a str {
     type Item = char;
+    type Stream = Self;
     type Position = NullPosition;
 
     fn peek(&self) -> Option<Self::Item> {
@@ -117,6 +120,7 @@ impl<'a> Stream for &'a str {
 
 impl Stream for String {
     type Item = char;
+    type Stream = Self;
     type Position = NullPosition;
 
     fn peek(&self) -> Option<Self::Item> {

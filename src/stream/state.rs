@@ -1,4 +1,4 @@
-use super::position::Position;
+use super::position::{NullPosition, Position};
 use super::{Stream, Tokens};
 // use error::{Error, Errors};
 
@@ -39,8 +39,9 @@ impl<S: Stream, X: Position<S::Item>, T: Into<X>> From<(S, T)> for State<S, X> {
     }
 }
 
-impl<S: Stream, X: Position<S::Item>> Stream for State<S, X> {
+impl<S: Stream<Position = NullPosition>, X: Position<S::Item>> Stream for State<S, X> {
     type Item = S::Item;
+    type Stream = S;
     type Position = X;
 
     fn peek(&self) -> Option<Self::Item> {
