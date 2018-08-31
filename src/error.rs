@@ -8,7 +8,7 @@ use std::iter::FromIterator;
 
 use stream::{Position, Stream};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Info<S: Stream> {
     Token(S::Item),
     Range(S),
@@ -78,7 +78,7 @@ where
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Error<S: Stream> {
     EOF,
     Unexpected(Info<S>),
@@ -156,7 +156,7 @@ impl<S: Stream, E: StdError + Send + Sync + 'static> From<Box<E>> for Error<S> {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Errors<S: Stream, X: Position<S::Item>> {
     pub position: X,
     pub errors: Vec<Error<S::Stream>>,

@@ -4,7 +4,38 @@ use std::fmt::Display;
 use std::marker::PhantomData;
 use std::str;
 
-use {ParseResult, Parser, Stream};
+use {Error, ParseResult, Parser, Stream};
+
+pub struct Expect<P: Parser> {
+    parser: P,
+    error: Error<<<P as Parser>::Stream as Stream>::Stream>,
+}
+
+impl<P: Parser> Parser for Expect<P> {
+    type Stream = P::Stream;
+    type Output = P::Output;
+
+    fn parse_stream(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        match self.parser.parse_stream(stream) {
+            (Err(mut errors), stream) => {
+                errors.add_error(self.error.clone());
+                stream.errs(errors)
+            }
+            ok => ok,
+        }
+    }
+}
+
+pub fn expect<P, I>(parser: P, expected: I) -> Expect<P>
+where
+    P: Parser,
+    I: Into<Error<<<P as Parser>::Stream as Stream>::Stream>>,
+{
+    Expect {
+        parser,
+        error: expected.into(),
+    }
+}
 
 pub struct Map<P, F> {
     parser: P,
