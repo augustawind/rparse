@@ -107,15 +107,15 @@ mod test {
     fn test_optional() {
         let mut parser = optional(token('x'));
         test_parser!(&str | parser, {
-            "" => (Ok(None), ""),
-            "y" => (Ok(None), "y"),
-            "x" => (Ok(Some('x')), ""),
-            "xyz" => (Ok(Some('x')), "yz"),
+            "" => (Ok(None), "");
+            "y" => (Ok(None), "y");
+            "x" => (Ok(Some('x')), "");
+            "xyz" => (Ok(Some('x')), "yz");
         });
 
         let mut parser = optional(many1::<_, String>(ascii::alpha_num()));
         test_parser!(&str | parser, {
-            "abc123" => (Ok(Some("abc123".to_string())), ""),
+            "abc123" => (Ok(Some("abc123".to_string())), "");
         });
 
         assert_eq!(
@@ -128,22 +128,22 @@ mod test {
     fn test_and() {
         let mut parser = and(token('a'), token('b'));
         test_parser!(IndexedStream<&str> | parser, {
-            "abcd" => (Ok('b'), "cd", 2),
-            "ab" => (Ok('b'), "", 2),
+            "abcd" => (Ok('b'), "cd", 2);
+            "ab" => (Ok('b'), "", 2);
         });
         test_parser_errors!(IndexedStream<&str> | parser, {
-            "def" => at 0; (|e| e == &Error::expected_token('a')),
-            "aab" => at 1; (|e| e == &Error::expected_token('b')),
-            "bcd" => at 0; (|e| e == &Error::expected_token('a')),
+            "def" => at 0; (|e| e == &Error::expected_token('a'));
+            "aab" => at 1; (|e| e == &Error::expected_token('b'));
+            "bcd" => at 0; (|e| e == &Error::expected_token('a'));
         });
 
         let mut parser = and(many1(ascii::digit()), many1(ascii::letter()));
         test_parser!(IndexedStream<&str> | parser, {
-            "123abc456" => (Ok(vec!['a', 'b', 'c']), "456", 6),
+            "123abc456" => (Ok(vec!['a', 'b', 'c']), "456", 6);
         });
         test_parser_errors!(IndexedStream<&str> | parser, {
-            " 1 2 3" => at 0; (|e| e == &Error::unexpected_token(' ')),
-            "123 abc" => at 3; (|e| e == &Error::unexpected_token(' ')),
+            " 1 2 3" => at 0; (|e| e == &Error::unexpected_token(' '));
+            "123 abc" => at 3; (|e| e == &Error::unexpected_token(' '));
         });
     }
 
@@ -151,11 +151,11 @@ mod test {
     fn test_or() {
         let mut parser = or(token('a'), token('b'));
         test_parser!(IndexedStream<&str> | parser, {
-            "bcd" => (Ok('b'), "cd", 1),
-            "a" => (Ok('a'), "", 1),
+            "bcd" => (Ok('b'), "cd", 1);
+            "a" => (Ok('a'), "", 1);
         });
         test_parser_errors!(IndexedStream<&str> | parser, {
-            "def" => at 0; (|e| e == &Error::expected_token('a'))
+            "def" => at 0; (|e| e == &Error::expected_token('a'));
         });
 
         let mut parser = or(
@@ -163,8 +163,8 @@ mod test {
             then(ascii::letter(), ascii::whitespace()),
         );
         test_parser!(IndexedStream<&str> | parser, {
-            "123a bc" => (Ok("123".to_string()), "a bc", 3),
-            "a b c" => (Ok("a ".to_string()), "b c", 2),
+            "123a bc" => (Ok("123".to_string()), "a bc", 3);
+            "a b c" => (Ok("a ".to_string()), "b c", 2);
         });
     }
 
@@ -174,12 +174,12 @@ mod test {
 
         let mut parser = choice!(token('a'), ascii::digit(), ascii::punctuation());
         test_parser!(IndexedStream<&str> | parser, {
-            "a9." => (Ok('a'), "9.", 1),
-            "9.a" => (Ok('9'), ".a", 1),
-            ".a9" => (Ok('.'), "a9", 1),
+            "a9." => (Ok('a'), "9.", 1);
+            "9.a" => (Ok('9'), ".a", 1);
+            ".a9" => (Ok('.'), "a9", 1);
         });
         test_parser_errors!(IndexedStream<&str> | parser, {
-            "ba9." => at 0; (|e| e == &Error::unexpected_token('b')),
+            "ba9." => at 0; (|e| e == &Error::unexpected_token('b'));
         });
 
         assert_eq!(
@@ -194,8 +194,8 @@ mod test {
             then(ascii::letter(), ascii::whitespace()),
         );
         test_parser!(IndexedStream<&str> | parser, {
-            "123a bc" => (Ok("123".to_string()), "a bc", 3),
-            "a b c" => (Ok("a ".to_string()), "b c", 2),
+            "123a bc" => (Ok("123".to_string()), "a bc", 3);
+            "a b c" => (Ok("a ".to_string()), "b c", 2);
         });
     }
 }

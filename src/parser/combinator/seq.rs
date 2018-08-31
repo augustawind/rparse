@@ -69,15 +69,15 @@ mod test {
     fn test_seq() {
         let mut parser = seq(vec![token('x'), token('y'), token('z')]);
         test_parser!(IndexedStream<&str> | parser, {
-            "xyz" => (Ok("xyz".to_string()), "", 3),
-            "xyzxyz" => (Ok("xyz".to_string()), "xyz", 3),
+            "xyz" => (Ok("xyz".to_string()), "", 3);
+            "xyzxyz" => (Ok("xyz".to_string()), "xyz", 3);
         });
         test_parser_errors!(IndexedStream<&str> | parser, {
-            "" => at 0; (|e| e == &Error::EOF),
-            "w" => at 0; (|e| e == &Error::expected_token('x')),
-            "x" => at 1; (|e| e == &Error::expected_token('y')),
-            "xy" => at 2; (|e| e == &Error::expected_token('z')),
-            "xy3" => at 2; (|e| e == &Error::expected_token('z')),
+            "" => at 0; (|e| e == &Error::EOF), (|e| e == &Error::expected_token('x'));
+            "w" => at 0; (|e| e == &Error::expected_token('x'));
+            "x" => at 1; (|e| e == &Error::expected_token('y'));
+            "xy" => at 2; (|e| e == &Error::expected_token('z'));
+            "xy3" => at 2; (|e| e == &Error::expected_token('z'));
         });
     }
 }

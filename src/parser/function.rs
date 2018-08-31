@@ -162,9 +162,9 @@ mod test {
     fn test_map() {
         let mut parser = map(ascii::digit(), |c: char| c.to_string());
         test_parser!(&str | parser, {
-            "3" => (Ok("3".to_string()), ""),
+            "3" => (Ok("3".to_string()), "");
         }, {
-            "a3" => (|e| e == &Error::unexpected_token('a')),
+            "a3" => (|e| e == &Error::unexpected_token('a'));
         });
 
         let mut parser = map(many1(ascii::letter()), |s: String| s.to_uppercase());
@@ -174,8 +174,8 @@ mod test {
             s.parse::<usize>().unwrap_or(0)
         });
         test_parser!(&str | parser, {
-            "324 dogs" => (Ok(324 as usize), " dogs"),
-            "324dogs" => (Ok(0 as usize), ""),
+            "324 dogs" => (Ok(324 as usize), " dogs");
+            "324dogs" => (Ok(0 as usize), "");
         });
     }
 
@@ -184,9 +184,9 @@ mod test {
         // TODO: use realistic use cases for these tests. many of these are better suited to map()
         let mut parser = ascii::digit().bind(|c: char, stream: &str| stream.ok(c.to_string()));
         test_parser!(&str | parser, {
-            "3" =>  (Ok("3".to_string()), ""),
+            "3" =>  (Ok("3".to_string()), "");
         }, {
-            "a3" => (|e| e == &Error::unexpected_token('a')),
+            "a3" => (|e| e == &Error::unexpected_token('a'));
         });
 
         let mut parser =
@@ -200,12 +200,12 @@ mod test {
             },
         );
         test_parser!(IndexedStream<&str> | parser, {
-            "324 dogs" => (Ok(324 as usize), " dogs", 3),
+            "324 dogs" => (Ok(324 as usize), " dogs", 3);
         });
         // TODO: add ability to control consumption, e.g. make this error show at beginning (0)
         // TODO: e.g.: many1(alpha_num()).bind(...).try()
         test_parser_errors!(IndexedStream<&str> | parser, {
-            "324dogs" => at 7; (|err| err == &"invalid digit found in string".into()),
+            "324dogs" => at 7; (|err| err == &"invalid digit found in string".into());
         });
     }
 
@@ -213,10 +213,10 @@ mod test {
     fn test_from_str() {
         let mut parser = many1::<_, String>(ascii::digit()).from_str::<u32>();
         test_parser!(&str | parser, {
-            "369" => (Ok(369 as u32), ""),
-            "369abc" => (Ok(369 as u32), "abc"),
+            "369" => (Ok(369 as u32), "");
+            "369abc" => (Ok(369 as u32), "abc");
         }, {
-            "abc" => (|err| err == &Error::unexpected_token('a')),
+            "abc" => (|err| err == &Error::unexpected_token('a'));
         });
 
         let mut parser = from_str::<_, f32>(many1::<_, String>(choice!(
@@ -225,18 +225,18 @@ mod test {
             ascii::digit()
         )));
         test_parser!(&str | parser, {
-            "12e" => (Ok(12 as f32), "e"),
-            "-12e" => (Ok(-12 as f32), "e"),
-            "-12.5e" => (Ok(-12.5 as f32), "e"),
+            "12e" => (Ok(12 as f32), "e");
+            "-12e" => (Ok(-12 as f32), "e");
+            "-12.5e" => (Ok(-12.5 as f32), "e");
         }, {
-            "12.5.9" => (|err| err == &"invalid float literal".into()),
+            "12.5.9" => (|err| err == &"invalid float literal".into());
         });
 
         let mut parser = many1::<_, String>(ascii::digit()).from_str::<f32>();
         test_parser!(SourceCode | parser, {
-            "12e" => (Ok(12f32), "e", (0, 2)),
+            "12e" => (Ok(12f32), "e", (0, 2));
         }, {
-            "e12" => (|err| err == &Error::unexpected_token('e')),
+            "e12" => (|err| err == &Error::unexpected_token('e'));
         });
     }
 }

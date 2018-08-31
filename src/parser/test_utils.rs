@@ -1,7 +1,6 @@
 macro_rules! test_parser {
     ($stream_type:ty | $parser:expr, {
-        $($stream:expr => $expected:tt),+
-        $(,)*
+        $($stream:expr => $expected:tt);+;
     }) => {
         $(
             let result: $crate::error::ParseResult<$stream_type, _> =
@@ -11,17 +10,15 @@ macro_rules! test_parser {
     };
 
     ($stream_type:ty | $parser:expr, {
-        $($stream:expr => $expected:tt),+
-        $(,)*
+        $($stream:expr => $expected:tt);+;
     }, {
-        $($stream2:expr => $expected2:tt),+
-        $(,)*
+        $($stream2:expr => $expected2:tt);+;
     }) => {
         test_parser!($stream_type | $parser, {
-            $($stream => $expected),+,
+            $($stream => $expected);+;
         });
         test_parser_errors!($stream_type | $parser, {
-            $($stream2 => $expected2),+,
+            $($stream2 => $expected2);+;
         });
     };
 }
@@ -42,26 +39,24 @@ macro_rules! assert_parse_result_eq {
 
 macro_rules! test_parser_errors {
     ($stream_type:ty | $parser:expr, {
-        $($stream:expr => $expected:tt),+
-        $(,)*
+        $($stream:expr => $($expected:expr),+);+;
     }) => {
         $(
             let stream: $stream_type = $stream.into();
             let result: $crate::error::ParseResult<$stream_type, _> =
                 $parser.parse(stream.clone());
-            assert_parser_errors!(stream => result => $expected);
+            assert_parser_errors!(stream => result => $($expected),+);
         )+
     };
 
     ($stream_type:ty | $parser:expr, {
-        $($stream:expr => at $pos:expr; $expected:tt),+
-        $(,)*
+        $($stream:expr => at $pos:expr; $($expected:expr),+);+;
     }) => {
         $(
             let stream: $stream_type = $stream.into();
             let result: $crate::error::ParseResult<$stream_type, _> =
                 $parser.parse(stream.clone());
-            assert_parser_errors!(stream => result => $pos; $expected);
+            assert_parser_errors!(stream => result => $pos; $($expected),+);
         )+
     };
 }
@@ -86,28 +81,23 @@ macro_rules! assert_parser_errors {
 }
 
 macro_rules! unwrap_errors_with {
-    ($parsed:expr, $($predicate:expr),*) => {{
+    ($parsed:expr, $($predicate:expr),+) => {{
         let (parsed_err, stream) = $parsed;
         let errors = parsed_err.expect_err("assertion failed: expected Err(_)");
-        assert_has_error_with!(&errors, $($predicate),*);
+        assert_has_error_with!(&errors, $($predicate),+);
         (errors, stream)
     }};
 }
 
 macro_rules! assert_has_error_with {
-    ($errors:expr, $($predicate:expr)*) => {
-        assert!(
-            $errors.errors.iter().any(|err| {
-                $(
-                    if !$predicate(err) {
-                        return false;
-                    }
-                )*
-                true
-            }),
-            "no Errors satisfied all predicates: {:?}",
-            $errors.errors
-        );
+    ($errors:expr, $($predicate:expr),+) => {
+        $(
+            assert!(
+                $errors.errors.iter().any($predicate),
+                "no errors satisfied a given predicate: {:?}",
+                $errors.errors,
+            );
+        )+
     };
 }
 

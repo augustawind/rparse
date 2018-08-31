@@ -153,28 +153,28 @@ pub mod ascii {
         #[test]
         fn test_letter() {
             test_parser!(&str | letter(), {
-                "a" => (Ok('a'), ""),
+                "a" => (Ok('a'), "");
             }, {
-                "1" => (|err| err == &Error::unexpected_token('1')),
+                "1" => (|err| err == &Error::unexpected_token('1'));
             });
         }
 
         #[test]
         fn test_digit() {
             test_parser!(&str | digit(), {
-                "1" => (Ok('1'), ""),
+                "1" => (Ok('1'), "");
             }, {
-                "a" => (|err| err == &Error::unexpected_token('a')),
+                "a" => (|err| err == &Error::unexpected_token('a'));
             });
         }
 
         #[test]
         fn test_alpha_num() {
             test_parser!(&str | alpha_num(), {
-                "a" => (Ok('a'), ""),
-                "1" => (Ok('1'), ""),
+                "a" => (Ok('a'), "");
+                "1" => (Ok('1'), "");
             }, {
-                "." => (|err| err == &Error::unexpected_token('.')),
+                "." => (|err| err == &Error::unexpected_token('.'));
             });
         }
     }
@@ -215,11 +215,11 @@ pub mod unicode {
         #[test]
         fn test_letter() {
             test_parser!(&str | letter(), {
-                "京34a" => (Ok('京'), "34a"),
-                "a京34" => (Ok('a'), "京34"),
+                "京34a" => (Ok('京'), "34a");
+                "a京34" => (Ok('a'), "京34");
             });
             test_parser_errors!(IndexedStream<&str> | letter(), {
-                "3京4a" => at 0; (|e| is_match!(&Unexpected(Token('3')) = e)),
+                "3京4a" => at 0; (|e| is_match!(&Unexpected(Token('3')) = e));
             });
         }
     }
@@ -233,16 +233,16 @@ mod test {
     #[test]
     fn test_any() {
         test_parser!(IndexedStream<&str> | any(), {
-            "hello, world." => (Ok('h'), "ello, world.", 1)
+            "hello, world." => (Ok('h'), "ello, world.", 1);
         });
     }
 
     #[test]
     fn test_token() {
         test_parser!(&str | token('c'), {
-            "cat" => (Ok('c'), "at"),
+            "cat" => (Ok('c'), "at");
         }, {
-            "ace" => (|err| err == &Error::expected_token('c')),
+            "ace" => (|err| err == &Error::expected_token('c'));
         });
     }
 
@@ -250,10 +250,10 @@ mod test {
     fn test_cond() {
         let mut parser = cond(|&c: &char| c.is_numeric());
         test_parser!(&str | parser, {
-            "123abc" => (Ok('1'), "23abc"),
+            "123abc" => (Ok('1'), "23abc");
         });
         test_parser_errors!(&str | parser, {
-            "abc123" => (|err| err == &Error::unexpected_token('a')),
+            "abc123" => (|err| err == &Error::unexpected_token('a'));
         });
     }
 }
