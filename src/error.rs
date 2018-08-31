@@ -1,5 +1,6 @@
 //! Error and Result types that are used by parsers.
 
+use std::cmp::Ordering;
 use std::error::Error as StdError;
 use std::fmt;
 use std::fmt::Debug;
@@ -162,6 +163,21 @@ impl<S: Stream, X: Position<S::Item>> Errors<S, X> {
         Errors {
             position,
             errors: vec![error],
+        }
+    }
+
+    pub fn merge_errors(&mut self, errors: &mut Errors<S, X>) {
+        match errors.position.value().cmp(&self.position.value()) {
+            Ordering::Greater => {
+                self.position = errors.position.clone();
+                errors.position = Default::default();
+                self.errors.clear();
+                self.errors.append(&mut errors.errors);
+            }
+            Ordering::Equal => {
+                self.errors.append(&mut errors.errors);
+            }
+            Ordering::Less => {}
         }
     }
 
