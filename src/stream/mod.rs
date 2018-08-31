@@ -73,7 +73,6 @@ pub trait Stream: Sized + Debug + Clone {
         (Ok(result), self)
     }
 
-    // TODO: should support Error<I> since State has sub-error?
     fn err_from(&self, error: Error<Self::Stream>) -> Errors<Self, Self::Position> {
         Errors::new(self.position(), error)
     }

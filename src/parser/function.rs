@@ -122,7 +122,7 @@ where
     type Output = O;
 
     fn parse_stream(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        match self.parser.parse(stream) {
+        match self.parser.parse_stream(stream) {
             (Ok(s), stream) => (
                 s.from_utf8()
                     .map_err(|_| "invalid UTF-8".into())
