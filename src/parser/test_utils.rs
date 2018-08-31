@@ -101,6 +101,13 @@ macro_rules! assert_has_error_with {
     };
 }
 
+// Predicate generators.
+macro_rules! eq {
+    ($value:expr) => {
+        |value| $value == value
+    };
+}
+
 macro_rules! is_match {
     ($pattern:pat = $value:expr) => {
         match $value {
