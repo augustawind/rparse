@@ -98,7 +98,6 @@ macro_rules! choice {
 #[cfg(test)]
 mod test {
     use super::*;
-    use error::Error;
     use parser::combinator::{many, many1, then};
     use parser::token::{any, ascii, token};
 
@@ -115,8 +114,6 @@ mod test {
         let mut parser = optional(many1::<_, String>(ascii::alpha_num()));
         test_parser!(&str | parser, {
             "abc123" => (Ok(Some("abc123".to_string())), ""),
-        }, {
-            "" => (|err| is_match!(&Error::EOF = err)),
         });
 
         assert_eq!(

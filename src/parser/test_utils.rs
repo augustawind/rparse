@@ -89,7 +89,7 @@ macro_rules! unwrap_errors_with {
     ($parsed:expr, $($predicate:expr),*) => {{
         let (parsed_err, stream) = $parsed;
         let errors = parsed_err.expect_err("assertion failed: expected Err(_)");
-        assert_has_error_with!(errors, $($predicate),*);
+        assert_has_error_with!(&errors, $($predicate),*);
         (errors, stream)
     }};
 }
@@ -105,7 +105,8 @@ macro_rules! assert_has_error_with {
                 )*
                 true
             }),
-            "no Errors satisfied all predicates",
+            "no Errors satisfied all predicates: {:?}",
+            $errors.errors
         );
     };
 }

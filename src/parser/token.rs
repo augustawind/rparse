@@ -241,7 +241,7 @@ mod test {
             "123abc" => (Ok('1'), "23abc"),
         });
         test_parser_errors!(&str | parser, {
-            "abc123" => (|err| err == &Error::expected_token('a')),
+            "abc123" => (|err| err == &Error::unexpected_token('a')),
         });
     }
 }

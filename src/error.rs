@@ -84,7 +84,6 @@ pub enum Error<S: Stream> {
     Unexpected(Info<S>),
     Expected(Info<S>),
     Message(Info<S>),
-    Other(Box<StdError + Send + Sync>),
 }
 
 impl<S, T> Error<S>
@@ -121,7 +120,6 @@ where
             (&Error::Unexpected(ref l), &Error::Unexpected(ref r)) => l == r,
             (&Error::Expected(ref l), &Error::Expected(ref r)) => l == r,
             (&Error::Message(ref l), &Error::Message(ref r)) => l == r,
-            (&Error::Other(ref l), &Error::Other(ref r)) => l.to_string() == r.to_string(),
             _ => false,
         }
     }
@@ -134,7 +132,6 @@ impl<S: Stream> fmt::Display for Error<S> {
             Error::Unexpected(info) => write!(f, "unexpected {}", info),
             Error::Expected(info) => write!(f, "expected {}", info),
             Error::Message(info) => write!(f, "{}", info),
-            Error::Other(err) => write!(f, "{}", err),
         }
     }
 }
@@ -155,7 +152,7 @@ impl<S: Stream> From<String> for Error<S> {
 
 impl<S: Stream, E: StdError + Send + Sync + 'static> From<Box<E>> for Error<S> {
     fn from(error: Box<E>) -> Self {
-        Error::Other(error)
+        error.to_string().into()
     }
 }
 

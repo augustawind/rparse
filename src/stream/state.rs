@@ -15,6 +15,10 @@ impl<S: Stream, X: Position<S::Item>> State<S, X> {
             position: position.into(),
         }
     }
+
+    //     pub fn add_error(&self, error: Error<S>) -> Errors<Self, X> {
+    //         Errors::new(self.position.clone(), error)
+    //     }
 }
 
 impl<S: Stream, X: Position<S::Item>> From<S> for State<S, X> {

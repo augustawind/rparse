@@ -194,7 +194,7 @@ mod test {
         test_parser!(&str | parser, {
             "324 dogs" => (Ok(324 as usize), " dogs"),
         }, {
-            "324dogs" => (|err| err == &"invalid integer literal".into()),
+            "324dogs" => (|err| err == &"invalid digit found in string".into()),
         });
     }
 
