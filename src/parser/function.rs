@@ -183,7 +183,7 @@ mod test {
             stream.ok(c.to_string())
         });
         test_parser!(&str | parser, {
-            "a" =>  (Ok("3".to_string()), ""),
+            "3" =>  (Ok("3".to_string()), ""),
         }, {
             "a3" => (|e| e == &Error::unexpected_token('a')),
         });

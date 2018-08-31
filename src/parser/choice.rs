@@ -163,7 +163,7 @@ mod test {
             then(ascii::letter(), ascii::whitespace()),
         );
         test_parser!(IndexedStream<&str> | parser, {
-            "123a bc" => (Ok("123".to_string()), "a bc", 4),
+            "123a bc" => (Ok("123".to_string()), "a bc", 3),
             "a b c" => (Ok("a ".to_string()), "b c", 2),
         });
     }
@@ -194,7 +194,7 @@ mod test {
             then(ascii::letter(), ascii::whitespace()),
         );
         test_parser!(IndexedStream<&str> | parser, {
-            "123a bc" => (Ok("123".to_string()), "a bc", 4),
+            "123a bc" => (Ok("123".to_string()), "a bc", 3),
             "a b c" => (Ok("a ".to_string()), "b c", 2),
         });
     }
