@@ -179,6 +179,7 @@ mod test {
 
     #[test]
     fn test_bind() {
+        // TODO: use realistic use cases for these tests. many of these are better suited to map()
         let mut parser = ascii::digit().bind(|c: char, stream: &str| stream.ok(c.to_string()));
         test_parser!(&str | parser, {
             "3" =>  (Ok("3".to_string()), ""),
