@@ -19,7 +19,6 @@ where
     })
 }
 
-#[derive(Copy, Clone)]
 pub struct Token<S: Stream> {
     token: S::Item,
 }
