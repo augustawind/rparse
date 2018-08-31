@@ -49,10 +49,9 @@ where
 
 #[cfg(test)]
 mod test {
-    use super::*;
-    use error::Error;
     use parser::token::token;
     use stream::IndexedStream;
+    use {Error, Parser};
 
     #[test]
     fn test_then() {

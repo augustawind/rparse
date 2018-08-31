@@ -8,6 +8,7 @@ mod test_utils;
 
 #[macro_use]
 pub mod choice;
+#[macro_use]
 pub mod combinator;
 pub mod function;
 pub mod token;

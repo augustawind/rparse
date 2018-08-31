@@ -164,11 +164,20 @@ pub struct Errors<S: Stream, X: Position<S::Item>> {
 }
 
 impl<S: Stream, X: Position<S::Item>> Errors<S, X> {
-    pub fn new(position: X, error: Error<S::Stream>) -> Self {
+    pub fn new(position: X) -> Self {
+        Errors {
+            position,
+            errors: Vec::new(),
+            is_eof: false,
+        }
+    }
+
+    pub fn from_error(position: X, error: Error<S::Stream>) -> Self {
+        let is_eof = error.is_eof();
         Errors {
             position,
             errors: vec![error],
-            is_eof: false,
+            is_eof,
         }
     }
 
@@ -234,7 +243,7 @@ impl<S: Stream, X: Position<S::Item>> StdError for Errors<S, X> {}
 
 impl<S: Stream, X: Position<S::Item>> From<Error<S::Stream>> for Errors<S, X> {
     fn from(error: Error<S::Stream>) -> Self {
-        Self::new(Default::default(), error)
+        Self::from_error(Default::default(), error)
     }
 }
 

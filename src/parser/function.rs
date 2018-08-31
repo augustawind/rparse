@@ -4,9 +4,7 @@ use std::fmt::Display;
 use std::marker::PhantomData;
 use std::str;
 
-use error::ParseResult;
-use parser::Parser;
-use stream::Stream;
+use {ParseResult, Parser, Stream};
 
 pub struct Map<P, F> {
     parser: P,
@@ -127,7 +125,11 @@ where
                 s.from_utf8()
                     .map_err(|_| "invalid UTF-8".into())
                     .and_then(|s| s.parse().map_err(|e: O::Err| e.to_string().into()))
-                    .map_err(|e| stream.errors_from(e)),
+                    .map_err(|e| {
+                        let mut errors = stream.empty_err();
+                        errors.add_error(e);
+                        errors
+                    }),
                 stream,
             ),
             (Err(err), stream) => (Err(err), stream),

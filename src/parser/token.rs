@@ -39,8 +39,15 @@ where
                 stream.pop();
                 stream.ok(t)
             }
-            Some(_) => stream.err(Error::expected_token(self.token)),
-            _ => stream.err(Error::EOF),
+            result => {
+                let mut errors = stream.empty_err();
+                errors.add_error(Error::expected_token(self.token));
+                errors.add_error(match result {
+                    Some(t) => Error::unexpected_token(t),
+                    None => Error::EOF,
+                });
+                stream.errs(errors)
+            }
         }
     }
 }

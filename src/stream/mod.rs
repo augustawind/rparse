@@ -73,13 +73,13 @@ pub trait Stream: Sized + Debug + Clone {
         (Ok(result), self)
     }
 
-    fn errors_from(&self, error: Error<Self::Stream>) -> Errors<Self, Self::Position> {
-        Errors::new(self.position(), error)
+    fn empty_err(&self) -> Errors<Self, Self::Position> {
+        Errors::new(self.position())
     }
 
     /// Return the given parse error as a `ParseResult`, using `Self` as the `Stream` type.
     fn err<O>(self, error: Error<Self::Stream>) -> ParseResult<Self, O> {
-        (Err(self.errors_from(error)), self)
+        (Err(Errors::from_error(self.position(), error)), self)
     }
 
     fn errs<O>(self, errors: Errors<Self, Self::Position>) -> ParseResult<Self, O> {
