@@ -6,6 +6,7 @@ use std::str;
 
 use error::ParseResult;
 use parser::Parser;
+use stream::Stream;
 
 pub struct Map<P, F> {
     parser: P,
@@ -125,7 +126,8 @@ where
             (Ok(s), stream) => (
                 s.from_utf8()
                     .map_err(|_| "invalid UTF-8".into())
-                    .and_then(|s| s.parse().map_err(|e: O::Err| e.to_string().into())),
+                    .and_then(|s| s.parse().map_err(|e: O::Err| e.to_string().into()))
+                    .map_err(|e| stream.err_from(e)),
                 stream,
             ),
             (Err(err), stream) => (Err(err), stream),

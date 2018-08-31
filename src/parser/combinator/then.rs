@@ -27,9 +27,9 @@ where
                     let result: I = iter::once(first).chain(iter::once(second)).collect();
                     stream.ok(result)
                 }
-                (Err(err), stream) => stream.err(err),
+                (Err(err), stream) => stream.errs(err),
             },
-            (Err(err), stream) => stream.err(err),
+            (Err(err), stream) => stream.errs(err),
         }
     }
 }

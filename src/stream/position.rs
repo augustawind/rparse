@@ -5,7 +5,7 @@ use std::fmt::{Debug, Display};
 
 /// The Position trait defines types that keep track of the cursor position while parsing an
 /// `Stream` stream.
-pub trait Position<T>: Debug + Default + Display + Clone {
+pub trait Position<T>: Default + Debug + Display + Clone + Ord {
     type Value: Ord;
 
     fn value(&self) -> Self::Value;
@@ -18,8 +18,8 @@ pub trait Position<T>: Debug + Default + Display + Clone {
 
 /// NullPosition is a dummy `Position` for streams that don't keep track of their current position.
 /// This is provided so that primitive types such as `&str` can implement `Stream`.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-pub struct NullPosition;
+#[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
+pub struct NullPosition(pub ());
 
 impl Display for NullPosition {
     fn fmt(&self, _: &mut fmt::Formatter) -> fmt::Result {
@@ -43,7 +43,7 @@ impl<T> Position<T> for NullPosition {
 
 /// IndexPosition is a `Position` which is represented as an index.
 /// This is useful for binary data or any kind of virtual input stream.
-#[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
 pub struct IndexPosition(usize);
 
 impl Default for IndexPosition {

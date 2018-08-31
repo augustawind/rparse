@@ -1,5 +1,6 @@
 use super::position::Position;
 use super::{Stream, Tokens};
+use error::{Error, Errors};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct State<S: Stream, X: Position<S::Item>> {
@@ -51,5 +52,9 @@ impl<S: Stream, X: Position<S::Item>> Stream for State<S, X> {
 
     fn tokens(&self) -> Tokens<Self::Item> {
         self.stream.tokens()
+    }
+
+    fn position(&self) -> Self::Position {
+        self.position.clone()
     }
 }

@@ -33,7 +33,7 @@ where
                 }
                 (Err(err), rest) => {
                     if i < self.min {
-                        break rest.err(err);
+                        break rest.errs(err);
                     }
                     stream = rest;
                     break stream.ok(output.into_iter().collect());

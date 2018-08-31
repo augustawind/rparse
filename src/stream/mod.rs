@@ -7,7 +7,7 @@ use std::fmt::Debug;
 
 pub use self::position::{IndexPosition, LinePosition, NullPosition, Position};
 pub use self::state::State;
-use error::{Error, ParseResult};
+use error::{Error, Errors, ParseResult};
 
 /// SourceCode is a type alias for str `Stream` positioned by rows and columns.
 pub type SourceCode = State<&'static str, LinePosition>;
@@ -52,6 +52,9 @@ pub trait Stream: Sized + Debug + Clone {
     /// Does not consume any input.
     fn tokens(&self) -> Tokens<Self::Item>;
 
+    /// Return the current position in the stream.
+    fn position(&self) -> Self::Position;
+
     /// Return a snapshot of the current stream.
     /// The returned snapshot can be restored with `restore()`.
     fn backup(&self) -> Self {
@@ -67,9 +70,19 @@ pub trait Stream: Sized + Debug + Clone {
     fn ok<O>(self, result: O) -> ParseResult<Self, O> {
         (Ok(result), self)
     }
+
+    // TODO: should support Error<I> since State has sub-error?
+    fn err_from(&self, error: Error<Self>) -> Errors<Self, Self::Position> {
+        Errors::new(self.position(), error)
+    }
+
     /// Return the given parse error as a `ParseResult`, using `Self` as the `Stream` type.
     fn err<O>(self, error: Error<Self>) -> ParseResult<Self, O> {
-        (Err(error), self)
+        (Err(self.err_from(error)), self)
+    }
+
+    fn errs<O>(self, errors: Errors<Self, Self::Position>) -> ParseResult<Self, O> {
+        (Err(errors), self)
     }
 }
 
@@ -96,6 +109,10 @@ impl<'a> Stream for &'a str {
     fn tokens(&self) -> Tokens<Self::Item> {
         Tokens::new(self.chars())
     }
+
+    fn position(&self) -> Self::Position {
+        NullPosition(())
+    }
 }
 
 impl Stream for String {
@@ -116,5 +133,9 @@ impl Stream for String {
 
     fn tokens(&self) -> Tokens<Self::Item> {
         Tokens::new(self.chars())
+    }
+
+    fn position(&self) -> Self::Position {
+        NullPosition(())
     }
 }

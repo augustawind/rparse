@@ -100,6 +100,13 @@ where
     pub fn unexpected_token(token: T) -> Self {
         Error::Unexpected(Info::Token(token))
     }
+
+    pub fn is_eof(&self) -> bool {
+        match self {
+            Error::EOF => true,
+            _ => false,
+        }
+    }
 }
 
 impl<S, T> PartialEq for Error<S>
@@ -156,6 +163,7 @@ impl<S: Stream, E: StdError + Send + Sync + 'static> From<Box<E>> for Error<S> {
 pub struct Errors<S: Stream, X: Position<S::Item>> {
     pub position: X,
     pub errors: Vec<Error<S>>,
+    is_eof: bool,
 }
 
 impl<S: Stream, X: Position<S::Item>> Errors<S, X> {
@@ -163,26 +171,55 @@ impl<S: Stream, X: Position<S::Item>> Errors<S, X> {
         Errors {
             position,
             errors: vec![error],
+            is_eof: false,
         }
     }
 
+    pub fn from_errors(position: X, errors: Vec<Error<S>>) -> Self {
+        let is_eof = errors.iter().any(|err| err.is_eof());
+        Errors {
+            position,
+            errors,
+            is_eof,
+        }
+    }
+
+    pub fn is_eof(&self) -> bool {
+        return self.is_eof;
+    }
+
+    pub fn add_error(&mut self, error: Error<S>) {
+        if error.is_eof() {
+            self.is_eof = true;
+        }
+        self.errors.push(error);
+    }
+
+    pub fn add_errors(&mut self, errors: Vec<Error<S>>) {
+        if errors.iter().any(|err| err.is_eof()) {
+            self.is_eof = true;
+        }
+        self.errors.append(&mut errors);
+    }
+
     pub fn merge_errors(&mut self, errors: &mut Errors<S, X>) {
-        match errors.position.value().cmp(&self.position.value()) {
+        match errors.position.cmp(&self.position) {
             Ordering::Greater => {
                 self.position = errors.position.clone();
-                errors.position = Default::default();
+                if errors.is_eof() {
+                    self.is_eof = true;
+                }
                 self.errors.clear();
                 self.errors.append(&mut errors.errors);
             }
             Ordering::Equal => {
+                if errors.is_eof() {
+                    self.is_eof = true;
+                }
                 self.errors.append(&mut errors.errors);
             }
             Ordering::Less => {}
         }
-    }
-
-    pub fn add_error(&mut self, error: Error<S>) {
-        self.errors.push(error);
     }
 }
 
@@ -200,19 +237,13 @@ impl<S: Stream, X: Position<S::Item>> StdError for Errors<S, X> {}
 
 impl<S: Stream, X: Position<S::Item>> From<Error<S>> for Errors<S, X> {
     fn from(error: Error<S>) -> Self {
-        Errors {
-            position: Default::default(),
-            errors: vec![error],
-        }
+        Self::new(Default::default(), error)
     }
 }
 
 impl<S: Stream, X: Position<S::Item>> FromIterator<Error<S>> for Errors<S, X> {
     fn from_iter<T: IntoIterator<Item = Error<S>>>(iter: T) -> Self {
-        Errors {
-            position: Default::default(),
-            errors: iter.into_iter().collect(),
-        }
+        Self::from_errors(Default::default(), iter.into_iter().collect())
     }
 }
 
@@ -222,4 +253,4 @@ impl<S: Stream, X: Position<S::Item>> From<Vec<Error<S>>> for Errors<S, X> {
     }
 }
 
-pub type ParseResult<S, O> = (Result<O, Error<S>>, S);
+pub type ParseResult<S, O> = (Result<O, Errors<S, <S as Stream>::Position>>, S);

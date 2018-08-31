@@ -1,4 +1,4 @@
-use error::{Error, ParseResult};
+use error::ParseResult;
 use parser::Parser;
 use stream::Stream;
 
@@ -11,7 +11,6 @@ impl<P: Parser> Parser for Optional<P> {
     fn parse_stream(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         match self.0.parse(stream) {
             (Ok(output), stream) => stream.ok(Some(output)),
-            (Err(Error::EOF), stream) => stream.err(Error::EOF),
             (Err(_), stream) => stream.ok(None),
         }
     }
@@ -66,13 +65,14 @@ where
     fn parse_stream(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         let (err, stream) = match self.left.parse(stream) {
             (Ok(result), stream) => return stream.ok(result),
-            (Err(Error::EOF), stream) => return stream.err(Error::EOF),
             (Err(err), stream) => (err, stream),
         };
         match self.right.parse(stream) {
             (Ok(result), stream) => stream.ok(result),
-            (Err(Error::EOF), stream) => stream.err(err),
-            (Err(err), stream) => stream.err(err),
+            (Err(err2), stream) => {
+                err.merge_errors(&mut err2);
+                stream.errs(err)
+            }
         }
     }
 }
