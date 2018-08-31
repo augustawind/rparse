@@ -26,19 +26,18 @@ where
         let mut output = Vec::new();
         let mut i = 0;
         loop {
-            match self.p.parse(stream) {
-                (Ok(result), rest) => {
+            stream = match self.p.parse_stream(stream) {
+                (Ok(result), stream) => {
                     output.push(result);
-                    stream = rest;
+                    stream
                 }
-                (Err(err), rest) => {
+                (Err(errors), stream) => {
                     if i < self.min {
-                        break rest.errs(err);
+                        return stream.errs(errors);
                     }
-                    stream = rest;
-                    break stream.ok(output.into_iter().collect());
+                    return stream.ok(output.into_iter().collect());
                 }
-            }
+            };
 
             i += 1;
         }

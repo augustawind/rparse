@@ -127,7 +127,7 @@ where
                 s.from_utf8()
                     .map_err(|_| "invalid UTF-8".into())
                     .and_then(|s| s.parse().map_err(|e: O::Err| e.to_string().into()))
-                    .map_err(|e| stream.err_from(e)),
+                    .map_err(|e| stream.errors_from(e)),
                 stream,
             ),
             (Err(err), stream) => (Err(err), stream),
@@ -179,22 +179,18 @@ mod test {
 
     #[test]
     fn test_bind() {
-        let mut parser = bind(ascii::digit(), |c: char, stream: &str| {
-            stream.ok(c.to_string())
-        });
+        let mut parser = ascii::digit().bind(|c: char, stream: &str| stream.ok(c.to_string()));
         test_parser!(&str | parser, {
             "3" =>  (Ok("3".to_string()), ""),
         }, {
             "a3" => (|e| e == &Error::unexpected_token('a')),
         });
 
-        let mut parser = bind(many1(ascii::letter()), |s: String, stream: &str| {
-            stream.ok(s.to_uppercase())
-        });
+        let mut parser =
+            many1(ascii::letter()).bind(|s: String, stream: &str| stream.ok(s.to_uppercase()));
         assert_eq!(parser.parse("aBcD12e"), (Ok("ABCD".to_string()), "12e"));
 
-        let mut parser = bind(
-            many1(ascii::alpha_num()),
+        let mut parser = many1(ascii::alpha_num()).bind(
             |s: String, stream: IndexedStream<&str>| match s.parse::<usize>() {
                 Ok(n) => stream.ok(n),
                 Err(e) => stream.err(Box::new(e).into()),
@@ -203,8 +199,10 @@ mod test {
         test_parser!(IndexedStream<&str> | parser, {
             "324 dogs" => (Ok(324 as usize), " dogs", 3),
         });
+        // TODO: add ability to control consumption, e.g. make this error show at beginning (0)
+        // TODO: e.g.: many1(alpha_num()).bind(...).try()
         test_parser_errors!(IndexedStream<&str> | parser, {
-            "324dogs" => at 3; (|err| err == &"invalid digit found in string".into()),
+            "324dogs" => at 7; (|err| err == &"invalid digit found in string".into()),
         });
     }
 
