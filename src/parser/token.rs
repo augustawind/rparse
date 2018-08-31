@@ -7,10 +7,10 @@ use error::{Error, ParseResult};
 use parser::{parser, Parser};
 use stream::{Position, Stream};
 
-pub fn any<I, O>() -> fn(I) -> ParseResult<I, O>
+pub fn any<S, O>() -> fn(S) -> ParseResult<S, O>
 where
-    I: Stream<Item = O>,
-    I::Position: Position<O>,
+    S: Stream<Item = O>,
+    S::Position: Position<O>,
     O: Copy + PartialEq + Debug,
 {
     parser(|mut stream| match stream.pop() {
@@ -20,16 +20,16 @@ where
 }
 
 #[derive(Copy, Clone)]
-pub struct Token<I: Stream> {
-    token: I::Item,
+pub struct Token<S: Stream> {
+    token: S::Item,
 }
 
-impl<I: Stream> Parser for Token<I>
+impl<S: Stream> Parser for Token<S>
 where
-    I::Item: PartialEq,
+    S::Item: PartialEq,
 {
-    type Stream = I;
-    type Output = I::Item;
+    type Stream = S;
+    type Output = S::Item;
 
     fn parse_stream(
         &mut self,
@@ -46,24 +46,24 @@ where
     }
 }
 
-pub fn token<I: Stream>(token: I::Item) -> Token<I> {
+pub fn token<S: Stream>(token: S::Item) -> Token<S> {
     Token { token }
 }
 
-pub struct Cond<I: Stream, F>
+pub struct Cond<S: Stream, F>
 where
-    F: Fn(&I::Item) -> bool,
+    F: Fn(&S::Item) -> bool,
 {
     f: F,
-    _marker: PhantomData<I>,
+    _marker: PhantomData<S>,
 }
 
-impl<I: Stream, F> Parser for Cond<I, F>
+impl<S: Stream, F> Parser for Cond<S, F>
 where
-    F: Fn(&I::Item) -> bool,
+    F: Fn(&S::Item) -> bool,
 {
-    type Stream = I;
-    type Output = I::Item;
+    type Stream = S;
+    type Output = S::Item;
 
     fn parse_stream(
         &mut self,
@@ -80,9 +80,9 @@ where
     }
 }
 
-pub fn cond<I: Stream, F>(f: F) -> Cond<I, F>
+pub fn cond<S: Stream, F>(f: F) -> Cond<S, F>
 where
-    F: Fn(&I::Item) -> bool,
+    F: Fn(&S::Item) -> bool,
 {
     Cond {
         f,
@@ -93,11 +93,11 @@ where
 macro_rules! def_char_parser {
     ($(#[$attr:meta])* $name:ident, $f:ident) => {
         $(#[$attr])*
-        pub fn $name<I, T>() -> Cond<I, fn(&I::Item) -> bool>
+        pub fn $name<S, T>() -> Cond<S, fn(&S::Item) -> bool>
         where
-            I: Stream<Item = T>,
+            S: Stream<Item = T>,
             T: Copy + PartialEq + Debug + Into<char>,
-            I::Position: Position<T>,
+            S::Position: Position<T>,
         {
             Cond {
                 f: |&c: &T| c.into().$f(),

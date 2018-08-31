@@ -5,26 +5,26 @@ use error::ParseResult;
 use parser::Parser;
 use stream::Stream;
 
-pub struct Then<L, R, S> {
+pub struct Then<L, R, I> {
     left: L,
     right: R,
-    __marker: PhantomData<S>,
+    __marker: PhantomData<I>,
 }
 
-impl<I: Stream, O, S, L, R> Parser for Then<L, R, S>
+impl<S: Stream, O, I, L, R> Parser for Then<L, R, I>
 where
-    L: Parser<Stream = I, Output = O>,
-    R: Parser<Stream = I, Output = O>,
-    S: iter::FromIterator<O>,
+    L: Parser<Stream = S, Output = O>,
+    R: Parser<Stream = S, Output = O>,
+    I: iter::FromIterator<O>,
 {
-    type Stream = I;
-    type Output = S;
+    type Stream = S;
+    type Output = I;
 
     fn parse_stream(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         match self.left.parse(stream) {
             (Ok(first), stream) => match self.right.parse(stream) {
                 (Ok(second), stream) => {
-                    let result: S = iter::once(first).chain(iter::once(second)).collect();
+                    let result: I = iter::once(first).chain(iter::once(second)).collect();
                     stream.ok(result)
                 }
                 (Err(err), stream) => stream.err(err),
@@ -34,11 +34,11 @@ where
     }
 }
 
-pub fn then<I: Stream, O, S, L, R>(left: L, right: R) -> Then<L, R, S>
+pub fn then<S: Stream, O, I, L, R>(left: L, right: R) -> Then<L, R, I>
 where
-    L: Parser<Stream = I, Output = O>,
-    R: Parser<Stream = I, Output = O>,
-    S: iter::FromIterator<O>,
+    L: Parser<Stream = S, Output = O>,
+    R: Parser<Stream = S, Output = O>,
+    I: iter::FromIterator<O>,
 {
     Then {
         left,
