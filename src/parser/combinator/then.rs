@@ -62,8 +62,8 @@ mod test {
             "XOXO" => (Ok("XO".to_string()), "XO", 2),
         });
         test_parser_errors!(IndexedStream<&str> | parser, {
-            "XY" => at 1; (|&err| err == Error::expected_token('O')),
-            "ZY" => at 0; (|&err| err == Error::expected_token('X')),
+            "XY" => at 1; (|err| err == &Error::expected_token('O')),
+            "ZY" => at 0; (|err| err == &Error::expected_token('X')),
         });
     }
 }

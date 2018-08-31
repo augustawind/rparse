@@ -185,14 +185,17 @@ mod test {
         });
         assert_eq!(parser.parse("aBcD12e"), (Ok("ABCD".to_string()), "12e"));
 
-        let mut parser = bind(many1(ascii::alpha_num()), |s: String, rest| {
-            match s.parse::<usize>() {
-                Ok(n) => rest.ok(n),
-                Err(e) => rest.err(Box::new(e).into()),
-            }
+        let mut parser = bind(many1(ascii::alpha_num()), |s: String, stream: &str| match s
+            .parse::<usize>()
+        {
+            Ok(n) => stream.ok(n),
+            Err(e) => stream.err(Box::new(e).into()),
         });
-        assert_eq!(parser.parse("324 dogs"), (Ok(324usize), " dogs"));
-        assert_parse_err!(parser.parse("324dogs"), "324dogs");
+        test_parser!(&str | parser, {
+            "324 dogs" => (Ok(324 as usize), " dogs"),
+        }, {
+            "324dogs" => (|err| err == &"invalid integer literal".into()),
+        });
     }
 
     #[test]
@@ -201,7 +204,8 @@ mod test {
         test_parser!(&str | parser, {
             "369" => (Ok(369 as u32), ""),
             "369abc" => (Ok(369 as u32), "abc"),
-            "abc" => (Err(Error::unexpected_token('a')), "abc"),
+        }, {
+            "abc" => (|err| err == &Error::unexpected_token('a')),
         });
 
         let mut parser = from_str::<_, f32>(many1::<_, String>(choice!(
@@ -213,13 +217,15 @@ mod test {
             "12e" => (Ok(12 as f32), "e"),
             "-12e" => (Ok(-12 as f32), "e"),
             "-12.5e" => (Ok(-12.5 as f32), "e"),
-            "12.5.9" => (Err("invalid float literal".into()), "12.5.9"),
+        }, {
+            "12.5.9" => (|err| err == &"invalid float literal".into()),
         });
 
         let mut parser = many1::<_, String>(ascii::digit()).from_str::<f32>();
         test_parser!(SourceCode | parser, {
             "12e" => (Ok(12f32), "e", (0, 2)),
-            "e12" => (Err(Error::unexpected_token('e')), "e12", (0, 0)),
+        }, {
+            "e12" => (|err| err == &Error::unexpected_token('e')),
         });
     }
 }

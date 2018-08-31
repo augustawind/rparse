@@ -88,10 +88,7 @@ macro_rules! assert_parser_errors {
 macro_rules! unwrap_errors_with {
     ($parsed:expr, $($predicate:expr),*) => {{
         let (parsed_err, stream) = $parsed;
-        let errors = parsed_err.expect_err(&format!(
-            "assertion failed: expected Err(_), got {:?}",
-            parsed_err,
-        ));
+        let errors = parsed_err.expect_err("assertion failed: expected Err(_)");
         assert_has_error_with!(errors, $($predicate),*);
         (errors, stream)
     }};

@@ -195,7 +195,7 @@ impl<S: Stream, X: Position<S::Item>> Errors<S, X> {
         self.errors.push(error);
     }
 
-    pub fn add_errors(&mut self, errors: Vec<Error<S>>) {
+    pub fn add_errors(&mut self, mut errors: Vec<Error<S>>) {
         if errors.iter().any(|err| err.is_eof()) {
             self.is_eof = true;
         }

@@ -148,7 +148,8 @@ pub mod ascii {
         fn test_letter() {
             test_parser!(&str | letter(), {
                 "a" => (Ok('a'), ""),
-                "1" => (Err(Error::unexpected_token('1')), "1"),
+            }, {
+                "1" => (|err| err == &Error::unexpected_token('1')),
             });
         }
 
@@ -156,7 +157,8 @@ pub mod ascii {
         fn test_digit() {
             test_parser!(&str | digit(), {
                 "1" => (Ok('1'), ""),
-                "a" => (Err(Error::unexpected_token('a')), "a"),
+            }, {
+                "a" => (|err| err == &Error::unexpected_token('a')),
             });
         }
 
@@ -165,7 +167,8 @@ pub mod ascii {
             test_parser!(&str | alpha_num(), {
                 "a" => (Ok('a'), ""),
                 "1" => (Ok('1'), ""),
-                "." => (Err(Error::unexpected_token('.')), "."),
+            }, {
+                "." => (|err| err == &Error::unexpected_token('.')),
             });
         }
     }
@@ -227,7 +230,7 @@ mod test {
         test_parser!(&str | token('c'), {
             "cat" => (Ok('c'), "at"),
         }, {
-            "ace" => (|&err| err == Error::expected_token('c')),
+            "ace" => (|err| err == &Error::expected_token('c')),
         });
     }
 
@@ -238,7 +241,7 @@ mod test {
             "123abc" => (Ok('1'), "23abc"),
         });
         test_parser_errors!(&str | parser, {
-            "abc123" => (|&err| err == Error::expected_token('a')),
+            "abc123" => (|err| err == &Error::expected_token('a')),
         });
     }
 }

@@ -98,20 +98,26 @@ macro_rules! choice {
 #[cfg(test)]
 mod test {
     use super::*;
+    use error::Error;
     use parser::combinator::{many, many1, then};
     use parser::token::{any, ascii, token};
 
     #[test]
     fn test_optional() {
         let mut parser = optional(token('x'));
-        assert_eq!(parser.parse(""), (Err(Error::EOF), ""));
-        assert_eq!(parser.parse("y"), (Ok(None), "y"));
-        assert_eq!(parser.parse("x"), (Ok(Some('x')), ""));
-        assert_eq!(parser.parse("xyz"), (Ok(Some('x')), "yz"));
+        test_parser!(&str | parser, {
+            "" => (Ok(None), ""),
+            "y" => (Ok(None), "y"),
+            "x" => (Ok(Some('x')), ""),
+            "xyz" => (Ok(Some('x')), "yz"),
+        });
 
         let mut parser = optional(many1::<_, String>(ascii::alpha_num()));
-        assert_eq!(parser.parse(""), (Err(Error::EOF), ""));
-        assert_eq!(parser.parse("abc123"), (Ok(Some("abc123".into())), ""));
+        test_parser!(&str | parser, {
+            "abc123" => (Ok(Some("abc123".to_string())), ""),
+        }, {
+            "" => (|&err| is_match!(Error::EOF = err)),
+        });
 
         assert_eq!(
             optional(many::<_, String>(any())).parse(""),
