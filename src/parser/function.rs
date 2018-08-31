@@ -154,13 +154,16 @@ mod test {
     use error::Error;
     use parser::combinator::many1;
     use parser::token::{ascii, token};
-    use stream::SourceCode;
+    use stream::{IndexedStream, SourceCode};
 
     #[test]
     fn test_map() {
         let mut parser = map(ascii::digit(), |c: char| c.to_string());
-        assert_eq!(parser.parse("3"), (Ok("3".to_string()), ""));
-        assert_parse_err!(parser.parse("a3"), "a3");
+        test_parser!(&str | parser, {
+            "3" => (Ok("3".to_string()), ""),
+        }, {
+            "a3" => (|e| e == &Error::unexpected_token('a')),
+        });
 
         let mut parser = map(many1(ascii::letter()), |s: String| s.to_uppercase());
         assert_eq!(parser.parse("aBcD12e"), (Ok("ABCD".to_string()), "12e"));
@@ -168,8 +171,10 @@ mod test {
         let mut parser = map(many1(ascii::alpha_num()), |s: String| {
             s.parse::<usize>().unwrap_or(0)
         });
-        assert_eq!(parser.parse("324 dogs"), (Ok(324 as usize), " dogs"));
-        assert_eq!(parser.parse("324dogs"), (Ok(0 as usize), ""));
+        test_parser!(&str | parser, {
+            "324 dogs" => (Ok(324 as usize), " dogs"),
+            "324dogs" => (Ok(0 as usize), ""),
+        });
     }
 
     #[test]
@@ -177,8 +182,11 @@ mod test {
         let mut parser = bind(ascii::digit(), |c: char, rest: &str| {
             (Ok(c.to_string()), rest)
         });
-        assert_eq!(parser.parse("3"), (Ok("3".to_string()), ""));
-        assert_parse_err!(parser.parse("a3"), "a3");
+        test_parser!(&str | parser, {
+            "a" =>  (Ok("3".to_string()), ""),
+        }, {
+            "a3" => (|e| e == &Error::unexpected_token('a')),
+        });
 
         let mut parser = bind(many1(ascii::letter()), |s: String, rest| {
             (Ok(s.to_uppercase()), rest)
@@ -191,10 +199,11 @@ mod test {
             Ok(n) => stream.ok(n),
             Err(e) => stream.err(Box::new(e).into()),
         });
-        test_parser!(&str | parser, {
+        test_parser!(IndexedStream<&str> | parser, {
             "324 dogs" => (Ok(324 as usize), " dogs"),
-        }, {
-            "324dogs" => (|err| err == &"invalid digit found in string".into()),
+        });
+        test_parser_errors!(IndexedStream<&str> | parser, {
+            "324dogs" => at 3; (|err| err == &"invalid digit found in string".into()),
         });
     }
 

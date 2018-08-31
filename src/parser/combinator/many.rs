@@ -72,7 +72,9 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
+    use error::Error;
     use parser::token::token;
+    use stream::IndexedStream;
 
     #[test]
     fn test_many() {
@@ -98,18 +100,13 @@ mod test {
 
     #[test]
     fn test_many1() {
-        assert_eq!(
-            many1(token('a')).parse("aaabcd"),
-            (Ok("aaa".to_string()), "bcd")
-        );
-        assert_eq!(
-            many1(token('a')).parse("abcd"),
-            (Ok("a".to_string()), "bcd")
-        );
-        assert_eq!(
-            many1(token('a')).parse("aaaa"),
-            (Ok(vec!['a', 'a', 'a', 'a']), "")
-        );
-        assert_parse_err!(many1::<_, String>(token('b')).parse("abcd"), "abcd");
+        test_parser!(IndexedStream<&str> | many1(token('a')), {
+            "aaabcd" => (Ok("aaa".to_string()), "bcd", 3),
+            "abcd" => (Ok("a".to_string()), "bcd", 1),
+            "aaaa" => (Ok("aaaa".to_string()), "", 4),
+        });
+        test_parser_errors!(IndexedStream<&str> | many1(token('a')), {
+            "baaa" => at 1; (|e| Error::expected_token('a')),
+        });
     }
 }

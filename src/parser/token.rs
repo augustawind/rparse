@@ -203,12 +203,17 @@ pub mod unicode {
     #[cfg(test)]
     mod test {
         use super::*;
+        use error::{Error::*, Info::*};
 
         #[test]
         fn test_letter() {
-            assert_eq!(letter().parse("京34a"), (Ok('京'), "34a"));
-            assert_eq!(letter().parse("a京34"), (Ok('a'), "京34"));
-            assert_parse_err!(letter().parse("3京4a"), "3京4a");
+            test_parser!(&str | letter(), {
+                "京34a" => (Ok('京'), "34a"),
+                "a京34" => (Ok('a'), "京34"),
+            });
+            test_parser_errors!(&str | letter(), {
+                "3京4a" => at 0; (|e| is_match!(Unexpected(Token('3')) = e)),
+            });
         }
     }
 }

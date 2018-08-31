@@ -111,27 +111,6 @@ macro_rules! assert_has_error_with {
     };
 }
 
-// FIXME: phase this out
-macro_rules! assert_parse_err {
-    ($parsed:expr) => {
-        let (parsed, _) = $parsed;
-        assert!(parsed.is_err());
-    };
-    ($parsed:expr, $stream:expr) => {
-        let (parsed, stream) = $parsed;
-        assert!(parsed.is_err());
-        assert_eq!(stream, $stream);
-    };
-    ($parsed:expr, $stream:expr, $type:ty | $position:expr) => {
-        let (parsed, stream) = $parsed;
-        assert!(parsed.is_err());
-        assert_eq!(
-            stream,
-            $crate::stream::State::<_, $type>::new($stream, $position)
-        );
-    };
-}
-
 macro_rules! is_match {
     ($pattern:pat = $value:expr) => {
         match $value {
