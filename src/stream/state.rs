@@ -41,7 +41,7 @@ impl<S: Stream, X: Position<S::Item>, T: Into<X>> From<(S, T)> for State<S, X> {
 
 impl<S: Stream<Position = NullPosition>, X: Position<S::Item>> Stream for State<S, X> {
     type Item = S::Item;
-    type Range = S;
+    type Range = S::Range;
     type Position = X;
 
     fn peek(&self) -> Option<Self::Item> {
@@ -57,6 +57,15 @@ impl<S: Stream<Position = NullPosition>, X: Position<S::Item>> Stream for State<
 
     fn tokens(&self) -> Tokens<Self::Item> {
         self.stream.tokens()
+    }
+
+    fn range(&mut self, idx: usize) -> Option<Self::Range> {
+        self.stream.range(idx).map(|range| {
+            for token in range.tokens() {
+                self.position.update(&token);
+            }
+            range
+        })
     }
 
     fn position(&self) -> Self::Position {

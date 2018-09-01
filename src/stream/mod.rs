@@ -4,6 +4,7 @@ pub mod position;
 pub mod state;
 
 use std::fmt::Debug;
+use std::mem;
 
 pub use self::position::{IndexPosition, LinePosition, NullPosition, Position};
 pub use self::state::State;
@@ -51,9 +52,12 @@ pub trait Stream: Sized + Debug + Clone {
     /// Removes and returns the next token in the stream.
     fn pop(&mut self) -> Option<Self::Item>;
 
-    /// Returns an iterator over remaining tokens in the stream.
+    /// Returns an iterator over the whole stream as tokens.
     /// Does not consume any input.
     fn tokens(&self) -> Tokens<Self::Item>;
+
+    /// Consumes and returns a continuous range of the stream.
+    fn range(&mut self, idx: usize) -> Option<Self::Range>;
 
     /// Return the current position in the stream.
     fn position(&self) -> Self::Position;
@@ -113,6 +117,14 @@ impl<'a> Stream for &'a str {
         Tokens::new(self.chars())
     }
 
+    fn range(&mut self, idx: usize) -> Option<Self::Range> {
+        let range = &self.get(..idx);
+        range.map(|range| {
+            *self = &mut &self[idx..];
+            range
+        })
+    }
+
     fn position(&self) -> Self::Position {
         NullPosition(())
     }
@@ -137,6 +149,15 @@ impl Stream for String {
 
     fn tokens(&self) -> Tokens<Self::Item> {
         Tokens::new(self.chars())
+    }
+
+    fn range(&mut self, idx: usize) -> Option<Self::Range> {
+        if self.len() > idx {
+            return None;
+        }
+        let mut range = self.split_off(idx);
+        mem::swap(&mut range, self);
+        Some(range)
     }
 
     fn position(&self) -> Self::Position {
