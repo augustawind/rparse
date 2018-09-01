@@ -38,7 +38,8 @@ pub trait Stream: Sized + Debug + Clone {
     /// The type of a single token.
     type Item: Copy + PartialEq + Debug;
 
-    type Stream: Stream<Item = Self::Item, Position = NullPosition>;
+    /// The type of a series of tokens.
+    type Range: Stream<Item = Self::Item, Position = NullPosition>;
 
     /// The Position type used to track the current parsing position.
     type Position: Position<Self::Item>;
@@ -78,7 +79,7 @@ pub trait Stream: Sized + Debug + Clone {
     }
 
     /// Return the given parse error as a `ParseResult`, using `Self` as the `Stream` type.
-    fn err<O>(self, error: Error<Self::Stream>) -> ParseResult<Self, O> {
+    fn err<O>(self, error: Error<Self::Range>) -> ParseResult<Self, O> {
         (Err(Errors::from_error(self.position(), error)), self)
     }
 
@@ -89,7 +90,7 @@ pub trait Stream: Sized + Debug + Clone {
 
 impl<'a> Stream for &'a str {
     type Item = char;
-    type Stream = Self;
+    type Range = Self;
     type Position = NullPosition;
 
     fn peek(&self) -> Option<Self::Item> {
@@ -119,7 +120,7 @@ impl<'a> Stream for &'a str {
 
 impl Stream for String {
     type Item = char;
-    type Stream = Self;
+    type Range = Self;
     type Position = NullPosition;
 
     fn peek(&self) -> Option<Self::Item> {
