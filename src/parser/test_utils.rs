@@ -93,16 +93,16 @@ macro_rules! assertions {
     (with $var:ident => $value:expr;  {  }) => {};
 
     (with $var:ident => $value:expr;  { $assertion:ident $head:tt; $($tail:tt)* }) => {
-        assertions!(@expand $var, $value, $assertion : $head);
+        assertions!(@expand $assertion, $var, $value, $head);
         assertions!(with $var => $value; { $($tail)* });
     };
 
-    (@expand $var:ident, $value:expr, assert : $head:tt) => {
+    (@expand assert, $var:ident, $value:expr, $head:tt) => {
         let $var = $value;
         assert!($head);
     };
 
-    (@expand $var:ident, $value:expr, assert_eq: $expected:expr) => {
+    (@expand assert_eq, $var:ident, $value:expr, $expected:expr) => {
         assert_eq!($value, $expected);
     };
 }
