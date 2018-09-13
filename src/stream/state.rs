@@ -121,7 +121,7 @@ mod test {
     use stream::{FromStream, NullPosition};
 
     #[test]
-    fn test_to_stream_state_string_for_string() {
+    fn test_to_stream_string_state_for_string() {
         assert_eq!(
             ToStream::<State<String, NullPosition>>::to_stream(String::from("yee")),
             State::from("yee".to_string())
@@ -132,35 +132,31 @@ mod test {
         );
     }
 
-    // #[test]
-    // fn test_to_stream_state_str_for_str() {
-    //     assert_eq!(
-    //         <String as ToStream<String>>::to_stream("yee".to_string()),
-    //         String::from("yee")
-    //     );
-    //     assert_eq!(String::from_stream("yee".to_string()), String::from("yee"));
-    // }
+    #[test]
+    fn test_to_stream_str_state_for_str() {
+        assert_eq!(
+            ToStream::<State<&str, NullPosition>>::to_stream("yee"),
+            State::from("yee")
+        );
+        assert_eq!(
+            <State<&str, NullPosition> as FromStream<&str>>::from_stream("yee"),
+            State::from("yee")
+        );
+    }
 
-    // #[test]
-    // fn test_to_stream_state_str_for_char() {
-    //     assert_eq!('x'.to_stream(), State::from("x"));
-    // assert_eq!(<char as ToStream<State<&str, Position<char>>>::to_stream('x'), State::new("x"));
-    // }
+    #[test]
+    fn test_to_stream_string_state_for_char() {
+        assert_eq!(
+            ToStream::<State<String, NullPosition>>::to_stream('x'),
+            State::from("x".to_string())
+        );
+    }
 
-    // #[test]
-    // fn test_to_stream_string_for_char() {
-    //     assert_eq!(
-    //         <char as ToStream<String>>::to_stream('x'),
-    //         String::from("x")
-    //     );
-    // }
-
-    // #[test]
-    // fn test_to_stream_string_for_str() {
-    //     assert_eq!(
-    //         <&str as ToStream<String>>::to_stream("yee"),
-    //         String::from("yee")
-    //     );
-    //     assert_eq!(String::from_stream("yee"), String::from("yee"));
-    // }
+    #[test]
+    fn test_to_stream_str_state_for_char() {
+        assert_eq!(
+            ToStream::<State<&str, NullPosition>>::to_stream('x'),
+            State::from("x")
+        );
+    }
 }
