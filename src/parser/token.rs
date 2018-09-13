@@ -41,11 +41,11 @@ where
             }
             result => {
                 let mut errors = stream.empty_err();
-                errors.add_error(Error::expected_token(self.token));
                 errors.add_error(match result {
                     Some(t) => Error::unexpected_token(t),
                     None => Error::EOF,
                 });
+                errors.add_error(Error::expected_token(self.token));
                 stream.errs(errors)
             }
         }
