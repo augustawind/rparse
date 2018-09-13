@@ -89,6 +89,20 @@ macro_rules! unwrap_errors_with {
     }};
 }
 
+macro_rules! assertions {
+    (with $var:ident => $value:expr;  {  }) => {};
+
+    (with $var:ident => $value:expr;  { $assertion:ident $head:tt; $($tail:tt)* }) => {
+        assertions!(@expand $var, $value, $assertion : $head);
+        assertions!(with $var => $value; { $($tail)* });
+    };
+
+    (@expand $var:ident, $value:expr, assert : $head:tt) => {
+        let $var = $value;
+        assert!($head);
+    };
+}
+
 macro_rules! assert_has_error_with {
     ($errors:expr, $($predicate:expr),+) => {
         $(
