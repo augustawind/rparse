@@ -11,6 +11,7 @@ pub mod choice;
 #[macro_use]
 pub mod combinator;
 pub mod function;
+pub mod range;
 pub mod token;
 
 use std::fmt::Display;
