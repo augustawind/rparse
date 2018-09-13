@@ -94,7 +94,7 @@ macro_rules! assert_has_error_with {
         $(
             assert!(
                 $errors.errors.iter().any($predicate),
-                "no errors satisfied a given predicate: {:?}",
+                "predicate was not satisfied by errors: {:?}",
                 $errors.errors,
             );
         )+
