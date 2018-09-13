@@ -103,6 +103,11 @@ pub trait RangeStream: Stream<Position = NullPosition, Range = Self> + PartialEq
     fn len(&self) -> usize;
 }
 
+/// The ToStream trait provides an interface that converts its implementor to a `Stream`.
+pub trait ToStream<S: Stream> {
+    fn to_stream(self) -> S;
+}
+
 impl<'a> Stream for &'a str {
     type Item = char;
     type Range = Self;
@@ -160,6 +165,23 @@ impl<'a> RangeStream for &'a str {
     }
 }
 
+impl<'a> ToStream<&'a str> for &'a str {
+    fn to_stream(self) -> &'a str {
+        self
+    }
+}
+
+impl<'a> ToStream<&'a str> for char {
+    fn to_stream(self) -> &'a str {
+        let s = self.to_string();
+        unsafe {
+            let stream: &'a str = mem::transmute_copy(&s.as_str());
+            mem::forget(s);
+            stream
+        }
+    }
+}
+
 impl Stream for String {
     type Item = char;
     type Range = Self;
@@ -206,5 +228,17 @@ impl Stream for String {
 impl RangeStream for String {
     fn len(&self) -> usize {
         String::len(self)
+    }
+}
+
+impl ToStream<String> for String {
+    fn to_stream(self) -> String {
+        self
+    }
+}
+
+impl ToStream<String> for char {
+    fn to_stream(self) -> String {
+        self.to_string()
     }
 }

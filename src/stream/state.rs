@@ -1,5 +1,5 @@
 use super::position::Position;
-use super::{RangeStream, Stream, Tokens};
+use super::{RangeStream, Stream, ToStream, Tokens};
 // use error::{Error, Errors};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -82,5 +82,35 @@ where
 
     fn position(&self) -> Self::Position {
         self.position.clone()
+    }
+}
+
+impl<'a, S, X> ToStream<State<S, X>> for S
+where
+    S: RangeStream,
+    X: Position<S::Item>,
+{
+    fn to_stream(self) -> State<S, X> {
+        self.into()
+    }
+}
+
+impl<'a, X> ToStream<State<&'a str, X>> for char
+where
+    X: Position<char>,
+{
+    fn to_stream(self) -> State<&'a str, X> {
+        let s: &'a str = self.to_stream();
+        s.into()
+    }
+}
+
+impl<'a, X> ToStream<State<String, X>> for char
+where
+    X: Position<char>,
+{
+    fn to_stream(self) -> State<String, X> {
+        let s: String = self.to_stream();
+        s.into()
     }
 }
