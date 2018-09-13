@@ -199,17 +199,19 @@ impl<S: Stream, X: Position<S::Item>> Errors<S, X> {
     }
 
     pub fn add_error(&mut self, error: Error<S::Range>) {
+        if self.errors.contains(&error) {
+            return;
+        }
         if error.is_eof() {
             self.is_eof = true;
         }
         self.errors.push(error);
     }
 
-    pub fn add_errors(&mut self, mut errors: Vec<Error<S::Range>>) {
-        if errors.iter().any(|err| err.is_eof()) {
-            self.is_eof = true;
+    pub fn add_errors(&mut self, errors: Vec<Error<S::Range>>) {
+        for err in errors {
+            self.add_error(err);
         }
-        self.errors.append(&mut errors);
     }
 
     pub fn merge_errors(&mut self, errors: &mut Errors<S, X>) {
@@ -220,15 +222,19 @@ impl<S: Stream, X: Position<S::Item>> Errors<S, X> {
                     self.is_eof = true;
                 }
                 self.errors.clear();
-                self.errors.append(&mut errors.errors);
+                self.errors.extend(errors.errors.drain(..));
             }
             Ordering::Equal => {
                 if errors.is_eof() {
                     self.is_eof = true;
                 }
-                self.errors.append(&mut errors.errors);
+                for err in errors.errors.drain(..) {
+                    if !self.errors.contains(&err) {
+                        self.errors.push(err);
+                    }
+                }
             }
-            Ordering::Less => {}
+            Ordering::Less => errors.errors.clear(),
         }
     }
 }

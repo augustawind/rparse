@@ -55,10 +55,13 @@ mod test {
             "defcon" => (Ok("def"), "con", 3);
         });
         test_parser_errors!(IndexedStream<&str> | parser, {
-            "" => at 0; eq!(&Error::EOF), eq!(&Error::expected_range("def"));
-            "de" => at 0; eq!(&Error::EOF), eq!(&Error::expected_range("def"));
-            "dr" => at 0; eq!(&Error::EOF), eq!(&Error::expected_range("def"));
-            "deg" => at 3; eq!(&Error::expected_range("def"));
+            "" => at 0; vec![Error::EOF, Error::expected_range("def")];
+            "de" => at 0; vec![Error::EOF, Error::expected_range("def")];
+            "dr" => at 0; vec![Error::EOF, Error::expected_range("def")];
+            "deg" => at 3; vec![Error::expected_range("def")];
         });
     }
 }
+
+// TODO
+// pub struct SatisfyRange

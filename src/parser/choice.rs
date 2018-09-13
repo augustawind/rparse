@@ -132,9 +132,9 @@ mod test {
             "ab" => (Ok('b'), "", 2);
         });
         test_parser_errors!(IndexedStream<&str> | parser, {
-            "def" => at 0; (|e| e == &Error::expected_token('a'));
-            "aab" => at 1; (|e| e == &Error::expected_token('b'));
-            "bcd" => at 0; (|e| e == &Error::expected_token('a'));
+            "def" => at 0; vec![Error::unexpected_token('d'), Error::expected_token('a')];
+            "aab" => at 1; vec![Error::unexpected_token('a'), Error::expected_token('b')];
+            "bcd" => at 0; vec![Error::unexpected_token('b'), Error::expected_token('a')];
         });
 
         let mut parser = and(many1(ascii::digit()), many1(ascii::letter()));
@@ -142,8 +142,8 @@ mod test {
             "123abc456" => (Ok(vec!['a', 'b', 'c']), "456", 6);
         });
         test_parser_errors!(IndexedStream<&str> | parser, {
-            " 1 2 3" => at 0; (|e| e == &Error::unexpected_token(' '));
-            "123 abc" => at 3; (|e| e == &Error::unexpected_token(' '));
+            " 1 2 3" => at 0; vec![Error::unexpected_token(' ')];
+            "123 abc" => at 3; vec![Error::unexpected_token(' ')];
         });
     }
 
@@ -155,7 +155,11 @@ mod test {
             "a" => (Ok('a'), "", 1);
         });
         test_parser_errors!(IndexedStream<&str> | parser, {
-            "def" => at 0; (|e| e == &Error::expected_token('a'));
+            "def" => at 0; vec![
+                Error::unexpected_token('d'),
+                Error::expected_token('a'),
+                Error::expected_token('b'),
+            ];
         });
 
         let mut parser = or(
@@ -179,7 +183,7 @@ mod test {
             ".a9" => (Ok('.'), "a9", 1);
         });
         test_parser_errors!(IndexedStream<&str> | parser, {
-            "ba9." => at 0; (|e| e == &Error::unexpected_token('b'));
+            "ba9." => at 0; vec![Error::unexpected_token('b'), Error::expected_token('a')];
         });
 
         assert_eq!(

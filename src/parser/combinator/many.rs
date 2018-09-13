@@ -106,7 +106,7 @@ mod test {
             "aaaa" => (Ok("aaaa".to_string()), "", 4);
         });
         test_parser_errors!(IndexedStream<&str> | parser, {
-            "baaa" => at 0; (|e| e == &Error::expected_token('a'));
+            "baaa" => at 0; vec![Error::unexpected_token('b'), Error::expected_token('a')];
         });
     }
 }

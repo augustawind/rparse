@@ -73,11 +73,11 @@ mod test {
             "xyzxyz" => (Ok("xyz".to_string()), "xyz", 3);
         });
         test_parser_errors!(IndexedStream<&str> | parser, {
-            "" => at 0; eq!(&Error::EOF), eq!(&Error::expected_token('x'));
-            "w" => at 0; eq!(&Error::expected_token('x'));
-            "x" => at 1; eq!(&Error::expected_token('y'));
-            "xy" => at 2; eq!(&Error::expected_token('z'));
-            "xy3" => at 2; eq!(&Error::expected_token('z'));
+            "" => at 0; vec![Error::EOF, Error::expected_token('x')];
+            "w" => at 0; vec![Error::unexpected_token('w'), Error::expected_token('x')];
+            "x" => at 1; vec![Error::EOF, Error::expected_token('y')];
+            "xy" => at 2; vec![Error::EOF, Error::expected_token('z')];
+            "xy3" => at 2; vec![Error::unexpected_token('3'), Error::expected_token('z')];
         });
     }
 }

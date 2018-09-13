@@ -42,51 +42,26 @@ macro_rules! test_parser_errors {
         $($stream:expr => $expected:expr);+;
     }) => {
         $(
-            let input: $stream_type = $stream.into();
-            let (result, stream): $crate::error::ParseResult<$stream_type, _> =
-                $parser.parse(input.clone());
-            let errors = result.expect_err("assertion failed: expected an Err(_)");
-            assert_eq!(errors.errors, $expected);
-            assert_eq!(stream, input);
+            let _ = test_parser_errors!(@test $stream_type, $parser, $stream, $expected);
         )+
     };
 
     ($stream_type:ty | $parser:expr, {
-        $($stream:expr => at $pos:expr; $($expected:expr),+);+;
+        $($stream:expr => at $pos:expr; $expected:expr);+;
     }) => {
         $(
-            let stream: $stream_type = $stream.into();
-            let result: $crate::error::ParseResult<$stream_type, _> =
-                $parser.parse(stream.clone());
-            assert_parser_errors!(stream => result => $pos; $($expected),+);
+            let (errors, _) = test_parser_errors!(@test $stream_type, $parser, $stream, $expected);
+            assert_eq!(errors.position, $pos.into());
         )+
     };
-}
 
-macro_rules! assert_parser_errors {
-    ($stream:expr => $result:expr => $pos:expr; $($predicate:expr),+) => {
-        let (errors, stream) = unwrap_errors_with!($result, $($predicate),+);
-        assert_eq!(errors.position, $pos.into());
-        assert_eq!(stream, $stream);
-    };
-    ($stream:expr => $result:expr => $($predicate:expr),+) => {
-        let (_, stream) = unwrap_errors_with!($result, $($predicate),+);
-        assert_eq!(stream, $stream);
-    };
-    ($result:expr => $pos:expr; $($predicate:expr),+) => {
-        let (errors, _) = unwrap_errors_with!($result, $($predicate),+);
-        assert_eq!(errors.position, $pos.into());
-    };
-    ($result:expr => $($predicate:expr),+) => {
-        unwrap_errors_with!($result, $($predicate),+);
-    };
-}
-
-macro_rules! unwrap_errors_with {
-    ($parsed:expr, $($predicate:expr),+) => {{
-        let (parsed_err, stream) = $parsed;
-        let errors = parsed_err.expect_err("assertion failed: expected Err(_)");
-        assert_has_error_with!(&errors, $($predicate),+);
+    (@test $stream_type:ty, $parser:expr, $stream:expr, $expected:expr) => {{
+        let input: $stream_type = $stream.into();
+        let (result, stream): $crate::error::ParseResult<$stream_type, _> =
+            $parser.parse(input.clone());
+        let errors = result.expect_err("assertion failed: expected an Err(_)");
+        assert_eq!(errors.errors, $expected);
+        assert_eq!(stream, input);
         (errors, stream)
     }};
 }
@@ -95,6 +70,7 @@ macro_rules! assertions {
     (with $pattern:pat = $value:expr;  {  }) => {};
 
     (with $pattern:pat = $value:expr;  { $head:tt, $($tail:tt)* }) => {
+        #[allow(unused_variables)]
         let $pattern = $value;
         assertions!(@expand $head);
         assertions!(with $pattern = $value; { $($tail)* });
@@ -103,32 +79,20 @@ macro_rules! assertions {
     (@expand $head:tt) => {
         assert!($head);
     };
+
+    (@expand ($left:tt == $right:expr)) => {
+        assert_eq!($left, $right);
+    }
 }
 
-macro_rules! assert_has_error_with {
-    ($errors:expr, $($predicate:expr),+) => {
-        $(
-            assert!(
-                $errors.errors.iter().any($predicate),
-                "predicate was not satisfied by errors: {:?}",
-                $errors.errors,
-            );
-        )+
-    };
-}
-
-// Predicate generators.
-macro_rules! eq {
-    ($value:expr) => {
-        |value| $value == value
-    };
-}
-
-macro_rules! is_match {
-    ($pattern:pat = $value:expr) => {
-        match $value {
-            $pattern => true,
-            _ => false,
-        }
-    };
+#[cfg(test)]
+mod test {
+    #[test]
+    fn test_assertions_macro() {
+        assertions!(with (x, _) = (5, 6); {
+            (x == 5),
+            (x > 4),
+            (x < 6),
+        });
+    }
 }

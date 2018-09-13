@@ -219,7 +219,7 @@ pub mod unicode {
                 "a京34" => (Ok('a'), "京34");
             });
             test_parser_errors!(IndexedStream<&str> | letter(), {
-                "3京4a" => at 0; (|e| is_match!(&Unexpected(Token('3')) = e));
+                "3京4a" => at 0; vec![Unexpected(Token('3'))];
             });
         }
     }
