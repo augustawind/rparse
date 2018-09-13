@@ -101,6 +101,10 @@ macro_rules! assertions {
         let $var = $value;
         assert!($head);
     };
+
+    (@expand $var:ident, $value:expr, assert_eq: $expected:expr) => {
+        assert_eq!($value, $expected);
+    };
 }
 
 macro_rules! assert_has_error_with {
