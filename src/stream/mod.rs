@@ -45,6 +45,10 @@ pub trait Stream: Sized + Debug + Clone {
     /// The Position type used to track the current parsing position.
     type Position: Position<Self::Item>;
 
+    fn from_token(token: Self::Item) -> Self;
+
+    fn from_range(range: Self::Range) -> Self;
+
     /// Returns the next token in the stream without consuming it.
     /// If there are no more tokens, returns `None`.
     fn peek(&self) -> Option<Self::Item>;
@@ -95,7 +99,7 @@ pub trait Stream: Sized + Debug + Clone {
 
 /// The RangeStream trait is a `Stream` that can be used as a continuous range of tokens.
 /// It supports equality comparisons and a `len` method, but does not track its parsing position.
-pub trait RangeStream: Stream<Position = NullPosition> + PartialEq {
+pub trait RangeStream: Stream<Position = NullPosition, Range = Self> + PartialEq {
     fn len(&self) -> usize;
 }
 
@@ -103,6 +107,19 @@ impl<'a> Stream for &'a str {
     type Item = char;
     type Range = Self;
     type Position = NullPosition;
+
+    fn from_token(token: Self::Item) -> Self {
+        let s = token.to_string();
+        unsafe {
+            let stream: &'a str = mem::transmute_copy(&s.as_str());
+            mem::forget(s);
+            stream
+        }
+    }
+
+    fn from_range(range: Self::Range) -> Self {
+        range
+    }
 
     fn peek(&self) -> Option<Self::Item> {
         self.chars().next()
@@ -147,6 +164,14 @@ impl Stream for String {
     type Item = char;
     type Range = Self;
     type Position = NullPosition;
+
+    fn from_token(token: Self::Item) -> Self {
+        token.to_string()
+    }
+
+    fn from_range(range: Self::Range) -> Self {
+        range
+    }
 
     fn peek(&self) -> Option<Self::Item> {
         self.chars().next()

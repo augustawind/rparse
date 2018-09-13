@@ -48,6 +48,14 @@ where
     type Range = S::Range;
     type Position = X;
 
+    fn from_token(token: Self::Item) -> Self {
+        Self::Range::from_token(token).into()
+    }
+
+    fn from_range(range: Self::Range) -> Self {
+        Self::Range::from_range(range).into()
+    }
+
     fn peek(&self) -> Option<Self::Item> {
         self.stream.peek()
     }
