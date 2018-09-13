@@ -12,13 +12,13 @@ macro_rules! test_parser {
     ($stream_type:ty | $parser:expr, {
         $($stream:expr => $expected:tt);+;
     }, {
-        $($stream2:expr => $expected2:tt);+;
+        $($stream2:expr => $expected_err:expr);+;
     }) => {
         test_parser!($stream_type | $parser, {
             $($stream => $expected);+;
         });
         test_parser_errors!($stream_type | $parser, {
-            $($stream2 => $expected2);+;
+            $($stream2 => $expected_err);+;
         });
     };
 }
@@ -39,13 +39,15 @@ macro_rules! assert_parse_result_eq {
 
 macro_rules! test_parser_errors {
     ($stream_type:ty | $parser:expr, {
-        $($stream:expr => $($expected:expr),+);+;
+        $($stream:expr => $expected:expr);+;
     }) => {
         $(
-            let stream: $stream_type = $stream.into();
-            let result: $crate::error::ParseResult<$stream_type, _> =
-                $parser.parse(stream.clone());
-            assert_parser_errors!(stream => result => $($expected),+);
+            let input: $stream_type = $stream.into();
+            let (result, stream): $crate::error::ParseResult<$stream_type, _> =
+                $parser.parse(input.clone());
+            let errors = result.expect_err("assertion failed: expected an Err(_)");
+            assert_eq!(errors.errors, $expected);
+            assert_eq!(stream, input);
         )+
     };
 
@@ -90,20 +92,16 @@ macro_rules! unwrap_errors_with {
 }
 
 macro_rules! assertions {
-    (with $var:ident => $value:expr;  {  }) => {};
+    (with $pattern:pat = $value:expr;  {  }) => {};
 
-    (with $var:ident => $value:expr;  { $assertion:ident $head:tt; $($tail:tt)* }) => {
-        assertions!(@expand $assertion, $var, $value, $head);
-        assertions!(with $var => $value; { $($tail)* });
+    (with $pattern:pat = $value:expr;  { $head:tt, $($tail:tt)* }) => {
+        let $pattern = $value;
+        assertions!(@expand $head);
+        assertions!(with $pattern = $value; { $($tail)* });
     };
 
-    (@expand assert, $var:ident, $value:expr, $head:tt) => {
-        let $var = $value;
+    (@expand $head:tt) => {
         assert!($head);
-    };
-
-    (@expand assert_eq, $var:ident, $value:expr, $expected:expr) => {
-        assert_eq!($value, $expected);
     };
 }
 

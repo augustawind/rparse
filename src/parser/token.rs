@@ -155,7 +155,7 @@ pub mod ascii {
             test_parser!(&str | letter(), {
                 "a" => (Ok('a'), "");
             }, {
-                "1" => (|err| err == &Error::unexpected_token('1'));
+                "1" => vec![Error::unexpected_token('1')];
             });
         }
 
@@ -164,7 +164,7 @@ pub mod ascii {
             test_parser!(&str | digit(), {
                 "1" => (Ok('1'), "");
             }, {
-                "a" => (|err| err == &Error::unexpected_token('a'));
+                "a" => vec![Error::unexpected_token('a')];
             });
         }
 
@@ -174,7 +174,7 @@ pub mod ascii {
                 "a" => (Ok('a'), "");
                 "1" => (Ok('1'), "");
             }, {
-                "." => (|err| err == &Error::unexpected_token('.'));
+                "." => vec![Error::unexpected_token('.')];
             });
         }
     }
@@ -242,7 +242,7 @@ mod test {
         test_parser!(&str | token('c'), {
             "cat" => (Ok('c'), "at");
         }, {
-            "ace" => (|err| err == &Error::expected_token('c'));
+            "ace" => vec![Error::unexpected_token('a'), Error::expected_token('c')];
         });
     }
 
@@ -253,7 +253,7 @@ mod test {
             "123abc" => (Ok('1'), "23abc");
         });
         test_parser_errors!(&str | parser, {
-            "abc123" => (|err| err == &Error::unexpected_token('a'));
+            "abc123" => vec![Error::unexpected_token('a')];
         });
     }
 }
