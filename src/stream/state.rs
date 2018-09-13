@@ -1,5 +1,5 @@
-use super::position::{NullPosition, Position};
-use super::{Stream, Tokens};
+use super::position::Position;
+use super::{RangeStream, Stream, Tokens};
 // use error::{Error, Errors};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -39,7 +39,11 @@ impl<S: Stream, X: Position<S::Item>, T: Into<X>> From<(S, T)> for State<S, X> {
     }
 }
 
-impl<S: Stream<Position = NullPosition>, X: Position<S::Item>> Stream for State<S, X> {
+impl<S, X> Stream for State<S, X>
+where
+    S: RangeStream,
+    X: Position<S::Item>,
+{
     type Item = S::Item;
     type Range = S::Range;
     type Position = X;

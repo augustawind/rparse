@@ -40,7 +40,7 @@ pub trait Stream: Sized + Debug + Clone {
     type Item: Copy + PartialEq + Debug;
 
     /// The type of a series of tokens.
-    type Range: Stream<Item = Self::Item, Position = NullPosition>;
+    type Range: RangeStream<Item = Self::Item>;
 
     /// The Position type used to track the current parsing position.
     type Position: Position<Self::Item>;
@@ -87,9 +87,16 @@ pub trait Stream: Sized + Debug + Clone {
         (Err(Errors::from_error(self.position(), error)), self)
     }
 
+    /// Return multiple parse errors as a `ParseResult`, using `Self` as the `Stream` type.
     fn errs<O>(self, errors: Errors<Self, Self::Position>) -> ParseResult<Self, O> {
         (Err(errors), self)
     }
+}
+
+/// The RangeStream trait is a `Stream` that can be used as a continuous range of tokens.
+/// It supports equality comparisons and a `len` method, but does not track its parsing position.
+pub trait RangeStream: Stream<Position = NullPosition> + PartialEq {
+    fn len(&self) -> usize;
 }
 
 impl<'a> Stream for &'a str {
@@ -130,6 +137,12 @@ impl<'a> Stream for &'a str {
     }
 }
 
+impl<'a> RangeStream for &'a str {
+    fn len(&self) -> usize {
+        str::len(self)
+    }
+}
+
 impl Stream for String {
     type Item = char;
     type Range = Self;
@@ -162,5 +175,11 @@ impl Stream for String {
 
     fn position(&self) -> Self::Position {
         NullPosition(())
+    }
+}
+
+impl RangeStream for String {
+    fn len(&self) -> usize {
+        String::len(self)
     }
 }

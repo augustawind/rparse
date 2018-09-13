@@ -6,12 +6,12 @@ use std::fmt;
 use std::fmt::Debug;
 use std::iter::FromIterator;
 
-use stream::{Position, Stream};
+use stream::{Position, RangeStream, Stream};
 
 #[derive(Debug, Clone)]
 pub enum Info<S: Stream> {
     Token(S::Item),
-    Range(S),
+    Range(S::Range),
     Msg(&'static str),
     MsgOwned(String),
 }
@@ -86,11 +86,12 @@ pub enum Error<S: Stream> {
     Message(Info<S>),
 }
 
-impl<S, T> Error<S>
+impl<S, T, R> Error<S>
 where
-    S: Stream<Item = T>,
+    S: Stream<Item = T, Range = R>,
     S::Position: Position<T>,
     T: Copy + PartialEq + Debug,
+    R: RangeStream<Item = T>,
 {
     pub fn expected_token(token: T) -> Self {
         Error::Expected(Info::Token(token))
@@ -98,6 +99,10 @@ where
 
     pub fn unexpected_token(token: T) -> Self {
         Error::Unexpected(Info::Token(token))
+    }
+
+    pub fn expected_range(range: R) -> Self {
+        Error::Expected(Info::Range(range))
     }
 
     pub fn is_eof(&self) -> bool {
