@@ -102,11 +102,11 @@ macro_rules! def_char_parser {
         pub fn $name<S, T>() -> Cond<S, fn(&S::Item) -> bool>
         where
             S: Stream<Item = T>,
-            T: Copy + PartialEq + Debug + Into<char>,
+            T: Copy + PartialEq + Debug + Into<char> + From<char>,
             S::Position: Position<T>,
         {
             Cond {
-                f: |&c: &T| c.into().$f(),
+                f: |&c: &T| c.into().$f().into(),
                 _marker: PhantomData,
             }
         }
@@ -129,6 +129,11 @@ pub mod ascii {
         /// [`std::char::is_ascii_digit`]: https://doc.rust-lang.org/std/primitive.char.html#method.is_ascii_digit
         digit,
         is_ascii_digit
+    );
+    def_char_parser!(
+        /// Parses a hexadecimal digit.
+        hexdigit,
+        is_ascii_hexdigit
     );
     def_char_parser!(
         /// Parses an ASCII letter or digit.
