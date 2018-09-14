@@ -137,6 +137,7 @@ pub fn parser<S: Stream, O>(f: fn(S) -> ParseResult<S, O>) -> fn(S) -> ParseResu
 
 #[cfg(test)]
 mod test {
+    use std::fmt::Debug;
 
     use super::*;
     use error::Error;
@@ -153,12 +154,12 @@ mod test {
                 'a' | 'e' | 'i' | 'o' | 'u' => stream.ok(t),
                 _ => stream.err(Error::unexpected_token(t)),
             },
-            _ => stream.err(Error::EOF),
+            None => stream.err(Error::EOF),
         })
     }
 
     #[test]
-    fn test_parser() {
+    fn test_parser_from_closure() {
         test_parser!(IndexedStream<&str> | vowel(), {
             "a" => (Ok('a'), "", 1);
             "ooh" => (Ok('o'), "oh", 1);
@@ -167,6 +168,36 @@ mod test {
             "" => at 0; vec![Error::EOF];
             "d" => at 1; vec![Error::unexpected_token('d')];
             "du" => at 1; vec![Error::unexpected_token('d')];
+        });
+    }
+
+    fn newline<S, O>(mut stream: S) -> ParseResult<S, O>
+    where
+        S: Stream<Item = O>,
+        S::Position: Position<O>,
+        O: Copy + PartialEq + Debug + Into<char> + ToStream<S> + ToStream<S::Range>,
+    {
+        match stream.pop().ok_or_else(|| Error::EOF).and_then(|t| {
+            if t.into() == '\n' {
+                Ok(t)
+            } else {
+                Err(Error::unexpected_token(t))
+            }
+        }) {
+            Ok(ok) => stream.ok(ok),
+            Err(err) => stream.err(err),
+        }
+    }
+
+    #[test]
+    fn test_parser_from_fn() {
+        test_parser!(IndexedStream<&[u8]> | parser(newline), {
+            "\n".as_bytes() => (Ok(b'\n'), "".as_bytes(), 1);
+            "\nx".as_bytes() => (Ok(b'\n'), "x".as_bytes(), 1);
+        });
+        test_parser_errors!(IndexedStream<&[u8]> | parser(newline), {
+            "".as_bytes() => at 0; vec![Error::EOF];
+            "x\n".as_bytes() => at 1; vec![Error::unexpected_token(b'x')];
         });
     }
 }

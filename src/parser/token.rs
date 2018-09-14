@@ -7,6 +7,7 @@ use error::{Error, ParseResult};
 use parser::{parser, Parser};
 use stream::{Position, Stream, ToStream};
 
+// TODO: refactor this to use a struct impl (e.g. `struct Any<S, O>`)
 pub fn any<S, O>() -> impl Parser<Stream = S, Output = O>
 where
     S: Stream<Item = O>,
