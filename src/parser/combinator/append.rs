@@ -58,7 +58,7 @@ mod test {
 
     #[test]
     fn test_append() {
-        let mut parser = append::<_, String, char, _, _>(many(letter()), token('?'));
+        let mut parser = append::<_, String, _, _, _>(many(letter()), token('?'));
         test_parser!(IndexedStream<&str> | parser, {
             "huh?" => (Ok("huh?".to_string()), "", 4);
             "oh? cool" => (Ok("oh?".to_string()), " cool", 3);
