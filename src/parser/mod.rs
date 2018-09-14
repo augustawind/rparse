@@ -19,7 +19,7 @@ use std::iter::FromIterator;
 use std::str;
 
 use self::choice::{and, or, And, Or};
-use self::combinator::{then, Then};
+use self::combinator::{append, then, Append, Then};
 use self::function::{bind, from_str, map, Bind, FromStr, Map, StrLike};
 use error::ParseResult;
 use stream::{Stream, ToStream};
@@ -93,11 +93,21 @@ pub trait Parser {
         then(self, other)
     }
 
-    /// Convert this Parser's output to the Parser's `Stream` type.
-    fn s<F>(self) -> Map<Self, fn(Self::Output) -> Self::Stream>
+    fn append<P, O>(self, other: P) -> Append<Self, P, Self::Output>
     where
         Self: Sized,
-        Self::Output: ToStream<Self::Stream>,
+        Self::Output: Extend<O>,
+        P: Parser<Stream = Self::Stream, Output = O>,
+    {
+        append(self, other)
+    }
+
+    /// Convert this Parser's output to some `Stream` type.
+    fn s<S>(self) -> Map<Self, fn(Self::Output) -> S>
+    where
+        Self: Sized,
+        Self::Output: ToStream<S>,
+        S: Stream,
     {
         map(self, |output: Self::Output| output.to_stream())
     }
