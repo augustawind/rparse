@@ -134,3 +134,39 @@ impl<S: Stream, O> Parser for fn(S) -> ParseResult<S, O> {
 pub fn parser<S: Stream, O>(f: fn(S) -> ParseResult<S, O>) -> fn(S) -> ParseResult<S, O> {
     f
 }
+
+#[cfg(test)]
+mod test {
+
+    use super::*;
+    use error::Error;
+    use stream::{IndexedStream, Position};
+
+    fn vowel<S>() -> fn(S) -> ParseResult<S, char>
+    where
+        S: Stream<Item = char>,
+        S::Position: Position<char>,
+        char: ToStream<S> + ToStream<S::Range>,
+    {
+        parser(|mut stream| match stream.pop() {
+            Some(t) => match t {
+                'a' | 'e' | 'i' | 'o' | 'u' => stream.ok(t),
+                _ => stream.err(Error::unexpected_token(t)),
+            },
+            _ => stream.err(Error::EOF),
+        })
+    }
+
+    #[test]
+    fn test_parser() {
+        test_parser!(IndexedStream<&str> | vowel(), {
+            "a" => (Ok('a'), "", 1);
+            "ooh" => (Ok('o'), "oh", 1);
+        });
+        test_parser_errors!(IndexedStream<&str> | vowel(), {
+            "" => at 0; vec![Error::EOF];
+            "d" => at 1; vec![Error::unexpected_token('d')];
+            "du" => at 1; vec![Error::unexpected_token('d')];
+        });
+    }
+}
