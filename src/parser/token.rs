@@ -7,13 +7,13 @@ use error::{Error, ParseResult};
 use parser::{parser, Parser};
 use stream::{Position, Stream, ToStream};
 
-pub fn any<S, O>() -> fn(S) -> ParseResult<S, O>
+pub fn any<S, O>() -> impl Parser<Stream = S, Output = O>
 where
     S: Stream<Item = O>,
     S::Position: Position<O>,
     O: Copy + PartialEq + Debug + ToStream<S> + ToStream<S::Range>,
 {
-    parser(|mut stream| match stream.pop() {
+    parser(|mut stream: S| match stream.pop() {
         Some(t) => stream.ok(t),
         _ => stream.err(Error::EOF),
     })
