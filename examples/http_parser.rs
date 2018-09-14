@@ -3,8 +3,8 @@ extern crate rparse;
 
 use std::iter::FromIterator;
 
-use rparse::parser::choice::optional;
-use rparse::parser::combinator::{many, many1};
+// use rparse::parser::choice::optional;
+use rparse::parser::combinator::many; //{many, many1};
 use rparse::parser::range::range;
 use rparse::parser::token::{ascii, token};
 use rparse::{Parser, Stream};
@@ -38,6 +38,14 @@ where
         .or(range("TRACE".into()))
 }
 
+// FIXME: this needs new methods/functions/macros!
+// TODO:
+//  - fn parser.s()             ~>  convert parser output from token to stream
+//  - fn parser.concat()        ~>  flatten nested parser output
+//  - fn optional(p: Parser)    ~>  ignore result if subparser fails
+//      *~> should this be first-class Parser functionality?
+//  - macro seq!                ~>  chain multiple parsers
+//
 // fn url_path<'a, S, O>() -> impl Parser<Stream = S, Output = O>
 // where
 //     S: Stream,
@@ -45,9 +53,30 @@ where
 //     S::Range: From<&'a str> + FromIterator<S::Item>,
 //     O: FromIterator<S::Range>,
 // {
-//     range("/".into())
-//         .then(many(range("/".into()).or(many(url_path_segment()))))
-//         .then(optional(range(".".into()).then(many1(url_path_segment()))))
+//     // a url path is
+//     seq![
+//         // a forward slash
+//         token('/').s(),
+//         // optionally followed by
+//         optional(seq![
+//             // one or more path segments, which consist of any arrangement of
+//             many1(choice![
+//                 // forward slashes
+//                 token('/').s(),
+//                 // url-safe characters
+//                 url_token().s(),
+//                 // and percent encoded octets
+//                 percent_encoded(),
+//             ]).concat(),
+//             // optionally followed by an extension, which is
+//             optional(seq![
+//                 // a period
+//                 token('.').s(),
+//                 // and some url-safe text
+//                 many1(choice![url_token().s(), percent_encoded()]).concat(),
+//             ]),
+//         ]),
+//     ]
 // }
 
 fn url_path_segment<'a, S, O>() -> impl Parser<Stream = S, Output = O>
