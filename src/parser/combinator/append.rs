@@ -50,6 +50,7 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
+    use error::Error::*;
     use parser::combinator::many;
     use parser::token::{ascii::letter, token};
     use parser::Parser;
@@ -62,6 +63,11 @@ mod test {
             "huh?" => (Ok("huh?".to_string()), "", 4);
             "oh? cool" => (Ok("oh?".to_string()), " cool", 3);
             "???" => (Ok("?".to_string()), "??", 1);
+        });
+        test_parser_errors!(IndexedStream<&str> | parser, {
+            "" => at 0; vec![EOF, Expected('?'.into())];
+            "whoops!" => at 6; vec![Unexpected('!'.into()), Expected('?'.into())];
+            "!?" => at 0; vec![Unexpected('!'.into()), Expected('?'.into())];
         });
     }
 }

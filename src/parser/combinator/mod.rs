@@ -1,9 +1,10 @@
 //! Parsers that combine other parsers.
 
+pub mod append;
 pub mod many;
-pub mod seq;
+#[macro_use]
 pub mod then;
 
+pub use self::append::*;
 pub use self::many::*;
-pub use self::seq::*;
 pub use self::then::*;
