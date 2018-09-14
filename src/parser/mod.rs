@@ -15,11 +15,12 @@ pub mod range;
 pub mod token;
 
 use std::fmt::Display;
+use std::iter;
 use std::iter::FromIterator;
 use std::str;
 
 use self::choice::{and, or, And, Or};
-use self::combinator::{append, then, Append, Then};
+use self::combinator::{append, extend, then, Append, Extend, Then};
 use self::function::{bind, from_str, map, Bind, FromStr, Map, StrLike};
 use error::ParseResult;
 use stream::{Stream, ToStream};
@@ -96,10 +97,20 @@ pub trait Parser {
     fn append<P, O>(self, other: P) -> Append<Self, P, Self::Output>
     where
         Self: Sized,
-        Self::Output: Extend<O>,
+        Self::Output: iter::Extend<O>,
         P: Parser<Stream = Self::Stream, Output = O>,
     {
         append(self, other)
+    }
+
+    fn extend<P, I, O>(self, other: P) -> Extend<Self, P, Self::Output, I>
+    where
+        Self: Sized,
+        Self::Output: iter::Extend<O>,
+        P: Parser<Stream = Self::Stream, Output = I>,
+        I: IntoIterator<Item = O>,
+    {
+        extend(self, other)
     }
 
     /// Convert this Parser's output to some `Stream` type.
