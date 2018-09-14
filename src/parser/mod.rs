@@ -142,13 +142,13 @@ mod test {
     use error::Error;
     use stream::{IndexedStream, Position};
 
-    fn vowel<S>() -> fn(S) -> ParseResult<S, char>
+    fn vowel<S>() -> impl Parser<Stream = S, Output = char>
     where
         S: Stream<Item = char>,
         S::Position: Position<char>,
         char: ToStream<S> + ToStream<S::Range>,
     {
-        parser(|mut stream| match stream.pop() {
+        parser(|mut stream: S| match stream.pop() {
             Some(t) => match t {
                 'a' | 'e' | 'i' | 'o' | 'u' => stream.ok(t),
                 _ => stream.err(Error::unexpected_token(t)),
