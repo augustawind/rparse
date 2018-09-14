@@ -22,7 +22,7 @@ use self::choice::{and, or, And, Or};
 use self::combinator::{then, Then};
 use self::function::{bind, from_str, map, Bind, FromStr, Map, StrLike};
 use error::ParseResult;
-use stream::Stream;
+use stream::{Stream, ToStream};
 
 pub trait Parser {
     type Stream: Stream;
@@ -91,6 +91,15 @@ pub trait Parser {
         O: FromIterator<Self::Output>,
     {
         then(self, other)
+    }
+
+    /// Convert this Parser's output to the Parser's `Stream` type.
+    fn s<F>(self) -> Map<Self, fn(Self::Output) -> Self::Stream>
+    where
+        Self: Sized,
+        Self::Output: ToStream<Self::Stream>,
+    {
+        map(self, |output: Self::Output| output.to_stream())
     }
 }
 
