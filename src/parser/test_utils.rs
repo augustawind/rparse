@@ -1,23 +1,23 @@
 macro_rules! test_parser {
-    ($stream_type:ty | $parser:expr, {
+    ($stream_type:ty | $p:expr, {
         $($stream:expr => $expected:tt);+;
     }) => {
         $(
             let result: $crate::error::ParseResult<$stream_type, _> =
-                $parser.parse($stream.into());
+                $p.parse($stream.into());
             assert_parse_result_eq!(result => $expected);
         )+
     };
 
-    ($stream_type:ty | $parser:expr, {
+    ($stream_type:ty | $p:expr, {
         $($stream:expr => $expected:tt);+;
     }, {
         $($stream2:expr => $expected_err:expr);+;
     }) => {
-        test_parser!($stream_type | $parser, {
+        test_parser!($stream_type | $p, {
             $($stream => $expected);+;
         });
-        test_parser_errors!($stream_type | $parser, {
+        test_parser_errors!($stream_type | $p, {
             $($stream2 => $expected_err);+;
         });
     };
@@ -38,27 +38,27 @@ macro_rules! assert_parse_result_eq {
 }
 
 macro_rules! test_parser_errors {
-    ($stream_type:ty | $parser:expr, {
+    ($stream_type:ty | $p:expr, {
         $($stream:expr => $expected:expr);+;
     }) => {
         $(
-            let _ = test_parser_errors!(@test $stream_type, $parser, $stream, $expected);
+            let _ = test_parser_errors!(@test $stream_type, $p, $stream, $expected);
         )+
     };
 
-    ($stream_type:ty | $parser:expr, {
+    ($stream_type:ty | $p:expr, {
         $($stream:expr => at $pos:expr; $expected:expr);+;
     }) => {
         $(
-            let (errors, _) = test_parser_errors!(@test $stream_type, $parser, $stream, $expected);
+            let (errors, _) = test_parser_errors!(@test $stream_type, $p, $stream, $expected);
             assert_eq!(errors.position, $pos.into());
         )+
     };
 
-    (@test $stream_type:ty, $parser:expr, $stream:expr, $expected:expr) => {{
+    (@test $stream_type:ty, $p:expr, $stream:expr, $expected:expr) => {{
         let input: $stream_type = $stream.into();
         let (result, stream): $crate::error::ParseResult<$stream_type, _> =
-            $parser.parse(input.clone());
+            $p.parse(input.clone());
         let errors = result.expect_err("assertion failed: expected an Err(_)");
         assert_eq!(errors.errors, $expected);
         assert_eq!(stream, input);
