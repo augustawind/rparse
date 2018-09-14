@@ -3,12 +3,12 @@ use super::{RangeStream, Stream, ToStream, Tokens};
 // use error::{Error, Errors};
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct State<S: Stream, X: Position<S::Item>> {
+pub struct State<S: RangeStream, X: Position<S::Item>> {
     pub stream: S,
     pub position: X,
 }
 
-impl<S: Stream, X: Position<S::Item>> State<S, X> {
+impl<S: RangeStream, X: Position<S::Item>> State<S, X> {
     pub fn new<T: Into<X>>(stream: S, position: T) -> Self {
         State {
             stream,
@@ -21,7 +21,7 @@ impl<S: Stream, X: Position<S::Item>> State<S, X> {
     //     }
 }
 
-impl<S: Stream, X: Position<S::Item>> From<S> for State<S, X> {
+impl<S: RangeStream, X: Position<S::Item>> From<S> for State<S, X> {
     fn from(stream: S) -> Self {
         State {
             stream,
@@ -30,7 +30,7 @@ impl<S: Stream, X: Position<S::Item>> From<S> for State<S, X> {
     }
 }
 
-impl<S: Stream, X: Position<S::Item>, T: Into<X>> From<(S, T)> for State<S, X> {
+impl<S: RangeStream, X: Position<S::Item>, T: Into<X>> From<(S, T)> for State<S, X> {
     fn from((stream, pos): (S, T)) -> Self {
         State {
             stream,
@@ -41,7 +41,8 @@ impl<S: Stream, X: Position<S::Item>, T: Into<X>> From<(S, T)> for State<S, X> {
 
 impl<S, X> Stream for State<S, X>
 where
-    S: RangeStream,
+    S: RangeStream + ToStream<S>,
+    S::Item: ToStream<Self>,
     X: Position<S::Item>,
 {
     type Item = S::Item;
@@ -85,33 +86,33 @@ where
     }
 }
 
-impl<'a, S, X> ToStream<State<S, X>> for S
+impl<S, X> ToStream<State<S, X>> for S::Item
 where
-    S: RangeStream,
+    S: RangeStream + ToStream<S>,
+    S::Item: ToStream<S>,
     X: Position<S::Item>,
 {
     fn to_stream(self) -> State<S, X> {
+        let s = self.to_stream();
+        State::from(s)
+    }
+}
+
+impl<X> ToStream<State<String, X>> for String
+where
+    X: Position<<String as Stream>::Item>,
+{
+    fn to_stream(self) -> State<String, X> {
         self.into()
     }
 }
 
-impl<'a, X> ToStream<State<&'a str, X>> for char
+impl<'a, X> ToStream<State<&'a str, X>> for &'a str
 where
-    X: Position<char>,
+    X: Position<<&'a str as Stream>::Item>,
 {
     fn to_stream(self) -> State<&'a str, X> {
-        let s: &'a str = self.to_stream();
-        s.into()
-    }
-}
-
-impl<'a, X> ToStream<State<String, X>> for char
-where
-    X: Position<char>,
-{
-    fn to_stream(self) -> State<String, X> {
-        let s: String = self.to_stream();
-        s.into()
+        self.into()
     }
 }
 

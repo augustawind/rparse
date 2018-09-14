@@ -5,13 +5,13 @@ use std::marker::PhantomData;
 
 use error::{Error, ParseResult};
 use parser::{parser, Parser};
-use stream::{Position, Stream};
+use stream::{Position, Stream, ToStream};
 
 pub fn any<S, O>() -> fn(S) -> ParseResult<S, O>
 where
     S: Stream<Item = O>,
     S::Position: Position<O>,
-    O: Copy + PartialEq + Debug,
+    O: Copy + PartialEq + Debug + ToStream<S> + ToStream<S::Range>,
 {
     parser(|mut stream| match stream.pop() {
         Some(t) => stream.ok(t),
@@ -102,7 +102,7 @@ macro_rules! def_char_parser {
         pub fn $name<S, T>() -> Cond<S, fn(&S::Item) -> bool>
         where
             S: Stream<Item = T>,
-            T: Copy + PartialEq + Debug + Into<char> + From<char>,
+            T: Copy + PartialEq + Debug + Into<char> + From<char> + ToStream<S> + ToStream<S::Range>,
             S::Position: Position<T>,
         {
             Cond {

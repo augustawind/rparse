@@ -37,7 +37,7 @@ impl<'a, T> Iterator for Tokens<'a, T> {
 /// The Stream trait represents data that can be consumed by a `Parser`.
 pub trait Stream: Sized + Debug + Clone {
     /// The type of a single token.
-    type Item: Copy + PartialEq + Debug;
+    type Item: Copy + PartialEq + Debug + ToStream<Self> + ToStream<Self::Range>;
 
     /// The type of a series of tokens.
     type Range: RangeStream<Item = Self::Item>;
