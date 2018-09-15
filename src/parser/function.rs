@@ -185,7 +185,7 @@ where
 mod test {
     use super::*;
     use error::Error;
-    use parser::combinator::many1;
+    use parser::seq::many1;
     use parser::token::{ascii, token};
     use stream::{IndexedStream, SourceCode};
 

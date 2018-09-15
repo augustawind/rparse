@@ -53,7 +53,7 @@ where
 mod test {
     use super::*;
     use error::Error;
-    use parser::combinator::{many, many1};
+    use parser::seq::{many, many1};
     use parser::token::ascii::letter;
     use parser::token::token;
     use parser::Parser;

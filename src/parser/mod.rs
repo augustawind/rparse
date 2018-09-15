@@ -9,7 +9,7 @@ mod test_utils;
 #[macro_use]
 pub mod choice;
 #[macro_use]
-pub mod combinator;
+pub mod seq;
 pub mod function;
 pub mod range;
 pub mod token;
@@ -20,8 +20,8 @@ use std::iter::FromIterator;
 use std::str;
 
 use self::choice::{and, or, And, Or};
-use self::combinator::{append, extend, then, Append, Extend, Then};
 use self::function::{bind, from_str, map, Bind, FromStr, Map, StrLike};
+use self::seq::{append, extend, then, Append, Extend, Then};
 use error::ParseResult;
 use stream::{Stream, ToStream};
 
