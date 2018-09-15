@@ -33,12 +33,12 @@ impl Stream for String {
     }
 
     fn range(&mut self, idx: usize) -> Option<Self::Range> {
-        if self.len() > idx {
-            return None;
+        if idx > self.len() {
+            None
+        } else {
+            let range = self.split_off(idx);
+            Some(mem::replace(self, range))
         }
-        let mut range = self.split_off(idx);
-        mem::swap(&mut range, self);
-        Some(range)
     }
 
     fn position(&self) -> Self::Position {
@@ -144,7 +144,74 @@ impl<'a> ToStream<&'a str> for char {
     }
 }
 
-// impl<T> Stream for Vec<T>
+impl<T> Stream for Vec<T>
+where
+    T: Copy + PartialEq + Debug,
+{
+    type Item = T;
+    type Range = Self;
+    type Position = NullPosition;
+
+    fn from_token(token: Self::Item) -> Self {
+        vec![token]
+    }
+
+    fn from_range(range: Self::Range) -> Self {
+        range
+    }
+
+    fn peek(&self) -> Option<Self::Item> {
+        self.first().map(|&t| t)
+    }
+
+    fn pop(&mut self) -> Option<Self::Item> {
+        self.pop()
+    }
+
+    fn tokens(&self) -> Tokens<Self::Item> {
+        Tokens::new(self.iter().map(|t| *t))
+    }
+
+    fn range(&mut self, idx: usize) -> Option<Self::Range> {
+        if idx > self.len() {
+            None
+        } else {
+            let range = self.split_off(idx);
+            Some(mem::replace(self, range))
+        }
+    }
+
+    fn position(&self) -> Self::Position {
+        NullPosition(())
+    }
+}
+
+impl<T> RangeStream for Vec<T>
+where
+    T: Copy + PartialEq + Debug,
+{
+    fn len(&self) -> usize {
+        Vec::len(self)
+    }
+}
+
+impl<T> ToStream<Self> for Vec<T>
+where
+    T: Copy + PartialEq + Debug,
+{
+    fn to_stream(self) -> Self {
+        self
+    }
+}
+
+impl<T> ToStream<Vec<T>> for T
+where
+    T: Copy + PartialEq + Debug,
+{
+    fn to_stream(self) -> Vec<T> {
+        vec![self]
+    }
+}
 
 impl<'a, T> Stream for &'a [T]
 where
@@ -163,7 +230,7 @@ where
     }
 
     fn peek(&self) -> Option<Self::Item> {
-        self.first().map(|t| *t)
+        self.first().map(|&t| t)
     }
 
     fn pop(&mut self) -> Option<Self::Item> {

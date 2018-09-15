@@ -1,7 +1,7 @@
 //! Traits and implementations defining parsable input streams.
 
+mod impls;
 pub mod position;
-mod primitives;
 pub mod state;
 
 use std::fmt::Debug;
