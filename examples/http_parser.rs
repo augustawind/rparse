@@ -59,8 +59,8 @@ where
 //     seq![
 //         // a forward slash
 //         token('/').s(),
-//         // optionally followed by
-//         optional(seq![
+//         // optionally** followed by
+//         seq![
 //             // one or more path segments, which consist of any arrangement of
 //             many1(choice![
 //                 // forward slashes
@@ -70,14 +70,14 @@ where
 //                 // and percent encoded octets
 //                 percent_encoded(),
 //             ]).concat(),
-//             // optionally followed by an extension, which is
-//             optional(seq![
+//             // optionally** followed by an extension, which is
+//             seq![
 //                 // a period
 //                 token('.').s(),
 //                 // and some url-safe text
 //                 many1(choice![url_token().s(), percent_encoded()]).concat(),
-//             ]),
-//         ]),
+//             ],
+//         ],
 //     ]
 // }
 
