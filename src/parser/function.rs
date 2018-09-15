@@ -242,7 +242,7 @@ mod test {
 
     #[test]
     fn test_from_str() {
-        let mut parser = many1::<_, String>(ascii::digit()).from_str::<u32>();
+        let mut parser = many1::<String, _>(ascii::digit()).from_str::<u32>();
         test_parser!(&str | parser, {
             "369" => (Ok(369 as u32), "");
             "369abc" => (Ok(369 as u32), "abc");
@@ -250,7 +250,7 @@ mod test {
             "abc" => vec![Error::unexpected_token('a')];
         });
 
-        let mut parser = from_str::<_, f32>(many1::<_, String>(choice!(
+        let mut parser = from_str::<_, f32>(many1::<String, _>(choice!(
             token('-'),
             token('.'),
             ascii::digit()
@@ -263,7 +263,7 @@ mod test {
             "12.5.9" =>  vec!["invalid float literal".into()];
         });
 
-        let mut parser = many1::<_, String>(ascii::digit()).from_str::<f32>();
+        let mut parser = many1::<String, _>(ascii::digit()).from_str::<f32>();
         test_parser!(SourceCode | parser, {
             "12e" => (Ok(12f32), "e", (0, 2));
         }, {

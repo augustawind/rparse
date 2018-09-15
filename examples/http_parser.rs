@@ -4,7 +4,7 @@ extern crate rparse;
 use std::iter::FromIterator;
 
 // use rparse::parser::choice::optional;
-use rparse::parser::combinator::many; //{many, many1};
+use rparse::parser::seq::many; //{many, many1};
 use rparse::parser::range::range;
 use rparse::parser::token::{ascii, token};
 use rparse::{Parser, Stream};
@@ -27,15 +27,17 @@ where
     S: Stream,
     S::Range: From<&'a str>,
 {
-    range("GET".into())
-        .or(range("POST".into()))
-        .or(range("PUT".into()))
-        .or(range("PATCH".into()))
-        .or(range("DELETE".into()))
-        .or(range("HEAD".into()))
-        .or(range("OPTIONS".into()))
-        .or(range("CONNECT".into()))
-        .or(range("TRACE".into()))
+    choice![
+        range("GET".into()),
+        (range("POST".into())),
+        (range("PUT".into())),
+        (range("PATCH".into())),
+        (range("DELETE".into())),
+        (range("HEAD".into())),
+        (range("OPTIONS".into())),
+        (range("CONNECT".into())),
+        (range("TRACE".into())),
+    ]
 }
 
 // FIXME: this needs new methods/functions/macros!

@@ -5,13 +5,13 @@ use error::ParseResult;
 use parser::Parser;
 use stream::Stream;
 
-pub struct Many<P, O> {
+pub struct Many<O, P> {
     p: P,
     min: usize,
     __marker: PhantomData<O>,
 }
 
-impl<P, O> Parser for Many<P, O>
+impl<O, P> Parser for Many<O, P>
 where
     P: Parser,
     O: FromIterator<P::Output>,
@@ -44,7 +44,7 @@ where
     }
 }
 
-pub fn many<P, O>(p: P) -> Many<P, O>
+pub fn many<O, P>(p: P) -> Many<O, P>
 where
     P: Parser,
     O: FromIterator<P::Output>,
@@ -56,7 +56,7 @@ where
     }
 }
 
-pub fn many1<P, O>(p: P) -> Many<P, O>
+pub fn many1<O, P>(p: P) -> Many<O, P>
 where
     P: Parser,
     O: FromIterator<P::Output>,

@@ -113,13 +113,13 @@ mod test {
             "xyz" => (Ok(Some('x')), "yz");
         });
 
-        let mut parser = optional(many1::<_, String>(ascii::alpha_num()));
+        let mut parser = optional(many1::<String, _>(ascii::alpha_num()));
         test_parser!(&str | parser, {
             "abc123" => (Ok(Some("abc123".to_string())), "");
         });
 
         assert_eq!(
-            optional(many::<_, String>(any())).parse(""),
+            optional(many::<String, _>(any())).parse(""),
             (Ok(Some("".into())), "")
         );
     }

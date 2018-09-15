@@ -103,7 +103,7 @@ pub trait Parser {
         append(self, other)
     }
 
-    fn extend<P, I, O>(self, other: P) -> Extend<Self, P, Self::Output, I>
+    fn extend<I, O, P>(self, other: P) -> Extend<Self::Output, I, Self, P>
     where
         Self: Sized,
         Self::Output: iter::Extend<O>,

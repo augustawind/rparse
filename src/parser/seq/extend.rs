@@ -5,13 +5,13 @@ use error::ParseResult;
 use parser::Parser;
 use stream::Stream;
 
-pub struct Extend<L, R, E, I> {
+pub struct Extend<E, I, L, R> {
     left: L,
     right: R,
     __marker: PhantomData<(E, I)>,
 }
 
-impl<S: Stream, E, I, O, L, R> Parser for Extend<L, R, E, I>
+impl<S: Stream, E, I, O, L, R> Parser for Extend<E, I, L, R>
 where
     L: Parser<Stream = S, Output = E>,
     R: Parser<Stream = S, Output = I>,
@@ -35,7 +35,7 @@ where
     }
 }
 
-pub fn extend<S: Stream, E, I, O, L, R>(left: L, right: R) -> Extend<L, R, E, I>
+pub fn extend<S: Stream, E, I, O, L, R>(left: L, right: R) -> Extend<E, I, L, R>
 where
     L: Parser<Stream = S, Output = E>,
     R: Parser<Stream = S, Output = I>,
