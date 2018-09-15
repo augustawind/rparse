@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::mem;
 
 use super::{NullPosition, RangeStream, Stream, ToStream, Tokens};
@@ -143,8 +144,13 @@ impl<'a> ToStream<&'a str> for char {
     }
 }
 
-impl<'a> Stream for &'a [u8] {
-    type Item = u8;
+// impl<T> Stream for Vec<T>
+
+impl<'a, T> Stream for &'a [T]
+where
+    T: Copy + PartialEq + Debug,
+{
+    type Item = T;
     type Range = Self;
     type Position = NullPosition;
 
@@ -186,23 +192,32 @@ impl<'a> Stream for &'a [u8] {
     }
 }
 
-impl<'a> RangeStream for &'a [u8] {
+impl<'a, T> RangeStream for &'a [T]
+where
+    T: Copy + PartialEq + Debug,
+{
     fn len(&self) -> usize {
-        <[u8]>::len(self)
+        <[T]>::len(self)
     }
 }
 
-impl<'a> ToStream<Self> for &'a [u8] {
+impl<'a, T> ToStream<Self> for &'a [T]
+where
+    T: Copy + PartialEq + Debug,
+{
     fn to_stream(self) -> Self {
         self
     }
 }
 
-impl<'a> ToStream<&'a [u8]> for u8 {
-    fn to_stream(self) -> &'a [u8] {
+impl<'a, T> ToStream<&'a [T]> for T
+where
+    T: Copy + PartialEq + Debug,
+{
+    fn to_stream(self) -> &'a [T] {
         let s = vec![self];
         unsafe {
-            let stream: &'a [u8] = mem::transmute_copy(&s.as_slice());
+            let stream: &'a [T] = mem::transmute_copy(&s.as_slice());
             mem::forget(s);
             stream
         }
