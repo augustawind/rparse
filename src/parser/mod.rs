@@ -172,8 +172,8 @@ mod test {
     #[test]
     fn test_parser_from_closure() {
         test_parser!(IndexedStream<&str> | vowel(), {
-            "a" => (Ok('a'), "", 1);
-            "ooh" => (Ok('o'), "oh", 1);
+            "a" => (Ok('a'), ("", 1));
+            "ooh" => (Ok('o'), ("oh", 1));
         });
         test_parser_errors!(IndexedStream<&str> | vowel(), {
             "" => at 0; vec![Error::EOF];
@@ -203,8 +203,8 @@ mod test {
     #[test]
     fn test_parser_from_fn() {
         test_parser!(IndexedStream<&[u8]> | parser(newline), {
-            "\n".as_bytes() => (Ok(b'\n'), "".as_bytes(), 1);
-            "\nx".as_bytes() => (Ok(b'\n'), "x".as_bytes(), 1);
+            "\n".as_bytes() => (Ok(b'\n'), ("".as_bytes(), 1));
+            "\nx".as_bytes() => (Ok(b'\n'), ("x".as_bytes(), 1));
         });
         test_parser_errors!(IndexedStream<&[u8]> | parser(newline), {
             "".as_bytes() => at 0; vec![Error::EOF];

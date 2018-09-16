@@ -239,7 +239,7 @@ mod test {
     #[test]
     fn test_any() {
         test_parser!(IndexedStream<&str> | any(), {
-            "hello, world." => (Ok('h'), "ello, world.", 1);
+            "hello, world." => (Ok('h'), ("ello, world.", 1));
         });
     }
 

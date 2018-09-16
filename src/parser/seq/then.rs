@@ -57,8 +57,8 @@ mod test {
     fn test_then() {
         let mut parser = token('X').then::<_, String>(token('O'));
         test_parser!(IndexedStream<&str> | parser, {
-            "XO" => (Ok("XO".to_string()), "", 2);
-            "XOXO" => (Ok("XO".to_string()), "XO", 2);
+            "XO" => (Ok("XO".to_string()), ("", 2));
+            "XOXO" => (Ok("XO".to_string()), ("XO", 2));
         });
         test_parser_errors!(IndexedStream<&str> | parser, {
             "XY" => at 1; vec![Error::unexpected_token('Y'), Error::expected_token('O')];

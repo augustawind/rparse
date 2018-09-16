@@ -3,9 +3,12 @@ macro_rules! test_parser {
         $($stream:expr => $expected:tt);+;
     }) => {
         $(
-            let result: $crate::error::ParseResult<$stream_type, _> =
+            let (parsed_result, parsed_stream): $crate::error::ParseResult<$stream_type, _> =
                 $p.parse($stream.into());
-            assert_parse_result_eq!(result => $expected);
+            let (expected_result, expected_stream) = $expected;
+            assert_eq!(parsed_result, expected_result);
+            let expected_stream: $stream_type = expected_stream.into();
+            assert_eq!(parsed_stream, expected_stream);
         )+
     };
 
@@ -20,20 +23,6 @@ macro_rules! test_parser {
         test_parser_errors!($stream_type | $p, {
             $($stream2 => $expected_err);+;
         });
-    };
-}
-
-macro_rules! assert_parse_result_eq {
-    ($result:expr => ($expected_result:expr, $expected_stream:expr, $expected_pos:expr)) => {
-        let (parsed_result, parsed_stream) = $result;
-        assert_eq!(parsed_result, $expected_result);
-        let expected_stream = $crate::stream::State::new($expected_stream, $expected_pos);
-        assert_eq!(parsed_stream, expected_stream);
-    };
-    ($result:expr => ($expected_result:expr, $expected_stream:expr)) => {
-        let (parsed_result, parsed_stream) = $result;
-        assert_eq!(parsed_result, $expected_result);
-        assert_eq!(parsed_stream, $expected_stream);
     };
 }
 

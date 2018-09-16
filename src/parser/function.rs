@@ -231,7 +231,7 @@ mod test {
             },
         );
         test_parser!(IndexedStream<&str> | parser, {
-            "324 dogs" => (Ok(324 as usize), " dogs", 3);
+            "324 dogs" => (Ok(324 as usize), (" dogs", 3));
         });
         // TODO: add ability to control consumption, e.g. make this error show at beginning (0)
         // TODO: e.g.: many1(alpha_num()).bind(...).try()
@@ -265,7 +265,7 @@ mod test {
 
         let mut parser = many1::<String, _>(ascii::digit()).from_str::<f32>();
         test_parser!(SourceCode | parser, {
-            "12e" => (Ok(12f32), "e", (0, 2));
+            "12e" => (Ok(12f32), ("e", (0, 2)));
         }, {
             "e12" => vec![Error::unexpected_token('e')];
         });

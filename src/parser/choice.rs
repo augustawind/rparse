@@ -128,8 +128,8 @@ mod test {
     fn test_and() {
         let mut parser = and(token('a'), token('b'));
         test_parser!(IndexedStream<&str> | parser, {
-            "abcd" => (Ok('b'), "cd", 2);
-            "ab" => (Ok('b'), "", 2);
+            "abcd" => (Ok('b'), ("cd", 2));
+            "ab" => (Ok('b'), ("", 2));
         });
         test_parser_errors!(IndexedStream<&str> | parser, {
             "def" => at 0; vec![Error::unexpected_token('d'), Error::expected_token('a')];
@@ -139,7 +139,7 @@ mod test {
 
         let mut parser = and(many1(ascii::digit()), many1(ascii::letter()));
         test_parser!(IndexedStream<&str> | parser, {
-            "123abc456" => (Ok(vec!['a', 'b', 'c']), "456", 6);
+            "123abc456" => (Ok(vec!['a', 'b', 'c']), ("456", 6));
         });
         test_parser_errors!(IndexedStream<&str> | parser, {
             " 1 2 3" => at 0; vec![Error::unexpected_token(' ')];
@@ -151,8 +151,8 @@ mod test {
     fn test_or() {
         let mut parser = or(token('a'), token('b'));
         test_parser!(IndexedStream<&str> | parser, {
-            "bcd" => (Ok('b'), "cd", 1);
-            "a" => (Ok('a'), "", 1);
+            "bcd" => (Ok('b'), ("cd", 1));
+            "a" => (Ok('a'), ("", 1));
         });
         test_parser_errors!(IndexedStream<&str> | parser, {
             "def" => at 0; vec![
@@ -167,8 +167,8 @@ mod test {
             then(ascii::letter(), ascii::whitespace()),
         );
         test_parser!(IndexedStream<&str> | parser, {
-            "123a bc" => (Ok("123".to_string()), "a bc", 3);
-            "a b c" => (Ok("a ".to_string()), "b c", 2);
+            "123a bc" => (Ok("123".to_string()), ("a bc", 3));
+            "a b c" => (Ok("a ".to_string()), ("b c", 2));
         });
     }
 
@@ -178,9 +178,9 @@ mod test {
 
         let mut parser = choice!(token('a'), ascii::digit(), ascii::punctuation());
         test_parser!(IndexedStream<&str> | parser, {
-            "a9." => (Ok('a'), "9.", 1);
-            "9.a" => (Ok('9'), ".a", 1);
-            ".a9" => (Ok('.'), "a9", 1);
+            "a9." => (Ok('a'), ("9.", 1));
+            "9.a" => (Ok('9'), (".a", 1));
+            ".a9" => (Ok('.'), ("a9", 1));
         });
         test_parser_errors!(IndexedStream<&str> | parser, {
             "ba9." => at 0; vec![Error::unexpected_token('b'), Error::expected_token('a')];
@@ -198,8 +198,8 @@ mod test {
             then(ascii::letter(), ascii::whitespace()),
         );
         test_parser!(IndexedStream<&str> | parser, {
-            "123a bc" => (Ok("123".to_string()), "a bc", 3);
-            "a b c" => (Ok("a ".to_string()), "b c", 2);
+            "123a bc" => (Ok("123".to_string()), ("a bc", 3));
+            "a b c" => (Ok("a ".to_string()), ("b c", 2));
         });
     }
 }
