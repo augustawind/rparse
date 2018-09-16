@@ -1,20 +1,12 @@
 use std::fmt::Debug;
 use std::mem;
 
-use super::{NullPosition, RangeStream, Stream, ToStream, Tokens};
+use super::{NullPosition, RangeStream, Stream, Tokens};
 
 impl Stream for String {
     type Item = char;
     type Range = Self;
     type Position = NullPosition;
-
-    fn from_token(token: Self::Item) -> Self {
-        token.to_string()
-    }
-
-    fn from_range(range: Self::Range) -> Self {
-        range
-    }
 
     fn peek(&self) -> Option<Self::Item> {
         self.chars().next()
@@ -52,41 +44,10 @@ impl RangeStream for String {
     }
 }
 
-impl ToStream<Self> for String {
-    fn to_stream(self) -> Self {
-        self
-    }
-}
-
-impl ToStream<String> for char {
-    fn to_stream(self) -> String {
-        self.to_string()
-    }
-}
-
-impl<'a> ToStream<String> for &'a str {
-    fn to_stream(self) -> String {
-        self.to_string()
-    }
-}
-
 impl<'a> Stream for &'a str {
     type Item = char;
     type Range = Self;
     type Position = NullPosition;
-
-    fn from_token(token: Self::Item) -> Self {
-        let s = token.to_string();
-        unsafe {
-            let stream: &'a str = mem::transmute_copy(&s.as_str());
-            mem::forget(s);
-            stream
-        }
-    }
-
-    fn from_range(range: Self::Range) -> Self {
-        range
-    }
 
     fn peek(&self) -> Option<Self::Item> {
         self.chars().next()
@@ -127,23 +88,6 @@ impl<'a> RangeStream for &'a str {
     }
 }
 
-impl<'a> ToStream<Self> for &'a str {
-    fn to_stream(self) -> Self {
-        self
-    }
-}
-
-impl<'a> ToStream<&'a str> for char {
-    fn to_stream(self) -> &'a str {
-        let s = self.to_string();
-        unsafe {
-            let stream: &'a str = mem::transmute_copy(&s.as_str());
-            mem::forget(s);
-            stream
-        }
-    }
-}
-
 impl<T> Stream for Vec<T>
 where
     T: Copy + PartialEq + Debug,
@@ -151,14 +95,6 @@ where
     type Item = T;
     type Range = Self;
     type Position = NullPosition;
-
-    fn from_token(token: Self::Item) -> Self {
-        vec![token]
-    }
-
-    fn from_range(range: Self::Range) -> Self {
-        range
-    }
 
     fn peek(&self) -> Option<Self::Item> {
         self.first().map(|&t| t)
@@ -195,24 +131,6 @@ where
     }
 }
 
-impl<T> ToStream<Self> for Vec<T>
-where
-    T: Copy + PartialEq + Debug,
-{
-    fn to_stream(self) -> Self {
-        self
-    }
-}
-
-impl<T> ToStream<Vec<T>> for T
-where
-    T: Copy + PartialEq + Debug,
-{
-    fn to_stream(self) -> Vec<T> {
-        vec![self]
-    }
-}
-
 impl<'a, T> Stream for &'a [T]
 where
     T: Copy + PartialEq + Debug,
@@ -220,14 +138,6 @@ where
     type Item = T;
     type Range = Self;
     type Position = NullPosition;
-
-    fn from_token(token: Self::Item) -> Self {
-        token.to_stream()
-    }
-
-    fn from_range(range: Self::Range) -> Self {
-        range
-    }
 
     fn peek(&self) -> Option<Self::Item> {
         self.first().map(|&t| t)
@@ -265,28 +175,5 @@ where
 {
     fn len(&self) -> usize {
         <[T]>::len(self)
-    }
-}
-
-impl<'a, T> ToStream<Self> for &'a [T]
-where
-    T: Copy + PartialEq + Debug,
-{
-    fn to_stream(self) -> Self {
-        self
-    }
-}
-
-impl<'a, T> ToStream<&'a [T]> for T
-where
-    T: Copy + PartialEq + Debug,
-{
-    fn to_stream(self) -> &'a [T] {
-        let s = vec![self];
-        unsafe {
-            let stream: &'a [T] = mem::transmute_copy(&s.as_slice());
-            mem::forget(s);
-            stream
-        }
     }
 }

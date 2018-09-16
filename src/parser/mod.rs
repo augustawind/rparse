@@ -23,7 +23,7 @@ use self::choice::{and, or, And, Or};
 use self::function::{bind, from_str, map, Bind, FromStr, Map, StrLike};
 use self::seq::{append, extend, then, Append, Extend, Then};
 use error::ParseResult;
-use stream::{Stream, ToStream};
+use stream::Stream;
 
 pub trait Parser {
     type Stream: Stream;
@@ -112,16 +112,6 @@ pub trait Parser {
     {
         extend(self, other)
     }
-
-    /// Convert this Parser's output to some `Stream` type.
-    fn s<S>(self) -> Map<Self, fn(Self::Output) -> S>
-    where
-        Self: Sized,
-        Self::Output: ToStream<S>,
-        S: Stream,
-    {
-        map(self, |output: Self::Output| output.to_stream())
-    }
 }
 
 impl<'a, S: Stream, O> Parser for FnMut(S) -> ParseResult<S, O> + 'a {
@@ -158,7 +148,6 @@ mod test {
     where
         S: Stream<Item = char>,
         S::Position: Position<char>,
-        char: ToStream<S> + ToStream<S::Range>,
     {
         parser(|mut stream: S| match stream.pop() {
             Some(t) => match t {
@@ -186,7 +175,7 @@ mod test {
     where
         S: Stream<Item = O>,
         S::Position: Position<O>,
-        O: Copy + PartialEq + Debug + Into<char> + ToStream<S> + ToStream<S::Range>,
+        O: Copy + PartialEq + Debug + Into<char>,
     {
         match stream.pop().ok_or_else(|| Error::EOF).and_then(|t| {
             if t.into() == '\n' {

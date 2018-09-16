@@ -6,7 +6,7 @@ use std::fmt;
 use std::fmt::Debug;
 use std::iter::FromIterator;
 
-use stream::{Position, Stream, ToStream};
+use stream::{Position, Stream};
 
 #[derive(Debug, Clone)]
 pub enum Info<S: Stream> {
@@ -42,7 +42,6 @@ impl<S: Stream> From<String> for Info<S> {
 impl<S> From<char> for Info<S>
 where
     S: Stream<Item = char>,
-    char: ToStream<S> + ToStream<S::Range>,
     S::Position: Position<char>,
 {
     fn from(c: char) -> Self {
@@ -52,7 +51,6 @@ where
 
 impl<S> From<u8> for Info<S>
 where
-    u8: ToStream<S> + ToStream<S::Range>,
     S: Stream<Item = u8>,
     S::Position: Position<u8>,
 {
@@ -65,7 +63,7 @@ impl<S, T> PartialEq for Info<S>
 where
     S: Stream<Item = T>,
     S::Position: Position<T>,
-    T: Copy + Debug + PartialEq + ToStream<S> + ToStream<S::Range>,
+    T: Copy + Debug + PartialEq,
 {
     fn eq(&self, other: &Info<S>) -> bool {
         match (self, other) {
@@ -92,7 +90,7 @@ impl<S, T> Error<S>
 where
     S: Stream<Item = T>,
     S::Position: Position<T>,
-    T: Copy + PartialEq + Debug + ToStream<S> + ToStream<S::Range>,
+    T: Copy + PartialEq + Debug,
 {
     pub fn expected_token(token: T) -> Self {
         Error::Expected(Info::Token(token))
@@ -118,7 +116,7 @@ impl<S, T> PartialEq for Error<S>
 where
     S: Stream<Item = T>,
     S::Position: Position<T>,
-    T: Copy + Debug + PartialEq + ToStream<S> + ToStream<S::Range>,
+    T: Copy + Debug + PartialEq,
 {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {

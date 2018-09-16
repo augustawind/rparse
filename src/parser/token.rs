@@ -5,14 +5,14 @@ use std::marker::PhantomData;
 
 use error::{Error, ParseResult};
 use parser::{parser, Parser};
-use stream::{Position, Stream, ToStream};
+use stream::{Position, Stream};
 
 // TODO: refactor this to use a struct impl (e.g. `struct Any<S, O>`)
 pub fn any<S, O>() -> impl Parser<Stream = S, Output = O>
 where
     S: Stream<Item = O>,
     S::Position: Position<O>,
-    O: Copy + PartialEq + Debug + ToStream<S> + ToStream<S::Range>,
+    O: Copy + PartialEq + Debug,
 {
     parser(|mut stream: S| match stream.pop() {
         Some(t) => stream.ok(t),
@@ -103,7 +103,7 @@ macro_rules! def_char_parser {
         pub fn $name<S, T>() -> Cond<S, fn(&S::Item) -> bool>
         where
             S: Stream<Item = T>,
-            T: Copy + PartialEq + Debug + Into<char> + From<char> + ToStream<S> + ToStream<S::Range>,
+            T: Copy + PartialEq + Debug + Into<char> + From<char> + ,
             S::Position: Position<T>,
         {
             Cond {

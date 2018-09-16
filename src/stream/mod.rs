@@ -35,19 +35,15 @@ impl<'a, T> Iterator for Tokens<'a, T> {
 }
 
 /// The Stream trait represents data that can be consumed by a `Parser`.
-pub trait Stream: Sized + Debug + Clone {
+pub trait Stream: Sized + Clone + Debug {
     /// The type of a single token.
-    type Item: Copy + PartialEq + Debug + ToStream<Self> + ToStream<Self::Range>;
+    type Item: Copy + PartialEq + Debug;
 
     /// The type of a series of tokens.
     type Range: RangeStream<Item = Self::Item>;
 
     /// The Position type used to track the current parsing position.
     type Position: Position<Self::Item>;
-
-    fn from_token(token: Self::Item) -> Self;
-
-    fn from_range(range: Self::Range) -> Self;
 
     /// Returns the next token in the stream without consuming it.
     /// If there are no more tokens, returns `None`.
@@ -101,63 +97,4 @@ pub trait Stream: Sized + Debug + Clone {
 /// It supports equality comparisons and a `len` method, but does not track its parsing position.
 pub trait RangeStream: Stream<Position = NullPosition, Range = Self> + PartialEq {
     fn len(&self) -> usize;
-}
-
-/// The ToStream trait provides an interface that converts its implementor to a `Stream`.
-pub trait ToStream<S: Stream> {
-    fn to_stream(self) -> S;
-}
-
-/// The FromStream trait is the inverse of `ToStream`. It is implemented automatically for
-/// `Stream` types whose `ToStream` converts to another `Stream` type.
-pub trait FromStream<S: Stream> {
-    fn from_stream(stream: S) -> Self;
-}
-
-impl<S: Stream + ToStream<T>, T: Stream> FromStream<S> for T {
-    fn from_stream(stream: S) -> Self {
-        stream.to_stream()
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test_to_stream_str_for_str() {
-        assert_eq!(<&str as ToStream<&str>>::to_stream("yee"), "yee");
-        assert_eq!(<(&str)>::from_stream("yee"), "yee");
-    }
-
-    #[test]
-    fn test_to_stream_str_for_char() {
-        assert_eq!(<char as ToStream<&str>>::to_stream('x'), "x");
-    }
-
-    #[test]
-    fn test_to_stream_string_for_string() {
-        assert_eq!(
-            <String as ToStream<String>>::to_stream("yee".to_string()),
-            String::from("yee")
-        );
-        assert_eq!(String::from_stream("yee".to_string()), String::from("yee"));
-    }
-
-    #[test]
-    fn test_to_stream_string_for_char() {
-        assert_eq!(
-            <char as ToStream<String>>::to_stream('x'),
-            String::from("x")
-        );
-    }
-
-    #[test]
-    fn test_to_stream_string_for_str() {
-        assert_eq!(
-            <&str as ToStream<String>>::to_stream("yee"),
-            String::from("yee")
-        );
-        assert_eq!(String::from_stream("yee"), String::from("yee"));
-    }
 }
