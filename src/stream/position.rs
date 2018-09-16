@@ -86,7 +86,7 @@ pub struct LinePosition {
 
 impl Default for LinePosition {
     fn default() -> Self {
-        LinePosition { line: 0, column: 0 }
+        LinePosition { line: 1, column: 1 }
     }
 }
 

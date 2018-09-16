@@ -265,7 +265,7 @@ mod test {
 
         let mut parser = many1::<String, _>(ascii::digit()).from_str::<f32>();
         test_parser!(SourceCode | parser, {
-            "12e" => (Ok(12f32), ("e", (0, 2)));
+            "12e" => (Ok(12f32), ("e", (1, 3)));
         }, {
             "e12" => vec![Error::unexpected_token('e')];
         });
