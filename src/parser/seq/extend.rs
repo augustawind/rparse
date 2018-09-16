@@ -62,7 +62,7 @@ mod test {
     use super::*;
     use error::Error;
     use parser::seq::{many, many1};
-    use parser::token::ascii::{self, letter};
+    use parser::token::ascii::letter;
     use parser::token::token;
     use parser::Parser;
     use stream::IndexedStream;
@@ -82,22 +82,17 @@ mod test {
         });
     }
 
-    //     #[test]
-    //     fn test_concat_macro() {
-    //         let mut parser: Extend<String, String, _, _> = concat![
-    //             many(ascii::whitespace()),
-    //             ascii::letter().s(),
-    //             many1(ascii::alpha_num()),
-    //         ];
-    //         test_parser!(IndexedStream<&str> | parser, {
+    // #[test]
+    // fn test_concat_macro() {
+    //     let mut parser: Extend<String, String, _, _> = concat![
+    //         many(ascii::whitespace()),
+    //         ascii::letter().s(),
+    //         many1(ascii::alpha_num()),
+    //     ];
+    //     test_parser!(IndexedStream<&str> | parser, {
     //             "x9" => (Ok("x9".to_string()), "", 2);
     //             "t1t3 man" => (Ok("t1t3".to_string()), " man", 5);
     //             "  xs = [2, 3]" => (Ok("  xs".to_string()), " = [2, 3]", 5);
     //         });
-    //         // test_parser_errors!(IndexedStream<&str> | parser, {
-    //         //     "" => at 0; vec![Error::EOF, Error::expected_token('%')];
-    //         //     "%0" => at 2; vec![Error::EOF];
-    //         //     "%zz" => at 1; vec![Error::unexpected_token('z')];
-    //         // });
-    //     }
+    // }
 }
