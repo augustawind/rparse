@@ -4,8 +4,8 @@ extern crate rparse;
 use std::iter::FromIterator;
 
 // use rparse::parser::choice::optional;
-use rparse::parser::seq::many; //{many, many1};
 use rparse::parser::range::range;
+use rparse::parser::seq::many; //{many, many1};
 use rparse::parser::token::{ascii, token};
 use rparse::{Parser, Stream};
 
