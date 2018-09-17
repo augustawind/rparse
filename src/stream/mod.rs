@@ -4,7 +4,6 @@ mod impls;
 pub mod position;
 pub mod state;
 
-use std::borrow::Borrow;
 use std::fmt::Debug;
 
 pub use self::position::{IndexPosition, LinePosition, NullPosition, Position};
@@ -35,25 +34,23 @@ impl<'a, T> Iterator for Tokens<'a, T> {
     }
 }
 
-pub trait StreamRange: PartialEq + Debug {
+pub trait StreamRange: Stream + PartialEq + Clone + Debug {
     fn len(&self) -> usize;
 }
 
 /// The Stream trait represents data that can be consumed by a `Parser`.
 pub trait Stream: Sized + Clone + Debug {
     /// The underlying Stream type.
-    type Stream: Stream;
+    type Stream: Stream<Item = Self::Item>;
 
     /// The Position type used to track the current parsing position.
-    type Position: Position<Self::Item>;
+    type Position: Position<Self::Stream>;
 
     /// The type of a single token.
     type Item: Copy + PartialEq + Debug;
 
     /// The type of a range of tokens.
-    type Range: ?Sized + StreamRange + ToOwned<Owned = Self::Owned>;
-
-    type Owned: PartialEq + Debug + Clone + Borrow<Self::Range>;
+    type Range: StreamRange<Item = Self::Item>;
 
     /// Returns the next token in the stream without consuming it.
     /// If there are no more tokens, returns `None`.
@@ -66,8 +63,8 @@ pub trait Stream: Sized + Clone + Debug {
     /// Does not consume any input.
     fn tokens(&self) -> Tokens<Self::Item>;
 
-    // /// Consumes and returns a continuous range of the stream.
-    // fn range(&mut self, idx: usize) -> Option<&Self::Range>;
+    /// Consumes and returns a continuous range of the stream.
+    fn range(&mut self, idx: usize) -> Option<Self::Range>;
 
     /// Return the current position in the stream.
     fn position(&self) -> &Self::Position;

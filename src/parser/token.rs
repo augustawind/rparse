@@ -11,7 +11,7 @@ use stream::{Position, Stream};
 pub fn any<S, O>() -> impl Parser<Stream = S, Output = O>
 where
     S: Stream<Item = O>,
-    S::Position: Position<O>,
+    S::Position: Position<S::Stream>,
     O: Copy + PartialEq + Debug,
 {
     parser(|mut stream: S| match stream.pop() {
@@ -104,7 +104,7 @@ macro_rules! def_char_parser {
         where
             S: Stream<Item = T>,
             T: Copy + PartialEq + Debug + Into<char> + From<char> + ,
-            S::Position: Position<T>,
+            S::Position: Position<S::Stream>,
         {
             Cond {
                 f: |&c: &T| c.into().$f().into(),

@@ -1,6 +1,6 @@
 use super::{NullPosition, Stream, StreamRange, Tokens};
 
-impl StreamRange for str {
+impl<'a> StreamRange for &'a str {
     fn len(&self) -> usize {
         <str>::len(self)
     }
@@ -10,8 +10,7 @@ impl<'a> Stream for &'a str {
     type Stream = Self;
     type Position = NullPosition;
     type Item = char;
-    type Range = str;
-    type Owned = String;
+    type Range = Self;
 
     fn peek(&self) -> Option<Self::Item> {
         self.chars().next()
@@ -46,7 +45,7 @@ impl<'a> Stream for &'a str {
     }
 }
 
-impl StreamRange for [u8] {
+impl<'a> StreamRange for &'a [u8] {
     fn len(&self) -> usize {
         <[u8]>::len(self)
     }
@@ -56,8 +55,7 @@ impl<'a> Stream for &'a [u8] {
     type Stream = Self;
     type Position = NullPosition;
     type Item = u8;
-    type Range = [u8];
-    type Owned = Vec<u8>;
+    type Range = Self;
 
     fn peek(&self) -> Option<Self::Item> {
         self.first().map(|&t| t)
@@ -71,7 +69,7 @@ impl<'a> Stream for &'a [u8] {
     }
 
     fn tokens(&self) -> Tokens<Self::Item> {
-        Tokens::new(self.iter().map(|t| *t))
+        Tokens::new(self.iter().cloned())
     }
 
     fn range(&mut self, idx: usize) -> Option<Self::Range> {
@@ -83,11 +81,6 @@ impl<'a> Stream for &'a [u8] {
             Some(head)
         }
     }
-
-    fn position(&self) -> Self::Position {
-        NullPosition(())
-    }
-}
 
     fn position(&self) -> &Self::Position {
         &NullPosition(())

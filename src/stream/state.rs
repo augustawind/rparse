@@ -2,12 +2,12 @@ use super::position::Position;
 use super::{Stream, Tokens};
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct State<S: Stream, X: Position<S::Item>> {
+pub struct State<S: Stream, X: Position<S>> {
     pub stream: S,
     pub position: X,
 }
 
-impl<S: Stream, X: Position<S::Item>> State<S, X> {
+impl<S: Stream, X: Position<S>> State<S, X> {
     pub fn new<T: Into<X>>(stream: S, position: T) -> Self {
         State {
             stream,
@@ -16,7 +16,7 @@ impl<S: Stream, X: Position<S::Item>> State<S, X> {
     }
 }
 
-impl<S: Stream, X: Position<S::Item>> From<S> for State<S, X> {
+impl<S: Stream, X: Position<S>> From<S> for State<S, X> {
     fn from(stream: S) -> Self {
         State {
             stream,
@@ -25,7 +25,7 @@ impl<S: Stream, X: Position<S::Item>> From<S> for State<S, X> {
     }
 }
 
-impl<S: Stream, X: Position<S::Item>, T: Into<X>> From<(S, T)> for State<S, X> {
+impl<S: Stream, X: Position<S>, T: Into<X>> From<(S, T)> for State<S, X> {
     fn from((stream, pos): (S, T)) -> Self {
         State {
             stream,
@@ -37,13 +37,12 @@ impl<S: Stream, X: Position<S::Item>, T: Into<X>> From<(S, T)> for State<S, X> {
 impl<S, X> Stream for State<S, X>
 where
     S: Stream,
-    X: Position<S::Item>,
+    X: Position<S>,
 {
     type Stream = S;
     type Position = X;
     type Item = S::Item;
     type Range = S::Range;
-    type Owned = S::Owned;
 
     fn peek(&self) -> Option<Self::Item> {
         self.stream.peek()

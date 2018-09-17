@@ -182,7 +182,7 @@ mod test {
     fn vowel<S>() -> impl Parser<Stream = S, Output = char>
     where
         S: Stream<Item = char>,
-        S::Position: Position<char>,
+        S::Position: Position<S::Stream>,
     {
         parser(|mut stream: S| match stream.pop() {
             Some(t) => match t {
@@ -208,7 +208,7 @@ mod test {
     fn newline<S, O>(mut stream: S) -> ParseResult<S, O>
     where
         S: Stream<Item = O>,
-        S::Position: Position<O>,
+        S::Position: Position<S::Stream>,
         O: Copy + PartialEq + Debug + Into<char>,
     {
         match stream.pop().ok_or_else(|| Error::EOF).and_then(|t| {

@@ -2,7 +2,7 @@
 
 use error::{Error, ParseResult};
 use parser::Parser;
-use stream::{RangeStream, Stream};
+use stream::{Stream, StreamRange};
 
 pub struct Range<S: Stream> {
     range: S::Range,

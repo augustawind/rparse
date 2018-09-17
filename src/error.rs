@@ -11,7 +11,7 @@ use stream::{Position, Stream};
 #[derive(Debug, Clone)]
 pub enum Info<S: Stream> {
     Token(S::Item),
-    Range(S::Owned),
+    Range(S::Range),
     Msg(&'static str),
     MsgOwned(String),
 }
@@ -42,7 +42,7 @@ impl<S: Stream> From<String> for Info<S> {
 impl<S> From<char> for Info<S>
 where
     S: Stream<Item = char>,
-    S::Position: Position<char>,
+    S::Position: Position<S::Stream>,
 {
     fn from(c: char) -> Self {
         Info::Token(c)
@@ -52,7 +52,7 @@ where
 impl<S> From<u8> for Info<S>
 where
     S: Stream<Item = u8>,
-    S::Position: Position<u8>,
+    S::Position: Position<S::Stream>,
 {
     fn from(b: u8) -> Self {
         Info::Token(b)
@@ -62,7 +62,7 @@ where
 impl<S, T> PartialEq for Info<S>
 where
     S: Stream<Item = T>,
-    S::Position: Position<T>,
+    S::Position: Position<S::Stream>,
     T: Copy + Debug + PartialEq,
 {
     fn eq(&self, other: &Info<S>) -> bool {
@@ -89,7 +89,7 @@ pub enum Error<S: Stream> {
 impl<S, T> Error<S>
 where
     S: Stream<Item = T>,
-    S::Position: Position<T>,
+    S::Position: Position<S::Stream>,
     T: Copy + PartialEq + Debug,
 {
     pub fn expected_token(token: T) -> Self {
@@ -100,15 +100,15 @@ where
         Error::Unexpected(Info::Token(token))
     }
 
-    pub fn expected_range(range: &S::Range) -> Self {
-        Error::Expected(Info::Range(range.to_owned()))
+    pub fn expected_range(range: S::Range) -> Self {
+        Error::Expected(Info::Range(range))
     }
 }
 
 impl<S, T> PartialEq for Error<S>
 where
     S: Stream<Item = T>,
-    S::Position: Position<T>,
+    S::Position: Position<S::Stream>,
     T: Copy + Debug + PartialEq,
 {
     fn eq(&self, other: &Self) -> bool {

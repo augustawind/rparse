@@ -1,15 +1,17 @@
 //! Traits and implementations representing positions in an `Stream` stream.
 
+use super::{Stream, StreamRange};
 use std::fmt;
 use std::fmt::{Debug, Display};
 
 /// The Position trait defines types that keep track of the cursor position while parsing an
 /// `Stream` stream.
-pub trait Position<T>: Default + Debug + Display + Clone + Ord {
+pub trait Position<S: Stream>: Default + Debug + Display + Clone + Ord {
     type Value: Ord;
 
     fn value(&self) -> Self::Value;
-    fn update(&mut self, item: &T);
+    fn update(&mut self, item: &S::Item);
+    fn update_range(&mut self, range: S::Range);
 
     fn fmt_msg(&self, msg: &str) -> String {
         format!("{} at {}", msg, self)
@@ -27,14 +29,15 @@ impl Display for NullPosition {
     }
 }
 
-impl<T> Position<T> for NullPosition {
+impl<S: Stream> Position<S> for NullPosition {
     type Value = ();
 
     fn value(&self) -> Self::Value {
-        ()
+        self.0
     }
 
-    fn update(&mut self, _: &T) {}
+    fn update(&mut self, _: &S::Item) {}
+    fn update_range(&mut self, _: S::Range) {}
 
     fn fmt_msg(&self, msg: &str) -> String {
         msg.to_string()
@@ -58,15 +61,19 @@ impl Display for IndexPosition {
     }
 }
 
-impl<T> Position<T> for IndexPosition {
+impl<S: Stream> Position<S> for IndexPosition {
     type Value = usize;
 
     fn value(&self) -> Self::Value {
         self.0
     }
 
-    fn update(&mut self, _: &T) {
+    fn update(&mut self, _: &S::Item) {
         self.0 += 1;
+    }
+
+    fn update_range(&mut self, range: S::Range) {
+        self.0 += range.len();
     }
 }
 
@@ -102,7 +109,7 @@ impl Display for LinePosition {
     }
 }
 
-impl Position<char> for LinePosition {
+impl<'a> Position<&'a str> for LinePosition {
     type Value = (u32, u32);
 
     fn value(&self) -> Self::Value {
@@ -115,6 +122,12 @@ impl Position<char> for LinePosition {
             self.column = 1;
         } else {
             self.column += 1;
+        }
+    }
+
+    fn update_range(&mut self, range: &str) {
+        for item in range.chars() {
+            self.update(&item);
         }
     }
 }
