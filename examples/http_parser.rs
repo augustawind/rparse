@@ -18,7 +18,7 @@ where
     ])
 }
 
-fn http_method<'a, S>() -> impl Parser<Stream = S>
+fn http_method<'a, S>() -> impl Parser<Stream = S, Output = S::Range>
 where
     S: Stream,
     S::Range: From<&'a str>,
@@ -95,6 +95,12 @@ mod test {
     use super::*;
     use rparse::stream::IndexedStream;
     use rparse::Error;
+
+    // TODO: [u8]
+    #[test]
+    fn test_http_method() {
+        test_parser!(for<IndexedStream<&str>, String> | http_method().collect(), {})
+    }
 
     #[test]
     fn test_percent_encoded() {
