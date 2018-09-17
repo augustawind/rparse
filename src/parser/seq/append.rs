@@ -97,8 +97,7 @@ mod test {
         test_parser!(IndexedStream<&str> | parser, {
             "%AF" => (Ok(String::from("%AF")), ("", 3));
             "%d8_/^/_" => (Ok(String::from("%d8")), ("_/^/_", 3));
-        });
-        test_parser_errors!(IndexedStream<&str> | parser, {
+        }, {
             "" => (0, vec![Error::EOF, Error::expected_range("%")]);
             "%0" => (2, vec![Error::EOF]);
             "%zz" => (1, vec![Error::unexpected_token('z')]);
