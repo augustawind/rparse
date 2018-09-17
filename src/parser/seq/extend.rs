@@ -76,15 +76,15 @@ mod test {
             ascii::letter().then(ascii::alpha_num()),
             many(ascii::alpha_num()),
         ].collect();
+
         test_parser!(IndexedStream<&str> | parser, {
-            "x9" => (Ok("x9".to_string()), ("", 2));
-            "t1t3 man" => (Ok("t1t3".to_string()), (" man", 4));
-            "  xs = [2, 3]" => (Ok("  xs".to_string()), (" = [2, 3]", 4));
-        }, {
-            "" => (0, vec![Error::EOF]);
-            "a" => (1, vec![Error::EOF]);
-            "?" => (0, vec![Error::unexpected_token('?')]);
-            "a?" => (1, vec![Error::unexpected_token('?')]);
+            "x9" => ok(Ok("x9".to_string()), ("", 2));
+            "t1t3 man" => ok(Ok("t1t3".to_string()), (" man", 4));
+            "  xs = [2, 3]" => ok(Ok("  xs".to_string()), (" = [2, 3]", 4));
+            "" => err(0, vec![Error::EOF]);
+            "a" => err(1, vec![Error::EOF]);
+            "?" => err(0, vec![Error::unexpected_token('?')]);
+            "a?" => err(1, vec![Error::unexpected_token('?')]);
         });
     }
 }

@@ -53,8 +53,7 @@ mod test {
         test_parser!(IndexedStream<&str> | parser, {
             "def" => (Ok("def"), ("", 3));
             "defcon" => (Ok("def"), ("con", 3));
-        });
-        test_parser_errors!(IndexedStream<&str> | parser, {
+        }, {
             "" => (0, vec![Error::EOF, Error::expected_range("def")]);
             "de" => (0, vec![Error::EOF, Error::expected_range("def")]);
             "dr" => (0, vec![Error::EOF, Error::expected_range("def")]);
