@@ -53,30 +53,27 @@ where
     // a url path is a forward slash
     token('/'.into()).wrap().extend(concat![
         // (optional) one or more path segments, which consist of any arrangement of
-        many1(choice![
-            // forward slashes
-            many1(token('/'.into())),
-            // url-safe characters
-            many1(url_token()),
-            // and percent encoded octets
-            percent_encoded(),
-        ]).flatten(),
+        many1(
+            // forward slashes and url segments
+            many(token('/'.into())).or(url_segment_chars()),
+        ).flatten(),
         // (optional) and an extension, which is
         concat![
             // a period
             token('.'.into()).wrap(),
-            // and some url-safe text
-            many1(choice![many1(url_token()), percent_encoded()]).flatten(),
+            // and one or more segment characters
+            many1(url_segment_chars()).flatten(),
         ],
     ])
 }
 
-fn url_path_segment<'a, S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
+fn url_segment_chars<'a, S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
 where
     S: Stream,
     S::Item: From<char> + Into<char>,
 {
-    choice![many(url_token()), percent_encoded()]
+    // one or more url-safe characters, or a percent-encoded octets
+    many1(url_token()).or(percent_encoded())
 }
 
 fn url_token<'a, S>() -> impl Parser<Stream = S, Output = S::Item>
