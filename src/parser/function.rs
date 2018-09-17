@@ -1,6 +1,7 @@
 //! Parsers that transform the output of other Parsers with arbitrary functions.
 
 use std::fmt::Display;
+use std::iter::FromIterator;
 use std::marker::PhantomData;
 use std::str;
 
@@ -64,6 +65,27 @@ where
     F: Fn(P::Output) -> O,
 {
     Map { parser: p, f }
+}
+
+pub type Iter<P, I> = Map<P, fn(<P as Parser>::Output) -> <I as IntoIterator>::IntoIter>;
+
+pub fn iter<P, I>(p: P) -> Iter<P, I>
+where
+    P: Parser<Output = I>,
+    I: IntoIterator,
+{
+    p.map(|output| output.into_iter())
+}
+
+pub type Collect<P, O> = Map<P, fn(<P as Parser>::Output) -> O>;
+
+pub fn collect<P, O>(p: P) -> Collect<P, O>
+where
+    P: Parser,
+    P::Output: IntoIterator,
+    O: FromIterator<<P::Output as IntoIterator>::Item>,
+{
+    p.map(|output| output.into_iter().collect())
 }
 
 pub struct Bind<P, F> {

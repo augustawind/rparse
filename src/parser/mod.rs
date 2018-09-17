@@ -15,10 +15,13 @@ pub mod range;
 pub mod token;
 
 use std::fmt::Display;
+use std::iter::FromIterator;
 use std::str;
 
 use self::choice::{and, or, And, Or};
-use self::function::{bind, from_str, map, Bind, FromStr, Map, StrLike};
+use self::function::{
+    bind, collect, from_str, iter, map, Bind, Collect, FromStr, Iter, Map, StrLike,
+};
 use self::seq::{append, extend, then, Append, Extend, Then};
 use error::ParseResult;
 use stream::Stream;
@@ -47,6 +50,23 @@ pub trait Parser {
         F: Fn(Self::Output) -> O,
     {
         map(self, f)
+    }
+
+    fn iter<I>(self) -> Iter<Self, I>
+    where
+        Self: Sized + Parser<Output = I>,
+        I: IntoIterator,
+    {
+        iter(self)
+    }
+
+    fn collect<O>(self) -> Collect<Self, O>
+    where
+        Self: Sized,
+        Self::Output: IntoIterator,
+        O: FromIterator<<Self::Output as IntoIterator>::Item>,
+    {
+        collect(self)
     }
 
     fn bind<F, O>(self, f: F) -> Bind<Self, F>
