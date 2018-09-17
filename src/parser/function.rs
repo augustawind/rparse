@@ -236,7 +236,7 @@ mod test {
         // TODO: add ability to control consumption, e.g. make this error show at beginning (0)
         // TODO: e.g.: many1(alpha_num()).bind(...).try()
         test_parser_errors!(IndexedStream<&str> | parser, {
-            "324dogs" => at 7; vec!["invalid digit found in string".into()];
+            "324dogs" => (7, vec!["invalid digit found in string".into()]);
         });
     }
 
