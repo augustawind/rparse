@@ -2,7 +2,6 @@
 //!
 //! Defines the `Parser` trait.
 
-#[cfg(test)]
 #[macro_use]
 mod test_utils;
 
@@ -192,8 +191,7 @@ mod test {
         test_parser!(IndexedStream<&str> | vowel(), {
             "a" => (Ok('a'), ("", 1));
             "ooh" => (Ok('o'), ("oh", 1));
-        });
-        test_parser_errors!(IndexedStream<&str> | vowel(), {
+        }, {
             "" => (0, vec![Error::EOF]);
             "d" => (1, vec![Error::unexpected_token('d')]);
             "du" => (1, vec![Error::unexpected_token('d')]);

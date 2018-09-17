@@ -4,25 +4,28 @@ macro_rules! test_parser {
         $($into_input:expr => $assertion:ident $expected:expr);+;
     }) => {
         $(
-            let input: $stream_type = $into_input.into();
-            let result: $crate::ParseResult<$stream_type, _> = $p.parse(input.clone());
-            test_parser!(@dispatch $assertion, $stream_type, input => result => $expected);
+            test_parser!(@dispatch $assertion, $p, $stream_type, $into_input => $expected);
         )+
     };
 
-    (@dispatch ok, $stream_type:ty, $input:expr => $result:expr => $expected:expr) => {
-        let (result, stream) = $result;
+    (@dispatch ok, $p:expr, $stream_type:ty, $into_input:expr => $expected:expr) => {
+        let input: $stream_type = $into_input.into();
+        let (result, stream): $crate::ParseResult<$stream_type, _> = $p.parse(input.clone());
         let (expected_result, into_expected_stream) = $expected;
         let expected_stream: $stream_type = into_expected_stream.into();
         assert_eq!(result, expected_result);
         assert_eq!(stream, expected_stream);
     };
 
-    (@dispatch err, $stream_type:ty, $input:expr => $result:expr => $expected:expr) => {
-        let (result, stream) = $result;
+    (@dispatch err, $p:expr, $stream_type:ty, $into_input:expr => $expected:expr) => {
+        let input: $stream_type = $into_input.into();
+        let (result, stream): $crate::ParseResult<$stream_type, _> = $p.parse(input.clone());
         let result = result.expect_err("assertion failed: expected an Err(_)");
-        let expected_result: $crate::error::Errors<$stream_type, <$stream_type as $crate::stream::Stream>::Position> = $expected.into();
-        let expected_stream = $input;
+        let expected_result: $crate::error::Errors<
+            $stream_type,
+            <$stream_type as $crate::stream::Stream>::Position,
+        > = $expected.into();
+        let expected_stream = input;
         assert_eq!(result, expected_result);
         assert_eq!(stream, expected_stream);
     };
@@ -77,35 +80,4 @@ macro_rules! test_parser {
         assert_eq!(result, expected_result);
         assert_eq!(stream, expected_stream);
     };
-}
-
-macro_rules! assertions {
-    (with $pattern:pat = $value:expr;  {  }) => {};
-
-    (with $pattern:pat = $value:expr;  { $head:tt, $($tail:tt)* }) => {
-        #[allow(unused_variables)]
-        let $pattern = $value;
-        assertions!(@expand $head);
-        assertions!(with $pattern = $value; { $($tail)* });
-    };
-
-    (@expand $head:tt) => {
-        assert!($head);
-    };
-
-    (@expand ($left:tt == $right:expr)) => {
-        assert_eq!($left, $right);
-    }
-}
-
-#[cfg(test)]
-mod test {
-    #[test]
-    fn test_assertions_macro() {
-        assertions!(with (x, _) = (5, 6); {
-            (x == 5),
-            (x > 4),
-            (x < 6),
-        });
-    }
 }
