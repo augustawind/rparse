@@ -3,7 +3,7 @@ extern crate rparse;
 
 // use rparse::parser::choice::optional;
 use rparse::parser::range::range;
-use rparse::parser::seq::many; //{many, many1};
+use rparse::parser::seq::{many, many1};
 use rparse::parser::token::{ascii, token};
 use rparse::{Parser, Stream};
 
@@ -45,38 +45,31 @@ where
 //      *~> should this be first-class Parser functionality?
 //  - macro seq!                ~>  chain multiple parsers
 //
-// fn url_path<'a, S, O>() -> impl Parser<Stream = S, Output = O>
-// where
-//     S: Stream,
-//     S::Item: From<char> + Into<char>,
-//     S::Range: From<&'a str> + FromIterator<S::Item>,
-//     O: FromIterator<S::Range>,
-// {
-//     // a url path is
-//     seq![
-//         // a forward slash
-//         token('/').s(),
-//         // optionally** followed by
-//         seq![
-//             // one or more path segments, which consist of any arrangement of
-//             many1(choice![
-//                 // forward slashes
-//                 token('/').s(),
-//                 // url-safe characters
-//                 url_token().s(),
-//                 // and percent encoded octets
-//                 percent_encoded(),
-//             ]).concat(),
-//             // optionally** followed by an extension, which is
-//             seq![
-//                 // a period
-//                 token('.').s(),
-//                 // and some url-safe text
-//                 many1(choice![url_token().s(), percent_encoded()]).concat(),
-//             ],
-//         ],
-//     ]
-// }
+fn url_path<'a, S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
+where
+    S: Stream,
+    S::Item: From<char> + Into<char>,
+{
+    // a url path is a forward slash
+    token('/'.into()).wrap().extend(concat![
+        // (optional) one or more path segments, which consist of any arrangement of
+        many1(choice![
+            // forward slashes
+            many1(token('/'.into())),
+            // url-safe characters
+            many1(url_token()),
+            // and percent encoded octets
+            percent_encoded(),
+        ]).flatten(),
+        // (optional) and an extension, which is
+        concat![
+            // a period
+            token('.'.into()).wrap(),
+            // and some url-safe text
+            many1(choice![many1(url_token()), percent_encoded()]).flatten(),
+        ],
+    ])
+}
 
 fn url_path_segment<'a, S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
 where
