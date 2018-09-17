@@ -62,7 +62,7 @@ mod test {
             "" => (0, vec![Error::EOF, Error::expected_range("def")]);
             "de" => (0, vec![Error::EOF, Error::expected_range("def")]);
             "dr" => (0, vec![Error::EOF, Error::expected_range("def")]);
-            "deg" => (3, vec![Error::expected_range("def")]);
+            "deg" => (0, vec![Error::expected_range("def")]);
         });
     }
 }
