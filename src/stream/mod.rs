@@ -59,7 +59,7 @@ pub trait StreamRange: Stream + PartialEq + Clone + Debug {
 /// The Stream trait represents data that can be consumed by a `Parser`.
 pub trait Stream: Sized + Clone + Debug {
     /// The underlying Stream type.
-    type Stream: Stream<Item = Self::Item>;
+    type Stream: Stream<Item = Self::Item, Range = Self::Range>;
 
     /// The Position type used to track the current parsing position.
     type Position: Position<Self::Stream>;
@@ -68,7 +68,7 @@ pub trait Stream: Sized + Clone + Debug {
     type Item: StreamItem;
 
     /// The type of a range of tokens.
-    type Range: StreamRange<Item = Self::Item>;
+    type Range: StreamRange<Item = Self::Item, Range = Self::Range>;
 
     /// Returns the next token in the stream without consuming it.
     /// If there are no more tokens, returns `None`.
