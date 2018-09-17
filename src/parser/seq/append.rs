@@ -15,9 +15,9 @@ where
     type Stream = S;
     type Output = Vec<O>;
 
-    fn parse_stream(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        match self.left.parse_stream(stream) {
-            (Ok(mut left), stream) => match self.right.parse_stream(stream) {
+    fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        match self.left.parse_partial(stream) {
+            (Ok(mut left), stream) => match self.right.parse_partial(stream) {
                 (Ok(right), stream) => {
                     left.push(right);
                     stream.ok(left)

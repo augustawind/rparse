@@ -18,8 +18,8 @@ impl<P: Parser> Parser for Expect<P> where {
     type Stream = P::Stream;
     type Output = P::Output;
 
-    fn parse_stream(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        self.parser.parse_stream(stream)
+    fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        self.parser.parse_partial(stream)
     }
 
     fn add_expected_error(&self, errors: &mut Errors<Self::Stream>) {
@@ -51,7 +51,7 @@ where
     type Stream = P::Stream;
     type Output = O;
 
-    fn parse_stream(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+    fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         match self.parser.parse(stream) {
             (Ok(result), remaining) => (Ok((self.f)(result)), remaining),
             (Err(err), remaining) => (Err(err), remaining),
@@ -123,8 +123,8 @@ where
     type Stream = P::Stream;
     type Output = O;
 
-    fn parse_stream(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        match self.parser.parse(stream) {
+    fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        match self.parser.parse_partial(stream) {
             (Ok(result), remaining) => (self.f)(result, remaining),
             (Err(err), remaining) => (Err(err), remaining),
         }
@@ -154,8 +154,8 @@ where
     type Stream = P::Stream;
     type Output = O;
 
-    fn parse_stream(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        match self.parser.parse_stream(stream) {
+    fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        match self.parser.parse_partial(stream) {
             (Ok(s), stream) => (
                 s.from_utf8()
                     .map_err(|_| "invalid UTF-8".into())

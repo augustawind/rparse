@@ -13,7 +13,7 @@ impl<S: Stream> Parser for Any<S> {
     type Stream = S;
     type Output = S::Item;
 
-    fn parse_stream(
+    fn parse_partial(
         &mut self,
         mut stream: Self::Stream,
     ) -> ParseResult<Self::Stream, Self::Output> {
@@ -43,7 +43,7 @@ where
     type Stream = S;
     type Output = S::Item;
 
-    fn parse_stream(
+    fn parse_partial(
         &mut self,
         mut stream: Self::Stream,
     ) -> ParseResult<Self::Stream, Self::Output> {
@@ -85,7 +85,7 @@ where
     type Stream = S;
     type Output = S::Item;
 
-    fn parse_stream(
+    fn parse_partial(
         &mut self,
         mut stream: Self::Stream,
     ) -> ParseResult<Self::Stream, Self::Output> {
