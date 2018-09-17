@@ -2,20 +2,34 @@
 
 use std::marker::PhantomData;
 
-use error::{Error, ParseResult};
-use parser::{parser, Parser};
-use stream::{Position, Stream, StreamItem, StreamRange};
+use error::{Error, Errors, ParseResult};
+use parser::function::Expect;
+use parser::Parser;
+use stream::{Position, Stream, StreamItem};
 
-// TODO: refactor this to use a struct impl (e.g. `struct Any<S, O>`)
-pub fn any<S>() -> impl Parser<Stream = S, Output = S::Item>
-where
-    S: Stream,
-    S::Position: Position<S::Stream>,
-{
-    parser(|mut stream: S| match stream.pop() {
-        Some(t) => stream.ok(t),
-        _ => stream.err(Error::EOF),
-    })
+pub struct Any<S: Stream>(PhantomData<S>);
+
+impl<S: Stream> Parser for Any<S> {
+    type Stream = S;
+    type Output = S::Item;
+
+    fn parse_stream(
+        &mut self,
+        mut stream: Self::Stream,
+    ) -> ParseResult<Self::Stream, Self::Output> {
+        match stream.pop() {
+            Some(t) => stream.ok(t),
+            None => stream.err(Error::EOF),
+        }
+    }
+
+    fn add_expected_error(&self, errors: &mut Errors<Self::Stream>) {
+        errors.add_error(Error::Expected("a token".into()));
+    }
+}
+
+pub fn any<S: Stream>() -> Any<S> {
+    Any(PhantomData)
 }
 
 pub struct Token<S: Stream> {
@@ -38,22 +52,21 @@ where
                 stream.pop();
                 stream.ok(t)
             }
-            result => {
-                let mut errors = stream.empty_err();
-                errors.add_error(match result {
-                    Some(t) => Error::unexpected_token(t),
-                    None => Error::EOF,
-                });
-                errors.add_error(Error::expected_token(self.token));
-                stream.errs(errors)
-            }
+            result => stream.err(match result {
+                Some(t) => Error::unexpected_token(t),
+                None => Error::EOF,
+            }),
         }
+    }
+
+    fn add_expected_error(&self, errors: &mut Errors<Self::Stream>) {
+        errors.add_error(Error::expected_token(self.token));
     }
 }
 
 pub fn token<S: Stream>(token: u8) -> Token<S> {
     Token {
-        token: S::Range::item_from_byte(token),
+        token: S::Item::from(token),
     }
 }
 
@@ -130,17 +143,18 @@ pub mod ascii {
     use super::*;
 
     macro_rules! def_ascii_parser {
-        ($(#[$attr:meta])* $name:ident, $f:ident) => {
+        ($(#[$attr:meta])* $name:ident, $f:ident, $expected:expr) => {
             $(#[$attr])*
-            pub fn $name<S>() -> Satisfy<S, fn(&S::Item) -> bool>
+            pub fn $name<S>() -> Expect<Satisfy<S, fn(&S::Item) -> bool>>
             where
                 S: Stream,
                 S::Position: Position<S::Stream>,
             {
+                let f: fn(&S::Item) -> bool = <S::Item as StreamItem>::$f;
                 Satisfy {
-                    f: <S::Item as StreamItem>::$f,
+                    f,
                     _marker: PhantomData,
-                }
+                }.expect($expected)
             }
         };
     }
@@ -148,59 +162,70 @@ pub mod ascii {
     def_ascii_parser!(
         /// Parses any ASCII character.
         ascii,
-        is_ascii
+        is_ascii,
+        "an ascii character"
     );
     def_ascii_parser!(
         /// Parses an ASCII letter.
         letter,
-        is_ascii_alphabetic
+        is_ascii_alphabetic,
+        "an ascii letter"
     );
     def_ascii_parser!(
         /// Parses an ASCII letter or digit.
         alpha_num,
-        is_ascii_alphanumeric
+        is_ascii_alphanumeric,
+        "an ascii letter or digit"
     );
     def_ascii_parser!(
         /// Parses a digit according to [`std::char::is_ascii_digit`].
         ///
         /// [`std::char::is_ascii_digit`]: https://doc.rust-lang.org/std/primitive.char.html#method.is_ascii_digit
         digit,
-        is_ascii_digit
+        is_ascii_digit,
+        "an ascii digit"
     );
     def_ascii_parser!(
         /// Parses a hexadecimal digit.
         hexdigit,
-        is_ascii_hexdigit
+        is_ascii_hexdigit,
+        "a hexadecimal digit"
     );
     def_ascii_parser!(
         /// Parses an ASCII punctuation character.
         punctuation,
-        is_ascii_punctuation
+        is_ascii_punctuation,
+        "an ascii punctuation character"
     );
     def_ascii_parser!(
         /// Parses an ASCII graphic character.
         graphic,
-        is_ascii_graphic
+        is_ascii_graphic,
+        "an ascii graphic character"
     );
     def_ascii_parser!(
         /// Parses an ASCII whitespace character.
         whitespace,
-        is_ascii_whitespace
+        is_ascii_whitespace,
+        "an ascii whitespace character"
     );
     def_ascii_parser!(
         /// Parses an ASCII control character.
         control,
-        is_ascii_control
+        is_ascii_control,
+        "an ascii control character"
     );
     def_ascii_parser!(
         /// Parses a lowercase ASCII letter.
         lowercase,
-        is_ascii_lowercase
+        is_ascii_lowercase,
+        "a lowercase ascii letter"
     );
     def_ascii_parser!(
         /// Parses an uppercase ASCII letter.
         uppercase,
-        is_ascii_uppercase
+        is_ascii_uppercase,
+        "an uppercase ascii letter"
     );
 
     #[cfg(test)]
@@ -235,17 +260,18 @@ pub mod unicode {
     use super::*;
 
     macro_rules! def_unicode_parser {
-        ($(#[$attr:meta])* $name:ident, $f:ident) => {
+        ($(#[$attr:meta])* $name:ident, $f:ident, $expected:expr) => {
             $(#[$attr])*
-            pub fn $name<S>() -> Satisfy<S, fn(&S::Item) -> bool>
+            pub fn $name<S>() -> Expect<Satisfy<S, fn(&S::Item) -> bool>>
             where
                 S: Stream<Item = char>,
                 S::Position: Position<S::Stream>,
             {
+                let f: fn(&S::Item) -> bool = |&c| <char>::$f(c);
                 Satisfy {
-                    f: |&c| <char>::$f(c),
+                    f,
                     _marker: PhantomData,
-                }
+                }.expect($expected)
             }
         };
     }
@@ -253,55 +279,45 @@ pub mod unicode {
     def_unicode_parser!(
         /// Parses a Unicode alphabetic character.
         letter,
-        is_alphabetic
+        is_alphabetic,
+        "an alphabetic character"
     );
     def_unicode_parser!(
         /// Parses a Unicode alphabetic or numeric character.
         alpha_num,
-        is_alphanumeric
+        is_alphanumeric,
+        "an alphabetic or numeric character"
     );
     def_unicode_parser!(
         /// Parses a Unicode numeric character.
         numeric,
-        is_numeric
+        is_numeric,
+        "a numeric character"
     );
     def_unicode_parser!(
         /// Parses a Unicode control character.
         control,
-        is_control
+        is_control,
+        "a control character"
     );
     def_unicode_parser!(
         /// Parses a Unicode whitespace character.
         whitespace,
-        is_whitespace
+        is_whitespace,
+        "a whitespace character"
     );
     def_unicode_parser!(
         /// Parses a lowercase Unicode alphabetic character.
         lowercase,
-        is_lowercase
+        is_lowercase,
+        "a lowercase alphabetic character"
     );
     def_unicode_parser!(
         /// Parses an uppercase Unicode alphabetic character.
         uppercase,
-        is_uppercase
+        is_uppercase,
+        "an uppercase alphabetic character"
     );
-
-    #[cfg(test)]
-    mod test {
-        use super::*;
-        use error::{Error::*, Info::*};
-        use stream::IndexedStream;
-
-        #[test]
-        fn test_letter() {
-            test_parser!(IndexedStream<&str> | letter(), {
-                "京34a" => (Ok('京'), ("34a", 1));
-                "a京34" => (Ok('a'), ("京34", 1));
-            }, {
-                "3京4a" => (0, vec![Unexpected(Token('3'))]);
-            });
-        }
-    }
 }
 
 #[cfg(test)]
@@ -311,27 +327,25 @@ mod test {
 
     #[test]
     fn test_any() {
-        test_parser!(IndexedStream<&str> | any(), {
-            "hello, world." => (Ok('h'), ("ello, world.", 1));
+        test_parser!(IndexedStream<&str> => char | any(), {
+            "hello, world." => ok(Ok('h'), ("ello, world.", 1)),
         });
     }
 
     #[test]
     fn test_token() {
-        test_parser!(&str | token(b'c'), {
-            "cat" => (Ok('c'), "at");
-        }, {
-            "ace" => vec![Error::unexpected_token('a'), Error::expected_token('c')];
+        test_parser!(&str => char | token(b'c'), {
+            "cat" => ok(Ok('c'), "at"),
+            "ace" => err(vec![Error::unexpected_token('a'), Error::expected_token('c')]),
         });
     }
 
     #[test]
     fn test_satisfy() {
         let mut parser = satisfy(|&c: &char| c.is_numeric());
-        test_parser!(&str | parser, {
-            "123abc" => (Ok('1'), "23abc");
-        }, {
-            "abc123" => vec![Error::unexpected_token('a')];
+        test_parser!(&str => char | parser, {
+            "123abc" => ok(Ok('1'), "23abc"),
+            "abc123" => err(vec![Error::unexpected_token('a')]),
         });
     }
 }

@@ -5,6 +5,7 @@ use std::iter::FromIterator;
 use std::marker::PhantomData;
 use std::str;
 
+use error::{Errors, Info};
 use traits::StrLike;
 use {Error, ParseResult, Parser, Stream};
 
@@ -18,24 +19,22 @@ impl<P: Parser> Parser for Expect<P> where {
     type Output = P::Output;
 
     fn parse_stream(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        match self.parser.parse_stream(stream) {
-            (Err(mut errors), stream) => {
-                errors.add_error(self.error.clone());
-                stream.errs(errors)
-            }
-            ok => ok,
-        }
+        self.parser.parse_stream(stream)
+    }
+
+    fn add_expected_error(&self, errors: &mut Errors<Self::Stream>) {
+        errors.add_error(self.error.clone());
     }
 }
 
 pub fn expect<P, I>(parser: P, expected: I) -> Expect<P>
 where
     P: Parser,
-    I: Into<Error<P::Stream>>,
+    I: Into<Info<P::Stream>>,
 {
     Expect {
         parser,
-        error: expected.into(),
+        error: Error::Expected(expected.into()),
     }
 }
 

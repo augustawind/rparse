@@ -19,11 +19,11 @@ use std::str;
 
 use self::choice::{and, optional, or, And, Optional, Or};
 use self::function::{
-    bind, collect, flatten, from_str, iter, map, wrap, Bind, Collect, Flatten, FromStr, Iter, Map,
-    Wrap,
+    bind, collect, expect, flatten, from_str, iter, map, wrap, Bind, Collect, Expect, Flatten,
+    FromStr, Iter, Map, Wrap,
 };
 use self::seq::{append, extend, then, Append, Extend, Then};
-use error::ParseResult;
+use error::{Errors, Info, ParseResult};
 use stream::Stream;
 use traits::StrLike;
 
@@ -39,10 +39,21 @@ pub trait Parser {
     {
         let backup = stream.backup();
         let mut result = self.parse_stream(stream);
-        if let (Err(_), ref mut stream) = result {
+        if let (Err(ref mut errors), ref mut stream) = result {
             stream.restore(backup);
+            self.add_expected_error(errors);
         }
         result
+    }
+
+    fn add_expected_error(&self, _: &mut Errors<Self::Stream>) {}
+
+    fn expect<I>(self, i: I) -> Expect<Self>
+    where
+        Self: Sized,
+        I: Into<Info<Self::Stream>>,
+    {
+        expect(self, i)
     }
 
     fn optional(self) -> Optional<Self>
