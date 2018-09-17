@@ -99,27 +99,27 @@ where
 
 #[cfg(test)]
 macro_rules! def_token_parser_tests {
-    ($name:ident, $p:expr, [ $($t_ok:expr),+ ] , [ $($t_err:expr),+ ] ) => {
+    ($name:ident => $p:expr; valid( $($t_ok:expr),+ ) error( $($t_err:expr),+ ) ) => {
         #[test]
         fn $name() {
-            $(
-                test_parser!(IndexedStream<&str> => char | $p(), {
+            test_parser!(IndexedStream<&str> => char | $p(), {
+                $(
                     concat!($t_ok) => ok(Ok($t_ok), ("", 1)),
-                });
-                test_parser!(IndexedStream<&[u8]> => u8 | $p(), {
-                    concat!($t_ok).as_bytes() => ok(Ok($t_ok as u8), ("".as_bytes(), 1)),
-                });
-            )+
-            $(
-                test_parser!(IndexedStream<&str> => char | $p(), {
-                    "" => err(0, vec![Error::EOF]),
+                )+
+                "" => err(0, vec![Error::EOF]),
+                $(
                     concat!($t_err) => err(0, vec![Error::unexpected_token($t_err)]),
-                });
-                test_parser!(IndexedStream<&[u8]> => u8 | $p(), {
-                    "".as_bytes() => err(0, vec![Error::EOF]),
+                )+
+            });
+            test_parser!(IndexedStream<&[u8]> => u8 | $p(), {
+                $(
+                    concat!($t_ok).as_bytes() => ok(Ok($t_ok as u8), ("".as_bytes(), 1)),
+                )+
+                "".as_bytes() => err(0, vec![Error::EOF]),
+                $(
                     concat!($t_err).as_bytes() => err(0, vec![Error::unexpected_token($t_err as u8)]),
-                });
-            )+
+                )+
+            });
         }
     };
 }
@@ -210,9 +210,18 @@ pub mod ascii {
         use stream::IndexedStream;
 
         // def_token_parser_tests!(test_ascii, ascii, '5', 'û');
-        def_token_parser_tests!(test_letter, letter, ['z', 'Z'], ['_', '\n', '9']);
-        def_token_parser_tests!(test_alpha_num, alpha_num, ['3', 'h', 'H'], ['!', '\n']);
-        def_token_parser_tests!(test_digit, digit, ['1', '0', '9'], ['a', 'f', '?']);
+        def_token_parser_tests!(test_letter => letter;
+            valid('z', 'Z')
+            error('_', '\n', '9')
+        );
+        def_token_parser_tests!(test_alpha_num => alpha_num;
+            valid('3', 'h', 'H')
+            error('!', '\n')
+        );
+        def_token_parser_tests!(test_digit => digit;
+            valid('1', '0', '9')
+            error('a', 'f', '?')
+        );
     }
 }
 
