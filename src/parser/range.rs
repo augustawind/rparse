@@ -51,14 +51,14 @@ mod test {
     fn test_range() {
         let mut parser = range("def");
         test_parser!(IndexedStream<&str> | parser, {
-            "def" => (Ok("def"), "", 3);
-            "defcon" => (Ok("def"), "con", 3);
+            "def" => (Ok("def"), ("", 3));
+            "defcon" => (Ok("def"), ("con", 3));
         });
         test_parser_errors!(IndexedStream<&str> | parser, {
-            "" => at 0; vec![Error::EOF, Error::expected_range("def")];
-            "de" => at 0; vec![Error::EOF, Error::expected_range("def")];
-            "dr" => at 0; vec![Error::EOF, Error::expected_range("def")];
-            "deg" => at 3; vec![Error::expected_range("def")];
+            "" => (0, vec![Error::EOF, Error::expected_range("def")]);
+            "de" => (0, vec![Error::EOF, Error::expected_range("def")]);
+            "dr" => (0, vec![Error::EOF, Error::expected_range("def")]);
+            "deg" => (3, vec![Error::expected_range("def")]);
         });
     }
 }

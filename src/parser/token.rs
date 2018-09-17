@@ -225,7 +225,7 @@ pub mod unicode {
                 "a京34" => (Ok('a'), "京34");
             });
             test_parser_errors!(IndexedStream<&str> | letter(), {
-                "3京4a" => at 0; vec![Unexpected(Token('3'))];
+                "3京4a" => (0, vec![Unexpected(Token('3'))]);
             });
         }
     }
@@ -239,7 +239,7 @@ mod test {
     #[test]
     fn test_any() {
         test_parser!(IndexedStream<&str> | any(), {
-            "hello, world." => (Ok('h'), "ello, world.", 1);
+            "hello, world." => (Ok('h'), ("ello, world.", 1));
         });
     }
 

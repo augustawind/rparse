@@ -71,14 +71,14 @@ mod test {
     fn test_extend() {
         let mut parser = extend::<_, String, Vec<char>, _, _, _>(many(letter()), many1(token('?')));
         test_parser!(IndexedStream<&str> | parser, {
-            "huh???" => (Ok("huh???".to_string()), "", 6);
-            "oh?? cool" => (Ok("oh??".to_string()), " cool", 4);
-            "???" => (Ok("???".to_string()), "", 3);
+            "huh???" => (Ok("huh???".to_string()), ("", 6));
+            "oh?? cool" => (Ok("oh??".to_string()), (" cool", 4));
+            "???" => (Ok("???".to_string()), ("", 3));
         });
         test_parser_errors!(IndexedStream<&str> | parser, {
-            "" => at 0; vec![Error::EOF, Error::expected_token('?')];
-            "whoops!" => at 6; vec![Error::unexpected_token('!'), Error::expected_token('?')];
-            "!?" => at 0; vec![Error::unexpected_token('!'), Error::expected_token('?')];
+            "" => (0, vec![Error::EOF, Error::expected_token('?')]);
+            "whoops!" => (6, vec![Error::unexpected_token('!'), Error::expected_token('?')]);
+            "!?" => (0, vec![Error::unexpected_token('!'), Error::expected_token('?')]);
         });
     }
 
@@ -94,5 +94,10 @@ mod test {
     //             "t1t3 man" => (Ok("t1t3".to_string()), " man", 5);
     //             "  xs = [2, 3]" => (Ok("  xs".to_string()), " = [2, 3]", 5);
     //         });
-    // }
+    //         // test_parser_errors!(IndexedStream<&str> | parser, {
+    //         //     "" => (0, vec![Error::EOF, Error::expected_token('%')]);
+    //         //     "%0" => (2, vec![Error::EOF]);
+    //         //     "%zz" => (1, vec![Error::unexpected_token('z')]);
+    //         // });
+    //     }
 }

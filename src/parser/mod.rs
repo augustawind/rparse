@@ -161,13 +161,13 @@ mod test {
     #[test]
     fn test_parser_from_closure() {
         test_parser!(IndexedStream<&str> | vowel(), {
-            "a" => (Ok('a'), "", 1);
-            "ooh" => (Ok('o'), "oh", 1);
+            "a" => (Ok('a'), ("", 1));
+            "ooh" => (Ok('o'), ("oh", 1));
         });
         test_parser_errors!(IndexedStream<&str> | vowel(), {
-            "" => at 0; vec![Error::EOF];
-            "d" => at 1; vec![Error::unexpected_token('d')];
-            "du" => at 1; vec![Error::unexpected_token('d')];
+            "" => (0, vec![Error::EOF]);
+            "d" => (1, vec![Error::unexpected_token('d')]);
+            "du" => (1, vec![Error::unexpected_token('d')]);
         });
     }
 
@@ -192,12 +192,11 @@ mod test {
     #[test]
     fn test_parser_from_fn() {
         test_parser!(IndexedStream<&[u8]> | parser(newline), {
-            "\n".as_bytes() => (Ok(b'\n'), "".as_bytes(), 1);
-            "\nx".as_bytes() => (Ok(b'\n'), "x".as_bytes(), 1);
-        });
-        test_parser_errors!(IndexedStream<&[u8]> | parser(newline), {
-            "".as_bytes() => at 0; vec![Error::EOF];
-            "x\n".as_bytes() => at 1; vec![Error::unexpected_token(b'x')];
+            "\n".as_bytes() => (Ok(b'\n'), ("".as_bytes(), 1));
+            "\nx".as_bytes() => (Ok(b'\n'), ("x".as_bytes(), 1));
+        }, {
+            "".as_bytes() => (0, vec![Error::EOF]);
+            "x\n".as_bytes() => (1, vec![Error::unexpected_token(b'x')]);
         });
     }
 }

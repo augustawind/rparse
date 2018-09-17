@@ -101,12 +101,12 @@ mod test {
     fn test_many1() {
         let mut parser = many1(token('a'));
         test_parser!(IndexedStream<&str> | parser, {
-            "aaabcd" => (Ok("aaa".to_string()), "bcd", 3);
-            "abcd" => (Ok("a".to_string()), "bcd", 1);
-            "aaaa" => (Ok("aaaa".to_string()), "", 4);
+            "aaabcd" => (Ok("aaa".to_string()), ("bcd", 3));
+            "abcd" => (Ok("a".to_string()), ("bcd", 1));
+            "aaaa" => (Ok("aaaa".to_string()), ("", 4));
         });
         test_parser_errors!(IndexedStream<&str> | parser, {
-            "baaa" => at 0; vec![Error::unexpected_token('b'), Error::expected_token('a')];
+            "baaa" => (0, vec![Error::unexpected_token('b'), Error::expected_token('a')]);
         });
     }
 }

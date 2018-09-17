@@ -80,14 +80,14 @@ mod test {
     fn test_append() {
         let mut parser = append::<_, String, _, _, _>(many(letter()), token('?'));
         test_parser!(IndexedStream<&str> | parser, {
-            "huh?" => (Ok("huh?".to_string()), "", 4);
-            "oh? cool" => (Ok("oh?".to_string()), " cool", 3);
-            "???" => (Ok("?".to_string()), "??", 1);
-        });
-        test_parser_errors!(IndexedStream<&str> | parser, {
-            "" => at 0; vec![Error::EOF, Error::expected_token('?')];
-            "whoops!" => at 6; vec![Error::unexpected_token('!'), Error::expected_token('?')];
-            "!?" => at 0; vec![Error::unexpected_token('!'), Error::expected_token('?')];
+            "huh?" => (Ok("huh?".to_string()), ("", 4));
+            "oh? cool" => (Ok("oh?".to_string()), (" cool", 3));
+            "???" => (Ok("?".to_string()), ("??", 1));
+        }, {
+            "" => (0, vec![Error::EOF, Error::expected_token('?')]);
+            "" => (0, vec![Error::EOF, Error::expected_token('?')]);
+            "whoops!" => (6, vec![Error::unexpected_token('!'), Error::expected_token('?')]);
+            "!?" => (0, vec![Error::unexpected_token('!'), Error::expected_token('?')]);
         });
     }
 
@@ -95,13 +95,13 @@ mod test {
     fn test_seq_macro() {
         let mut parser = seq!(range("%").from_str() => [hexdigit(), hexdigit()]);
         test_parser!(IndexedStream<&str> | parser, {
-            "%AF" => (Ok(String::from("%AF")), "", 3);
-            "%d8_/^/_" => (Ok(String::from("%d8")), "_/^/_", 3);
+            "%AF" => (Ok(String::from("%AF")), ("", 3));
+            "%d8_/^/_" => (Ok(String::from("%d8")), ("_/^/_", 3));
         });
         test_parser_errors!(IndexedStream<&str> | parser, {
-            "" => at 0; vec![Error::EOF, Error::expected_range("%")];
-            "%0" => at 2; vec![Error::EOF];
-            "%zz" => at 1; vec![Error::unexpected_token('z')];
+            "" => (0, vec![Error::EOF, Error::expected_range("%")]);
+            "%0" => (2, vec![Error::EOF]);
+            "%zz" => (1, vec![Error::unexpected_token('z')]);
         });
     }
 }
