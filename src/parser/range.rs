@@ -40,8 +40,11 @@ impl<S: Stream> Parser for Range<S> {
     }
 }
 
-pub fn range<S: Stream>(range: S::Range) -> Range<S> {
-    Range { range }
+pub fn range<S: Stream>(range: &'static str) -> Range<S> where
+{
+    Range {
+        range: S::Range::from_str(range),
+    }
 }
 
 #[cfg(test)]

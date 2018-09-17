@@ -4,6 +4,9 @@ impl<'a> StreamRange for &'a str {
     fn len(&self) -> usize {
         <str>::len(self)
     }
+    fn from_str(s: &'static str) -> Self {
+        s
+    }
 }
 
 impl<'a> Stream for &'a str {
@@ -48,6 +51,9 @@ impl<'a> Stream for &'a str {
 impl<'a> StreamRange for &'a [u8] {
     fn len(&self) -> usize {
         <[u8]>::len(self)
+    }
+    fn from_str(s: &'static str) -> Self {
+        s.as_ref()
     }
 }
 
