@@ -67,7 +67,7 @@ mod test {
             "oh?? cool" => (Ok("oh??".chars().collect()), (" cool", 4));
             "???" => (Ok("???".chars().collect()), ("", 3));
         }, {
-            "" => (0, vec![Error::EOF, Error::expected_token('?')]);
+            "" => (0, vec![Error::unexpected_eoi(), Error::expected_token('?')]);
             "whoops!" => (6, vec![Error::unexpected_token('!'), Error::expected_token('?')]);
             "!?" => (0, vec![Error::unexpected_token('!'), Error::expected_token('?')]);
         });
@@ -85,8 +85,8 @@ mod test {
             "x9" => ok(Ok("x9".to_string()), ("", 2)),
             "t1t3 man" => ok(Ok("t1t3".to_string()), (" man", 4)),
             "  xs = [2, 3]" => ok(Ok("  xs".to_string()), (" = [2, 3]", 4)),
-            "" => err(0, vec![Error::EOF]),
-            "a" => err(1, vec![Error::EOF]),
+            "" => err(0, vec![Error::unexpected_eoi()]),
+            "a" => err(1, vec![Error::unexpected_eoi()]),
             "?" => err(0, vec![Error::unexpected_token('?')]),
             "a?" => err(1, vec![Error::unexpected_token('?')]),
         });

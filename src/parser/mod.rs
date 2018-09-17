@@ -199,7 +199,7 @@ mod test {
                 'a' | 'e' | 'i' | 'o' | 'u' => stream.ok(t),
                 _ => stream.err(Error::unexpected_token(t)),
             },
-            None => stream.err(Error::EOF),
+            None => stream.err(Error::unexpected_eoi()),
         })
     }
 
@@ -209,7 +209,7 @@ mod test {
             "a" => (Ok('a'), ("", 1));
             "ooh" => (Ok('o'), ("oh", 1));
         }, {
-            "" => (0, vec![Error::EOF]);
+            "" => (0, vec![Error::unexpected_eoi()]);
             "d" => (1, vec![Error::unexpected_token('d')]);
             "du" => (1, vec![Error::unexpected_token('d')]);
         });
@@ -220,7 +220,7 @@ mod test {
         S: Stream,
         S::Position: Position<S::Stream>,
     {
-        match stream.pop().ok_or_else(|| Error::EOF).and_then(|t| {
+        match stream.pop().ok_or_else(|| Error::unexpected_eoi()).and_then(|t| {
             if t == b'\n'.into() {
                 Ok(t)
             } else {
@@ -238,7 +238,7 @@ mod test {
             "\n".as_bytes() => (Ok(b'\n'), ("".as_bytes(), 1));
             "\nx".as_bytes() => (Ok(b'\n'), ("x".as_bytes(), 1));
         }, {
-            "".as_bytes() => (0, vec![Error::EOF]);
+            "".as_bytes() => (0, vec![Error::unexpected_eoi()]);
             "x\n".as_bytes() => (1, vec![Error::unexpected_token(b'x')]);
         });
     }

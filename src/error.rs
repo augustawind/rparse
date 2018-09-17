@@ -78,7 +78,6 @@ where
 
 #[derive(Debug, Clone)]
 pub enum Error<S: Stream> {
-    EOF,
     Unexpected(Info<S>),
     Expected(Info<S>),
     Message(Info<S>),
@@ -89,6 +88,10 @@ where
     S: Stream,
     S::Position: Position<S::Stream>,
 {
+    pub fn unexpected_eoi() -> Self {
+        Error::Unexpected("end of input".into())
+    }
+
     pub fn expected_token(token: S::Item) -> Self {
         Error::Expected(Info::Token(token))
     }
@@ -113,7 +116,6 @@ where
 {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (&Error::EOF, &Error::EOF) => true,
             (&Error::Unexpected(ref l), &Error::Unexpected(ref r)) => l == r,
             (&Error::Expected(ref l), &Error::Expected(ref r)) => l == r,
             (&Error::Message(ref l), &Error::Message(ref r)) => l == r,
@@ -125,7 +127,6 @@ where
 impl<S: Stream> fmt::Display for Error<S> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Error::EOF => write!(f, "unexpected end of input"),
             Error::Unexpected(info) => write!(f, "unexpected {}", info),
             Error::Expected(info) => write!(f, "expected {}", info),
             Error::Message(info) => write!(f, "{}", info),

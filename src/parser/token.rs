@@ -19,7 +19,7 @@ impl<S: Stream> Parser for Any<S> {
     ) -> ParseResult<Self::Stream, Self::Output> {
         match stream.pop() {
             Some(t) => stream.ok(t),
-            None => stream.err(Error::EOF),
+            None => stream.err(Error::unexpected_eoi()),
         }
     }
 
@@ -54,7 +54,7 @@ where
             }
             result => stream.err(match result {
                 Some(t) => Error::unexpected_token(t),
-                None => Error::EOF,
+                None => Error::unexpected_eoi(),
             }),
         }
     }
@@ -95,7 +95,7 @@ where
                 stream.ok(*t)
             }
             Some(t) => stream.err(Error::unexpected_token(t)),
-            _ => stream.err(Error::EOF),
+            _ => stream.err(Error::unexpected_eoi()),
         }
     }
 }
@@ -119,7 +119,7 @@ macro_rules! def_token_parser_tests {
                 $(
                     concat!($t_ok) => ok(Ok($t_ok), ("", 1)),
                 )+
-                "" => err(0, vec![Error::EOF]),
+                "" => err(0, vec![Error::unexpected_eoi()]),
                 $(
                     concat!($t_err) => err(0, vec![Error::unexpected_token($t_err)]),
                 )+
@@ -128,7 +128,7 @@ macro_rules! def_token_parser_tests {
                 $(
                     concat!($t_ok).as_bytes() => ok(Ok($t_ok as u8), ("".as_bytes(), 1)),
                 )+
-                "".as_bytes() => err(0, vec![Error::EOF]),
+                "".as_bytes() => err(0, vec![Error::unexpected_eoi()]),
                 $(
                     concat!($t_err).as_bytes() => err(0, vec![Error::unexpected_token($t_err as u8)]),
                 )+

@@ -73,8 +73,8 @@ mod test {
             "oh? cool" => (Ok("oh?".chars().collect()), (" cool", 3));
             "???" => (Ok("?".chars().collect()), ("??", 1));
         }, {
-            "" => (0, vec![Error::EOF, Error::expected_token('?')]);
-            "" => (0, vec![Error::EOF, Error::expected_token('?')]);
+            "" => (0, vec![Error::unexpected_eoi(), Error::expected_token('?')]);
+            "" => (0, vec![Error::unexpected_eoi(), Error::expected_token('?')]);
             "whoops!" => (6, vec![Error::unexpected_token('!'), Error::expected_token('?')]);
             "!?" => (0, vec![Error::unexpected_token('!'), Error::expected_token('?')]);
         });
@@ -87,8 +87,8 @@ mod test {
             "%AF" => (Ok("%AF".chars().collect()), ("", 3));
             "%d8_/^/_" => (Ok("%d8".chars().collect()), ("_/^/_", 3));
         }, {
-            "" => (0, vec![Error::EOF, Error::expected_token('%')]);
-            "%0" => (2, vec![Error::EOF]);
+            "" => (0, vec![Error::unexpected_eoi(), Error::expected_token('%')]);
+            "%0" => (2, vec![Error::unexpected_eoi()]);
             "%zz" => (1, vec![Error::unexpected_token('z')]);
         });
     }

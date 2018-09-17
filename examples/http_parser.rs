@@ -122,7 +122,7 @@ mod test {
         test_parser!(&str => String | percent_encoded().collect(), {
             "%A9" => ok(Ok("%A9".to_string()), ""),
             "%0f/hello" => ok(Ok("%0f".to_string()), "/hello"),
-            "" => err(vec![Error::EOF, Error::expected_token('%')]),
+            "" => err(vec![Error::unexpected_eoi(), Error::expected_token('%')]),
             "%xy" => err(vec![Error::unexpected_token('x')]),
         });
     }

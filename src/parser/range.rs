@@ -27,7 +27,7 @@ impl<S: Stream> Parser for Range<S> {
                     stream.errs(errs)
                 }
             }
-            None => stream.err(Error::EOF),
+            None => stream.err(Error::unexpected_eoi()),
         };
         match result {
             (Err(mut errors), stream) => {
@@ -59,9 +59,9 @@ mod test {
             "def" => (Ok("def"), ("", 3));
             "defcon" => (Ok("def"), ("con", 3));
         }, {
-            "" => (0, vec![Error::EOF, Error::expected_range("def")]);
-            "de" => (0, vec![Error::EOF, Error::expected_range("def")]);
-            "dr" => (0, vec![Error::EOF, Error::expected_range("def")]);
+            "" => (0, vec![Error::unexpected_eoi(), Error::expected_range("def")]);
+            "de" => (0, vec![Error::unexpected_eoi(), Error::expected_range("def")]);
+            "dr" => (0, vec![Error::unexpected_eoi(), Error::expected_range("def")]);
             "deg" => (0, vec![Error::expected_range("def")]);
         });
     }
