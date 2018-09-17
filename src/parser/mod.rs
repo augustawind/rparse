@@ -20,7 +20,8 @@ use std::str;
 
 use self::choice::{and, or, And, Or};
 use self::function::{
-    bind, collect, from_str, iter, map, Bind, Collect, FromStr, Iter, Map, StrLike,
+    bind, collect, flatten, from_str, iter, map, Bind, Collect, Flatten, FromStr, Iter, Map,
+    StrLike,
 };
 use self::seq::{append, extend, then, Append, Extend, Then};
 use error::ParseResult;
@@ -125,6 +126,13 @@ pub trait Parser {
         P: Parser<Stream = Self::Stream, Output = Vec<O>>,
     {
         extend(self, other)
+    }
+
+    fn flatten<O>(self) -> Flatten<Self, O>
+    where
+        Self: Sized + Parser<Output = Vec<Vec<O>>>,
+    {
+        flatten(self)
     }
 }
 

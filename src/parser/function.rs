@@ -88,6 +88,15 @@ where
     p.map(|output| output.into_iter().collect())
 }
 
+pub type Flatten<P, O> = Map<P, fn(<P as Parser>::Output) -> Vec<O>>;
+
+pub fn flatten<P, O>(p: P) -> Flatten<P, O>
+where
+    P: Parser<Output = Vec<Vec<O>>>,
+{
+    p.map(|output| output.into_iter().flatten().collect())
+}
+
 pub struct Bind<P, F> {
     parser: P,
     f: F,
