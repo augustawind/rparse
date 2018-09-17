@@ -11,7 +11,7 @@ use stream::{Position, Stream};
 #[derive(Debug, Clone)]
 pub enum Info<S: Stream> {
     Token(S::Item),
-    Range(S),
+    Range(S::Owned),
     Msg(&'static str),
     MsgOwned(String),
 }
@@ -68,7 +68,7 @@ where
     fn eq(&self, other: &Info<S>) -> bool {
         match (self, other) {
             (&Info::Token(ref l), &Info::Token(ref r)) => l == r,
-            (&Info::Range(ref l), &Info::Range(ref r)) => l.tokens().eq(r.tokens()),
+            (&Info::Range(ref l), &Info::Range(ref r)) => l == r,
             (&Info::Msg(ref l), &Info::Msg(ref r)) => l == r,
             (&Info::MsgOwned(ref l), &Info::MsgOwned(ref r)) => l == r,
             (&Info::Msg(ref l), &Info::MsgOwned(ref r)) => l == r,
@@ -100,8 +100,8 @@ where
         Error::Unexpected(Info::Token(token))
     }
 
-    pub fn expected_range(range: S) -> Self {
-        Error::Expected(Info::Range(range))
+    pub fn expected_range(range: &S::Range) -> Self {
+        Error::Expected(Info::Range(range.to_owned()))
     }
 }
 
@@ -154,44 +154,44 @@ impl<S: Stream, E: StdError + Send + Sync + 'static> From<Box<E>> for Error<S> {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct Errors<S: Stream, X: Position<S::Item>> {
-    pub position: X,
-    pub errors: Vec<Error<S::Range>>,
+pub struct Errors<S: Stream> {
+    pub position: S::Position,
+    pub errors: Vec<Error<S>>,
 }
 
-impl<S: Stream, X: Position<S::Item>> Errors<S, X> {
-    pub fn new(position: X) -> Self {
+impl<S: Stream> Errors<S> {
+    pub fn new(position: S::Position) -> Self {
         Errors {
             position,
             errors: Vec::new(),
         }
     }
 
-    pub fn from_error(position: X, error: Error<S::Range>) -> Self {
+    pub fn from_error(position: S::Position, error: Error<S>) -> Self {
         Errors {
             position,
             errors: vec![error],
         }
     }
 
-    pub fn from_errors(position: X, errors: Vec<Error<S::Range>>) -> Self {
+    pub fn from_errors(position: S::Position, errors: Vec<Error<S>>) -> Self {
         Errors { position, errors }
     }
 
-    pub fn add_error(&mut self, error: Error<S::Range>) {
+    pub fn add_error(&mut self, error: Error<S>) {
         if self.errors.contains(&error) {
             return;
         }
         self.errors.push(error);
     }
 
-    pub fn add_errors(&mut self, errors: Vec<Error<S::Range>>) {
+    pub fn add_errors(&mut self, errors: Vec<Error<S>>) {
         for err in errors {
             self.add_error(err);
         }
     }
 
-    pub fn merge_errors(&mut self, errors: &mut Errors<S, X>) {
+    pub fn merge_errors(&mut self, errors: &mut Errors<S>) {
         match errors.position.cmp(&self.position) {
             Ordering::Greater => {
                 self.position = errors.position.clone();
@@ -210,7 +210,7 @@ impl<S: Stream, X: Position<S::Item>> Errors<S, X> {
     }
 }
 
-impl<S: Stream, X: Position<S::Item>> fmt::Display for Errors<S, X> {
+impl<S: Stream> fmt::Display for Errors<S> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         writeln!(f, "{}:", self.position.fmt_msg("Parse error"))?;
         for error in self.errors.iter() {
@@ -220,34 +220,34 @@ impl<S: Stream, X: Position<S::Item>> fmt::Display for Errors<S, X> {
     }
 }
 
-impl<S: Stream, X: Position<S::Item>> StdError for Errors<S, X> {}
+impl<S: Stream> StdError for Errors<S> {}
 
-impl<S: Stream, X: Position<S::Item>> From<Error<S::Range>> for Errors<S, X> {
-    fn from(error: Error<S::Range>) -> Self {
+impl<S: Stream> From<Error<S>> for Errors<S> {
+    fn from(error: Error<S>) -> Self {
         Self::from_error(Default::default(), error)
     }
 }
 
-impl<S: Stream, X: Position<S::Item>> FromIterator<Error<S::Range>> for Errors<S, X> {
-    fn from_iter<T: IntoIterator<Item = Error<S::Range>>>(iter: T) -> Self {
+impl<S: Stream> FromIterator<Error<S>> for Errors<S> {
+    fn from_iter<T: IntoIterator<Item = Error<S>>>(iter: T) -> Self {
         Self::from_errors(Default::default(), iter.into_iter().collect())
     }
 }
 
-impl<S: Stream, X: Position<S::Item>> From<Vec<Error<S::Range>>> for Errors<S, X> {
-    fn from(v: Vec<Error<S::Range>>) -> Self {
+impl<S: Stream> From<Vec<Error<S>>> for Errors<S> {
+    fn from(v: Vec<Error<S>>) -> Self {
         Self::from_iter(v)
     }
 }
 
-impl<S: Stream, X: Position<S::Item>, P, I> From<(P, I)> for Errors<S, X>
+impl<S: Stream, P, I> From<(P, I)> for Errors<S>
 where
-    I: IntoIterator<Item = Error<S::Range>>,
-    P: Into<X>,
+    I: IntoIterator<Item = Error<S>>,
+    P: Into<S::Position>,
 {
     fn from((pos, iter): (P, I)) -> Self {
         Self::from_errors(pos.into(), iter.into_iter().collect())
     }
 }
 
-pub type ParseResult<S, O> = (Result<O, Errors<S, <S as Stream>::Position>>, S);
+pub type ParseResult<S, O> = (Result<O, Errors<S>>, S);

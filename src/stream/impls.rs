@@ -1,53 +1,17 @@
-use std::fmt::Debug;
-use std::mem;
+use super::{NullPosition, Stream, StreamRange, Tokens};
 
-use super::{NullPosition, RangeStream, Stream, Tokens};
-
-impl Stream for String {
-    type Item = char;
-    type Range = Self;
-    type Position = NullPosition;
-
-    fn peek(&self) -> Option<Self::Item> {
-        self.chars().next()
-    }
-
-    fn pop(&mut self) -> Option<Self::Item> {
-        if self.is_empty() {
-            None
-        } else {
-            Some(self.remove(0))
-        }
-    }
-
-    fn tokens(&self) -> Tokens<Self::Item> {
-        Tokens::new(self.chars())
-    }
-
-    fn range(&mut self, idx: usize) -> Option<Self::Range> {
-        if idx > self.len() {
-            None
-        } else {
-            let range = self.split_off(idx);
-            Some(mem::replace(self, range))
-        }
-    }
-
-    fn position(&self) -> Self::Position {
-        NullPosition(())
-    }
-}
-
-impl RangeStream for String {
+impl StreamRange for str {
     fn len(&self) -> usize {
-        String::len(self)
+        <str>::len(self)
     }
 }
 
 impl<'a> Stream for &'a str {
-    type Item = char;
-    type Range = Self;
+    type Stream = Self;
     type Position = NullPosition;
+    type Item = char;
+    type Range = str;
+    type Owned = String;
 
     fn peek(&self) -> Option<Self::Item> {
         self.chars().next()
@@ -77,67 +41,23 @@ impl<'a> Stream for &'a str {
         })
     }
 
-    fn position(&self) -> Self::Position {
-        NullPosition(())
+    fn position(&self) -> &Self::Position {
+        &NullPosition(())
     }
 }
 
-impl<'a> RangeStream for &'a str {
+impl StreamRange for [u8] {
     fn len(&self) -> usize {
-        str::len(self)
+        <[u8]>::len(self)
     }
 }
 
-impl<T> Stream for Vec<T>
-where
-    T: Copy + PartialEq + Debug,
-{
-    type Item = T;
-    type Range = Self;
+impl<'a> Stream for &'a [u8] {
+    type Stream = Self;
     type Position = NullPosition;
-
-    fn peek(&self) -> Option<Self::Item> {
-        self.first().map(|&t| t)
-    }
-
-    fn pop(&mut self) -> Option<Self::Item> {
-        self.pop()
-    }
-
-    fn tokens(&self) -> Tokens<Self::Item> {
-        Tokens::new(self.iter().map(|t| *t))
-    }
-
-    fn range(&mut self, idx: usize) -> Option<Self::Range> {
-        if idx > self.len() {
-            None
-        } else {
-            let range = self.split_off(idx);
-            Some(mem::replace(self, range))
-        }
-    }
-
-    fn position(&self) -> Self::Position {
-        NullPosition(())
-    }
-}
-
-impl<T> RangeStream for Vec<T>
-where
-    T: Copy + PartialEq + Debug,
-{
-    fn len(&self) -> usize {
-        Vec::len(self)
-    }
-}
-
-impl<'a, T> Stream for &'a [T]
-where
-    T: Copy + PartialEq + Debug,
-{
-    type Item = T;
-    type Range = Self;
-    type Position = NullPosition;
+    type Item = u8;
+    type Range = [u8];
+    type Owned = Vec<u8>;
 
     fn peek(&self) -> Option<Self::Item> {
         self.first().map(|&t| t)
@@ -169,11 +89,7 @@ where
     }
 }
 
-impl<'a, T> RangeStream for &'a [T]
-where
-    T: Copy + PartialEq + Debug,
-{
-    fn len(&self) -> usize {
-        <[T]>::len(self)
+    fn position(&self) -> &Self::Position {
+        &NullPosition(())
     }
 }

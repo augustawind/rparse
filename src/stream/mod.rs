@@ -4,6 +4,7 @@ mod impls;
 pub mod position;
 pub mod state;
 
+use std::borrow::Borrow;
 use std::fmt::Debug;
 
 pub use self::position::{IndexPosition, LinePosition, NullPosition, Position};
@@ -34,16 +35,25 @@ impl<'a, T> Iterator for Tokens<'a, T> {
     }
 }
 
+pub trait StreamRange: PartialEq + Debug {
+    fn len(&self) -> usize;
+}
+
 /// The Stream trait represents data that can be consumed by a `Parser`.
 pub trait Stream: Sized + Clone + Debug {
-    /// The type of a single token.
-    type Item: Copy + PartialEq + Debug;
-
-    /// The type of a series of tokens.
-    type Range: RangeStream<Item = Self::Item>;
+    /// The underlying Stream type.
+    type Stream: Stream;
 
     /// The Position type used to track the current parsing position.
     type Position: Position<Self::Item>;
+
+    /// The type of a single token.
+    type Item: Copy + PartialEq + Debug;
+
+    /// The type of a range of tokens.
+    type Range: ?Sized + StreamRange + ToOwned<Owned = Self::Owned>;
+
+    type Owned: PartialEq + Debug + Clone + Borrow<Self::Range>;
 
     /// Returns the next token in the stream without consuming it.
     /// If there are no more tokens, returns `None`.
@@ -56,17 +66,24 @@ pub trait Stream: Sized + Clone + Debug {
     /// Does not consume any input.
     fn tokens(&self) -> Tokens<Self::Item>;
 
-    /// Consumes and returns a continuous range of the stream.
-    fn range(&mut self, idx: usize) -> Option<Self::Range>;
+    // /// Consumes and returns a continuous range of the stream.
+    // fn range(&mut self, idx: usize) -> Option<&Self::Range>;
 
     /// Return the current position in the stream.
-    fn position(&self) -> Self::Position;
+    fn position(&self) -> &Self::Position;
+
+    fn nth_position(&self, n: usize) -> Self::Position {
+        let mut pos = self.position().clone();
+        self.tokens().take(n).for_each(|t| pos.update(&t));
+        pos
+    }
 
     /// Return a snapshot of the current stream.
     /// The returned snapshot can be restored with `restore()`.
     fn backup(&self) -> Self {
         self.clone()
     }
+
     /// Reset the stream to the given state.
     /// This method is intended for use with the `backup()` method.
     fn restore(&mut self, backup: Self) {
@@ -78,23 +95,20 @@ pub trait Stream: Sized + Clone + Debug {
         (Ok(result), self)
     }
 
-    fn empty_err(&self) -> Errors<Self, Self::Position> {
-        Errors::new(self.position())
+    fn empty_err(&self) -> Errors<Self> {
+        Errors::new(self.position().clone())
     }
 
     /// Return the given parse error as a `ParseResult`, using `Self` as the `Stream` type.
-    fn err<O>(self, error: Error<Self::Range>) -> ParseResult<Self, O> {
-        (Err(Errors::from_error(self.position(), error)), self)
+    fn err<O>(self, error: Error<Self>) -> ParseResult<Self, O> {
+        (
+            Err(Errors::from_error(self.position().clone(), error)),
+            self,
+        )
     }
 
     /// Return multiple parse errors as a `ParseResult`, using `Self` as the `Stream` type.
-    fn errs<O>(self, errors: Errors<Self, Self::Position>) -> ParseResult<Self, O> {
+    fn errs<O>(self, errors: Errors<Self>) -> ParseResult<Self, O> {
         (Err(errors), self)
     }
-}
-
-/// The RangeStream trait is a `Stream` that can be used as a continuous range of tokens.
-/// It supports equality comparisons and a `len` method, but does not track its parsing position.
-pub trait RangeStream: Stream<Position = NullPosition, Range = Self> + PartialEq {
-    fn len(&self) -> usize;
 }

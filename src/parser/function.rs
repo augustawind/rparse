@@ -9,10 +9,10 @@ use {Error, ParseResult, Parser, Stream};
 
 pub struct Expect<P: Parser> {
     parser: P,
-    error: Error<<<P as Parser>::Stream as Stream>::Range>,
+    error: Error<P::Stream>,
 }
 
-impl<P: Parser> Parser for Expect<P> {
+impl<P: Parser> Parser for Expect<P> where {
     type Stream = P::Stream;
     type Output = P::Output;
 
@@ -30,7 +30,7 @@ impl<P: Parser> Parser for Expect<P> {
 pub fn expect<P, I>(parser: P, expected: I) -> Expect<P>
 where
     P: Parser,
-    I: Into<Error<<<P as Parser>::Stream as Stream>::Range>>,
+    I: Into<Error<P::Stream>>,
 {
     Expect {
         parser,

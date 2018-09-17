@@ -23,10 +23,7 @@ macro_rules! test_parser {
         let input: $stream_ty = $into_input.into();
         let (result, stream): $crate::ParseResult<$stream_ty, $output_ty> = $p.parse(input.clone());
         let result = result.expect_err("assertion failed: expected an Err(_)");
-        let expected_result: $crate::error::Errors<
-            $stream_ty,
-            <$stream_ty as $crate::stream::Stream>::Position,
-        > = $expected.into();
+        let expected_result: $crate::error::Errors<$stream_ty> = $expected.into();
         let expected_stream = input;
         assert_eq!(result, expected_result);
         assert_eq!(stream, expected_stream);
@@ -77,7 +74,7 @@ macro_rules! test_parser {
     (@err $stream_ty:ty, $result:expr, $expected_result:expr, $into_expected_stream:expr) => {
         let (result, stream) = $result;
         let result = result.expect_err("assertion failed: expected an Err(_)");
-        let expected_result: $crate::error::Errors<$stream_ty, <$stream_ty as $crate::stream::Stream>::Position> = $expected_result.into();
+        let expected_result: $crate::error::Errors<$stream_ty> = $expected_result.into();
         let expected_stream: $stream_ty = $into_expected_stream.into();
         assert_eq!(result, expected_result);
         assert_eq!(stream, expected_stream);
