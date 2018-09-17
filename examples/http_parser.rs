@@ -105,7 +105,7 @@ mod test {
 
     #[test]
     fn test_percent_encoded() {
-        test_parser!(&str | percent_encoded().collect::<String>(), {
+        test_parser!(for<&str, String> | percent_encoded().collect(), {
             "%A9" => ok(Ok("%A9".to_string()), "");
             "%0f/hello" => ok(Ok("%0f".to_string()), "/hello");
             "" => err(vec![Error::EOF, Error::expected_token('%')]);
