@@ -220,16 +220,13 @@ mod test {
             "a3" => vec![Error::unexpected_token('a')];
         });
 
-        let mut parser = map(many1(ascii::letter()), |s| {
-            s.into_iter().collect::<String>().to_uppercase()
+        let mut parser = map(many1(ascii::letter()).collect::<String>(), |s| {
+            s.to_uppercase()
         });
         assert_eq!(parser.parse("aBcD12e"), (Ok("ABCD".to_string()), "12e"));
 
-        let mut parser = map(many1(ascii::alpha_num()), |s| {
-            s.into_iter()
-                .collect::<String>()
-                .parse::<usize>()
-                .unwrap_or(0)
+        let mut parser = map(many1(ascii::alpha_num()).collect::<String>(), |s| {
+            s.parse::<usize>().unwrap_or(0)
         });
         test_parser!(&str | parser, {
             "324 dogs" => (Ok(324 as usize), " dogs");
@@ -248,18 +245,16 @@ mod test {
         });
 
         let mut parser = many1(ascii::letter())
-            .map(|vec| vec.into_iter().collect())
+            .collect()
             .bind(|s: String, stream: &str| stream.ok(s.to_uppercase()));
         assert_eq!(parser.parse("aBcD12e"), (Ok("ABCD".to_string()), "12e"));
 
-        let mut parser = many1(ascii::alpha_num())
-            .map(|vec| vec.into_iter().collect())
-            .bind(
-                |s: String, stream: IndexedStream<&str>| match s.parse::<usize>() {
-                    Ok(n) => stream.ok(n),
-                    Err(e) => stream.err(Box::new(e).into()),
-                },
-            );
+        let mut parser = many1(ascii::alpha_num()).collect().bind(
+            |s: String, stream: IndexedStream<&str>| match s.parse::<usize>() {
+                Ok(n) => stream.ok(n),
+                Err(e) => stream.err(Box::new(e).into()),
+            },
+        );
         test_parser!(IndexedStream<&str> | parser, {
             "324 dogs" => (Ok(324 as usize), (" dogs", 3));
         }, {
@@ -271,9 +266,7 @@ mod test {
 
     #[test]
     fn test_from_str() {
-        let mut parser = many1(ascii::digit())
-            .map::<_, String>(|vec| vec.into_iter().collect())
-            .from_str::<u32>();
+        let mut parser = many1(ascii::digit()).collect::<String>().from_str::<u32>();
         test_parser!(&str | parser, {
             "369" => (Ok(369 as u32), "");
             "369abc" => (Ok(369 as u32), "abc");
@@ -281,10 +274,9 @@ mod test {
             "abc" => vec![Error::unexpected_token('a')];
         });
 
-        let mut parser = from_str::<_, f32>(
-            many1(choice!(token('-'), token('.'), ascii::digit()))
-                .map::<_, String>(|vec| vec.into_iter().collect()),
-        );
+        let mut parser = many1(choice!(token('-'), token('.'), ascii::digit()))
+            .collect::<String>()
+            .from_str::<f32>();
         test_parser!(&str | parser, {
             "12e" => (Ok(12 as f32), "e");
             "-12e" => (Ok(-12 as f32), "e");
@@ -293,9 +285,7 @@ mod test {
             "12.5.9" =>  vec!["invalid float literal".into()];
         });
 
-        let mut parser = many1(ascii::digit())
-            .map::<_, String>(|vec| vec.into_iter().collect())
-            .from_str::<f32>();
+        let mut parser = many1(ascii::digit()).collect::<String>().from_str::<f32>();
         test_parser!(SourceCode | parser, {
             "12e" => (Ok(12f32), ("e", (1, 3)));
         }, {

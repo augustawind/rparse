@@ -113,9 +113,9 @@ mod test {
             "xyz" => (Ok(Some('x')), "yz");
         });
 
-        let mut parser = optional(many1(ascii::alpha_num()));
+        let mut parser = optional(many1(ascii::alpha_num()).collect());
         test_parser!(&str | parser, {
-            "abc123" => (Ok(Some("abc123".chars().collect())), "");
+            "abc123" => (Ok(Some("abc123".to_string())), "");
         });
 
         assert_eq!(optional(many(any())).parse(""), (Ok(Some(Vec::new())), ""));
@@ -159,10 +159,10 @@ mod test {
         let mut parser = or(
             many1(ascii::digit()),
             then(ascii::letter(), ascii::whitespace()),
-        );
+        ).collect();
         test_parser!(IndexedStream<&str> | parser, {
-            "123a bc" => (Ok("123".chars().collect()), ("a bc", 3));
-            "a b c" => (Ok("a ".chars().collect()), ("b c", 2));
+            "123a bc" => (Ok("123".to_string()), ("a bc", 3));
+            "a b c" => (Ok("a ".to_string()), ("b c", 2));
         });
     }
 
@@ -189,10 +189,10 @@ mod test {
         let mut parser = choice!(
             many1(ascii::digit()),
             then(ascii::letter(), ascii::whitespace()),
-        );
+        ).collect();
         test_parser!(IndexedStream<&str> | parser, {
-            "123a bc" => (Ok("123".chars().collect()), ("a bc", 3));
-            "a b c" => (Ok("a ".chars().collect()), ("b c", 2));
+            "123a bc" => (Ok("123".to_string()), ("a bc", 3));
+            "a b c" => (Ok("a ".to_string()), ("b c", 2));
         });
     }
 }
