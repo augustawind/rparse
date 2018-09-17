@@ -222,6 +222,10 @@ pub mod ascii {
             valid('1', '0', '9')
             error('a', 'f', '?')
         );
+        def_token_parser_tests!(test_hexdigit => hexdigit;
+            valid('1', 'F', 'b')
+            error('H', 'h', '?')
+        );
     }
 }
 
