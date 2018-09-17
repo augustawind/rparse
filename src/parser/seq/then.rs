@@ -42,7 +42,7 @@ mod test {
 
     #[test]
     fn test_then() {
-        let mut parser = token('X').then(token('O'));
+        let mut parser = token(b'X').then(token(b'O'));
         test_parser!(IndexedStream<&str> | parser, {
             "XO" => (Ok("XO".chars().collect()), ("", 2));
             "XOXO" => (Ok("XO".chars().collect()), ("XO", 2));

@@ -246,7 +246,7 @@ mod test {
 
     #[test]
     fn test_token() {
-        test_parser!(&str | token('c'), {
+        test_parser!(&str | token(b'c'), {
             "cat" => (Ok('c'), "at");
         }, {
             "ace" => vec![Error::unexpected_token('a'), Error::expected_token('c')];

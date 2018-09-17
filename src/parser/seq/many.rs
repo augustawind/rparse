@@ -63,34 +63,34 @@ mod test {
     #[test]
     fn test_many() {
         assert_eq!(
-            many(token('a')).parse("aaabcd"),
+            many(token(b'a')).parse("aaabcd"),
             (Ok("aaa".chars().collect()), "bcd")
         );
         assert_eq!(
-            many(token('a')).parse("aaabcd"),
+            many(token(b'a')).parse("aaabcd"),
             (Ok(vec!['a', 'a', 'a']), "bcd")
         );
         assert_eq!(
-            many(token('b')).parse("abcd"),
+            many(token(b'b')).parse("abcd"),
             (Ok("".chars().collect()), "abcd")
         );
         assert_eq!(
-            many(token('a')).parse("aaaa"),
+            many(token(b'a')).parse("aaaa"),
             (Ok("aaaa".chars().collect()), "")
         );
         assert_eq!(
-            many(many1(token('a'))).parse("aaabcd"),
+            many(many1(token(b'a'))).parse("aaabcd"),
             (Ok(vec!["aaa".chars().collect()]), "bcd")
         );
         assert_eq!(
-            many(many1(token('b'))).parse("aaabcd"),
+            many(many1(token(b'b'))).parse("aaabcd"),
             (Ok(Vec::<Vec<char>>::new()), "aaabcd")
         );
     }
 
     #[test]
     fn test_many1() {
-        let mut parser = many1(token('a'));
+        let mut parser = many1(token(b'a'));
         test_parser!(IndexedStream<&str> | parser, {
             "aaabcd" => (Ok("aaa".chars().collect()), ("bcd", 3));
             "abcd" => (Ok("a".chars().collect()), ("bcd", 1));

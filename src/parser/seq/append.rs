@@ -67,7 +67,7 @@ mod test {
 
     #[test]
     fn test_append() {
-        let mut parser = append(many(letter()), token('?'));
+        let mut parser = append(many(letter()), token(b'?'));
         test_parser!(IndexedStream<&str> | parser, {
             "huh?" => (Ok("huh?".chars().collect()), ("", 4));
             "oh? cool" => (Ok("oh?".chars().collect()), (" cool", 3));
@@ -82,7 +82,7 @@ mod test {
 
     #[test]
     fn test_seq_macro() {
-        let mut parser = seq![token('%'), hexdigit(), hexdigit()];
+        let mut parser = seq![token(b'%'), hexdigit(), hexdigit()];
         test_parser!(IndexedStream<&str> | parser, {
             "%AF" => (Ok("%AF".chars().collect()), ("", 3));
             "%d8_/^/_" => (Ok("%d8".chars().collect()), ("_/^/_", 3));

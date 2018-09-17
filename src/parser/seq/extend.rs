@@ -57,7 +57,7 @@ mod test {
 
     #[test]
     fn test_extend() {
-        let mut parser = extend(many(ascii::letter()), many1(token('?')));
+        let mut parser = extend(many(ascii::letter()), many1(token(b'?')));
         test_parser!(IndexedStream<&str> | parser, {
             "huh???" => (Ok("huh???".chars().collect()), ("", 6));
             "oh?? cool" => (Ok("oh??".chars().collect()), (" cool", 4));
@@ -77,7 +77,7 @@ mod test {
             many(ascii::alpha_num()),
         ].collect();
 
-        test_parser!(for<IndexedStream<&str>, String> | parser, {
+        test_parser!(IndexedStream<&str> => String | parser, {
             "x9" => ok(Ok("x9".to_string()), ("", 2)),
             "t1t3 man" => ok(Ok("t1t3".to_string()), (" man", 4)),
             "  xs = [2, 3]" => ok(Ok("  xs".to_string()), (" = [2, 3]", 4)),

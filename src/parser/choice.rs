@@ -105,7 +105,7 @@ mod test {
 
     #[test]
     fn test_optional() {
-        let mut parser = optional(token('x'));
+        let mut parser = optional(token(b'x'));
         test_parser!(&str | parser, {
             "" => (Ok(None), "");
             "y" => (Ok(None), "y");
@@ -120,8 +120,8 @@ mod test {
 
         assert_eq!(optional(many(any())).parse(""), (Ok(Some(Vec::new())), ""));
 
-        let mut parser = token('x').optional().collect();
-        test_parser!(for<&str, String> | parser, {
+        let mut parser = token(b'x').optional().collect();
+        test_parser!(&str => String | parser, {
             "x" => ok(Ok("x".to_string()), ""),
             "y" => ok(Ok("".to_string()), "y"),
         });
@@ -129,7 +129,7 @@ mod test {
 
     #[test]
     fn test_and() {
-        let mut parser = and(token('a'), token('b'));
+        let mut parser = and(token(b'a'), token(b'b'));
         test_parser!(IndexedStream<&str> | parser, {
             "abcd" => (Ok('b'), ("cd", 2));
             "ab" => (Ok('b'), ("", 2));
@@ -150,7 +150,7 @@ mod test {
 
     #[test]
     fn test_or() {
-        let mut parser = or(token('a'), token('b'));
+        let mut parser = or(token(b'a'), token(b'b'));
         test_parser!(IndexedStream<&str> | parser, {
             "bcd" => (Ok('b'), ("cd", 1));
             "a" => (Ok('a'), ("", 1));
@@ -174,9 +174,9 @@ mod test {
 
     #[test]
     fn test_choice() {
-        assert_eq!(choice!(token('a'), token('b')).parse("a"), (Ok('a'), ""));
+        assert_eq!(choice!(token(b'a'), token(b'b')).parse("a"), (Ok('a'), ""));
 
-        let mut parser = choice!(token('a'), ascii::digit(), ascii::punctuation());
+        let mut parser = choice!(token(b'a'), ascii::digit(), ascii::punctuation());
         test_parser!(IndexedStream<&str> | parser, {
             "a9." => (Ok('a'), ("9.", 1));
             "9.a" => (Ok('9'), (".a", 1));
@@ -186,7 +186,7 @@ mod test {
         });
 
         assert_eq!(
-            choice!(token('a'), token('b'), token('c')).parse("bcd"),
+            choice!(token(b'a'), token(b'b'), token(b'c')).parse("bcd"),
             (Ok('b'), "cd")
         );
 

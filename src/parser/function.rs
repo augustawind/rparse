@@ -257,7 +257,7 @@ mod test {
             "abc" => vec![Error::unexpected_token('a')];
         });
 
-        let mut parser = many1(choice!(token('-'), token('.'), ascii::digit()))
+        let mut parser = many1(choice!(token(b'-'), token(b'.'), ascii::digit()))
             .collect::<String>()
             .from_str::<f32>();
         test_parser!(&str | parser, {
