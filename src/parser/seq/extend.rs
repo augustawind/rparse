@@ -1,3 +1,5 @@
+use std::iter;
+
 use error::ParseResult;
 use parser::Parser;
 use stream::Stream;
@@ -9,11 +11,13 @@ pub struct Extend<L, R> {
 
 impl<S: Stream, O, L, R> Parser for Extend<L, R>
 where
-    L: Parser<Stream = S, Output = Vec<O>>,
-    R: Parser<Stream = S, Output = Vec<O>>,
+    L: Parser<Stream = S>,
+    L::Output: iter::Extend<O>,
+    R: Parser<Stream = S>,
+    R::Output: iter::IntoIterator<Item = O>,
 {
     type Stream = S;
-    type Output = Vec<O>;
+    type Output = L::Output;
 
     fn parse_stream(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         match self.left.parse_stream(stream) {

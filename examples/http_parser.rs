@@ -6,14 +6,27 @@ use rparse::parser::seq::{many, many1};
 use rparse::parser::token::{ascii, token};
 use rparse::{Parser, Stream};
 
-fn http_version<'a, S>() -> impl Parser<Stream = S, Output = Vec<S::Range>>
+// fn http_request_line<S>() -> impl Parser<Stream = S, Output = Vec<S::Range>>
+// where
+//     S: Stream,
+// {
+//     http_method()
+//         .wrap()
+//         .extend(concat![
+//             token(b' ').and(url_path()),
+//             token(b' ').and(http_version()),
+//         ])
+//         .append(range("\r\n"))
+// }
+
+fn http_version<S>() -> impl Parser<Stream = S, Output = Vec<S::Range>>
 where
     S: Stream,
 {
     range("HTTP/").then(choice![range("1"), range("1.1"), range("2")])
 }
 
-fn http_method<'a, S>() -> impl Parser<Stream = S, Output = S::Range>
+fn http_method<S>() -> impl Parser<Stream = S, Output = S::Range>
 where
     S: Stream,
 {
@@ -37,7 +50,6 @@ where
 fn url_path<S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
 where
     S: Stream,
-    S::Item: From<char> + Into<char>,
 {
     // a url path is a forward slash
     token(b'/').wrap().extend(
@@ -52,7 +64,6 @@ where
 fn url_segment_part<S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
 where
     S: Stream,
-    S::Item: From<char> + Into<char>,
 {
     // one or more url-safe characters, or a percent-encoded octets
     many1(url_token()).or(percent_encoded())
@@ -61,7 +72,6 @@ where
 fn url_token<S>() -> impl Parser<Stream = S, Output = S::Item>
 where
     S: Stream,
-    S::Item: From<char> + Into<char>,
 {
     choice![
         ascii::alpha_num(),
@@ -75,7 +85,6 @@ where
 fn percent_encoded<S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
 where
     S: Stream,
-    S::Item: From<char> + Into<char>,
 {
     token(b'%')
         .then(ascii::hexdigit())
