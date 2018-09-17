@@ -43,7 +43,7 @@ where
 macro_rules! seq {
     ($init:expr, $head:expr $(, $tail:expr),* $(,)*) => {{
         let head = $init.then($head);
-        seq!(@inner head, $($tail),+)
+        seq!(@inner head, $($tail),*)
     }};
 
     (@inner $head:expr $(,)*) => {{
