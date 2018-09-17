@@ -3,7 +3,7 @@ macro_rules! test_parser {
     // New API
 
     (for<$stream_ty:ty, $output_ty:ty> | $p:expr, {
-        $($into_input:expr => $assertion:ident $expected:expr);+;
+        $($into_input:expr => $assertion:ident $expected:expr),+ $(,)*
     }) => {
         $(
             test_parser!(@dispatch $assertion <$stream_ty, $output_ty> $p, $into_input => $expected);

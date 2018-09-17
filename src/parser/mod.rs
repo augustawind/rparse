@@ -17,7 +17,7 @@ use std::fmt::Display;
 use std::iter::FromIterator;
 use std::str;
 
-use self::choice::{and, or, And, Or};
+use self::choice::{and, optional, or, And, Optional, Or};
 use self::function::{
     bind, collect, flatten, from_str, iter, map, wrap, Bind, Collect, Flatten, FromStr, Iter, Map,
     StrLike, Wrap,
@@ -42,6 +42,13 @@ pub trait Parser {
             stream.restore(backup);
         }
         result
+    }
+
+    fn optional(self) -> Optional<Self>
+    where
+        Self: Sized,
+    {
+        optional(self)
     }
 
     fn map<F, O>(self, f: F) -> Map<Self, F>

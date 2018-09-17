@@ -77,14 +77,14 @@ mod test {
             many(ascii::alpha_num()),
         ].collect();
 
-        test_parser!(IndexedStream<&str> | parser, {
-            "x9" => ok(Ok("x9".to_string()), ("", 2));
-            "t1t3 man" => ok(Ok("t1t3".to_string()), (" man", 4));
-            "  xs = [2, 3]" => ok(Ok("  xs".to_string()), (" = [2, 3]", 4));
-            "" => err(0, vec![Error::EOF]);
-            "a" => err(1, vec![Error::EOF]);
-            "?" => err(0, vec![Error::unexpected_token('?')]);
-            "a?" => err(1, vec![Error::unexpected_token('?')]);
+        test_parser!(for<IndexedStream<&str>, String> | parser, {
+            "x9" => ok(Ok("x9".to_string()), ("", 2)),
+            "t1t3 man" => ok(Ok("t1t3".to_string()), (" man", 4)),
+            "  xs = [2, 3]" => ok(Ok("  xs".to_string()), (" = [2, 3]", 4)),
+            "" => err(0, vec![Error::EOF]),
+            "a" => err(1, vec![Error::EOF]),
+            "?" => err(0, vec![Error::unexpected_token('?')]),
+            "a?" => err(1, vec![Error::unexpected_token('?')]),
         });
     }
 }

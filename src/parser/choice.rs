@@ -119,6 +119,12 @@ mod test {
         });
 
         assert_eq!(optional(many(any())).parse(""), (Ok(Some(Vec::new())), ""));
+
+        let mut parser = token('x').optional().collect();
+        test_parser!(for<&str, String> | parser, {
+            "x" => ok(Ok("x".to_string()), ""),
+            "y" => ok(Ok("".to_string()), "y"),
+        });
     }
 
     #[test]
