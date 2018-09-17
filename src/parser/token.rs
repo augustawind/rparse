@@ -146,14 +146,34 @@ pub mod ascii {
         is_ascii_hexdigit
     );
     def_ascii_parser!(
+        /// Parses an ASCII punctuation character.
+        punctuation,
+        is_ascii_punctuation
+    );
+    def_ascii_parser!(
+        /// Parses an ASCII graphic character.
+        graphic,
+        is_ascii_graphic
+    );
+    def_ascii_parser!(
         /// Parses an ASCII whitespace character.
         whitespace,
         is_ascii_whitespace
     );
     def_ascii_parser!(
-        /// Parses an ASCII punctuation character.
-        punctuation,
-        is_ascii_punctuation
+        /// Parses an ASCII control character.
+        control,
+        is_ascii_control
+    );
+    def_ascii_parser!(
+        /// Parses a lowercase ASCII letter.
+        lowercase,
+        is_ascii_lowercase
+    );
+    def_ascii_parser!(
+        /// Parses an uppercase ASCII letter.
+        uppercase,
+        is_ascii_uppercase
     );
 
     #[cfg(test)]
@@ -217,19 +237,34 @@ pub mod unicode {
         is_alphabetic
     );
     def_unicode_parser!(
-        /// Parses a Unicode numeric character.
-        numeric,
-        is_numeric
-    );
-    def_unicode_parser!(
         /// Parses a Unicode alphabetic or numeric character.
         alpha_num,
         is_alphanumeric
     );
     def_unicode_parser!(
+        /// Parses a Unicode numeric character.
+        numeric,
+        is_numeric
+    );
+    def_unicode_parser!(
+        /// Parses a Unicode control character.
+        control,
+        is_control
+    );
+    def_unicode_parser!(
         /// Parses a Unicode whitespace character.
         whitespace,
         is_whitespace
+    );
+    def_unicode_parser!(
+        /// Parses a lowercase Unicode alphabetic character.
+        lowercase,
+        is_lowercase
+    );
+    def_unicode_parser!(
+        /// Parses an uppercase Unicode alphabetic character.
+        uppercase,
+        is_uppercase
     );
 
     #[cfg(test)]

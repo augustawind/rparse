@@ -174,8 +174,6 @@ pub fn parser<S: Stream, O>(f: fn(S) -> ParseResult<S, O>) -> fn(S) -> ParseResu
 
 #[cfg(test)]
 mod test {
-    use std::fmt::Debug;
-
     use super::*;
     use error::Error;
     use stream::{IndexedStream, Position};
