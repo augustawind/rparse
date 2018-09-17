@@ -37,6 +37,7 @@ impl<'a, T> Iterator for Tokens<'a, T> {
 pub trait StreamRange: Stream + PartialEq + Clone + Debug {
     fn len(&self) -> usize;
     fn from_str(s: &'static str) -> Self;
+    fn item_from_byte(c: u8) -> Self::Item;
 }
 
 /// The Stream trait represents data that can be consumed by a `Parser`.

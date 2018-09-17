@@ -40,11 +40,11 @@ where
     S::Item: From<char> + Into<char>,
 {
     // a url path is a forward slash
-    token('/'.into()).wrap().extend(
+    token(b'/').wrap().extend(
         // (optional) one or more path segments, which consist of any arrangement of
         many(
             // forward slashes and url path segments
-            many1(token('/'.into())).or(url_segment_part()),
+            many1(token(b'/')).or(url_segment_part()),
         ).flatten(),
     )
 }
@@ -65,10 +65,10 @@ where
 {
     choice![
         ascii::alpha_num(),
-        token('-'.into()),
-        token('.'.into()),
-        token('_'.into()),
-        token('~'.into())
+        token(b'-'),
+        token(b'.'),
+        token(b'_'),
+        token(b'~')
     ]
 }
 
@@ -77,7 +77,7 @@ where
     S: Stream,
     S::Item: From<char> + Into<char>,
 {
-    token('%'.into())
+    token(b'%')
         .then(ascii::hexdigit())
         .append(ascii::hexdigit())
 }

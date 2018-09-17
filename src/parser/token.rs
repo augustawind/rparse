@@ -5,7 +5,7 @@ use std::marker::PhantomData;
 
 use error::{Error, ParseResult};
 use parser::{parser, Parser};
-use stream::{Position, Stream};
+use stream::{Position, Stream, StreamRange};
 
 // TODO: refactor this to use a struct impl (e.g. `struct Any<S, O>`)
 pub fn any<S, O>() -> impl Parser<Stream = S, Output = O>
@@ -53,8 +53,10 @@ where
     }
 }
 
-pub fn token<S: Stream>(token: S::Item) -> Token<S> {
-    Token { token }
+pub fn token<S: Stream>(token: u8) -> Token<S> {
+    Token {
+        token: S::Range::item_from_byte(token),
+    }
 }
 
 pub struct Cond<S: Stream, F>
