@@ -242,4 +242,14 @@ impl<S: Stream, X: Position<S::Item>> From<Vec<Error<S::Range>>> for Errors<S, X
     }
 }
 
+impl<S: Stream, X: Position<S::Item>, P, I> From<(P, I)> for Errors<S, X>
+where
+    I: IntoIterator<Item = Error<S::Range>>,
+    P: Into<X>,
+{
+    fn from((pos, iter): (P, I)) -> Self {
+        Self::from_errors(pos.into(), iter.into_iter().collect())
+    }
+}
+
 pub type ParseResult<S, O> = (Result<O, Errors<S, <S as Stream>::Position>>, S);
