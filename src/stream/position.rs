@@ -76,6 +76,12 @@ impl From<usize> for IndexPosition {
     }
 }
 
+impl From<LinePosition> for IndexPosition {
+    fn from(LinePosition { line, column }: LinePosition) -> Self {
+        IndexPosition((line * column) as usize)
+    }
+}
+
 /// LinePosition is a `Position` which is represented as a line number and column number.
 /// This is primarily useful for parsing text files or anything that has multiple lines.
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord)]
