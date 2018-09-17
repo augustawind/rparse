@@ -2,6 +2,7 @@
 extern crate rparse;
 
 // use rparse::parser::choice::optional;
+use rparse::parser::choice::optional;
 use rparse::parser::range::range;
 use rparse::parser::seq::{many, many1};
 use rparse::parser::token::{ascii, token};
@@ -41,26 +42,19 @@ where
 //  - fn optional(p: Parser)    ~>  ignore result if subparser fails
 //      *~> should this be first-class Parser functionality?
 //
-fn url_path<'a, S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
+fn url_path<S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
 where
     S: Stream,
     S::Item: From<char> + Into<char>,
 {
     // a url path is a forward slash
-    token('/'.into()).wrap().extend(concat![
+    token('/'.into()).wrap().extend(
         // (optional) one or more path segments, which consist of any arrangement of
-        many1(
+        many(
             // forward slashes and url path segments
-            many(token('/'.into())).or(url_segment_part()),
+            many1(token('/'.into())).or(url_segment_part()),
         ).flatten(),
-        // (optional) and an extension, which is
-        concat![
-            // a period
-            token('.'.into()).wrap(),
-            // and some url tokens
-            many1(url_segment_part()).flatten(),
-        ],
-    ])
+    )
 }
 
 fn url_segment_part<S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
@@ -72,7 +66,7 @@ where
     many1(url_token()).or(percent_encoded())
 }
 
-fn url_token<'a, S>() -> impl Parser<Stream = S, Output = S::Item>
+fn url_token<S>() -> impl Parser<Stream = S, Output = S::Item>
 where
     S: Stream,
     S::Item: From<char> + Into<char>,
@@ -101,15 +95,23 @@ fn main() {}
 #[cfg(test)]
 mod test {
     use super::*;
+    use rparse::stream::IndexedStream;
     use rparse::Error;
 
     #[test]
     fn test_percent_encoded() {
         test_parser!(for<&str, String> | percent_encoded().collect(), {
-            "%A9" => ok(Ok("%A9".to_string()), "");
-            "%0f/hello" => ok(Ok("%0f".to_string()), "/hello");
-            "" => err(vec![Error::EOF, Error::expected_token('%')]);
-            "%xy" => err(vec![Error::unexpected_token('x')]);
+            "%A9" => ok(Ok("%A9".to_string()), ""),
+            "%0f/hello" => ok(Ok("%0f".to_string()), "/hello"),
+            "" => err(vec![Error::EOF, Error::expected_token('%')]),
+            "%xy" => err(vec![Error::unexpected_token('x')]),
+        });
+    }
+
+    #[test]
+    fn test_url_path() {
+        test_parser!(for<IndexedStream<&str>, String> | url_path().collect(), {
+            "/my_img.jpeg" => ok(Ok("/my_img.jpeg".to_string()), ("", 12)),
         });
     }
 }
