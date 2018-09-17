@@ -57,7 +57,7 @@ pub fn token<S: Stream>(token: u8) -> Token<S> {
     }
 }
 
-pub struct Cond<S: Stream, F>
+pub struct Satisfy<S: Stream, F>
 where
     F: Fn(&S::Item) -> bool,
 {
@@ -65,7 +65,7 @@ where
     _marker: PhantomData<S>,
 }
 
-impl<S: Stream, F> Parser for Cond<S, F>
+impl<S: Stream, F> Parser for Satisfy<S, F>
 where
     F: Fn(&S::Item) -> bool,
 {
@@ -87,11 +87,11 @@ where
     }
 }
 
-pub fn cond<S: Stream, F>(f: F) -> Cond<S, F>
+pub fn satisfy<S: Stream, F>(f: F) -> Satisfy<S, F>
 where
     F: Fn(&S::Item) -> bool,
 {
-    Cond {
+    Satisfy {
         f,
         _marker: PhantomData,
     }
@@ -132,12 +132,12 @@ pub mod ascii {
     macro_rules! def_ascii_parser {
         ($(#[$attr:meta])* $name:ident, $f:ident) => {
             $(#[$attr])*
-            pub fn $name<S>() -> Cond<S, fn(&S::Item) -> bool>
+            pub fn $name<S>() -> Satisfy<S, fn(&S::Item) -> bool>
             where
                 S: Stream,
                 S::Position: Position<S::Stream>,
             {
-                Cond {
+                Satisfy {
                     f: <S::Item as StreamItem>::$f,
                     _marker: PhantomData,
                 }
@@ -237,12 +237,12 @@ pub mod unicode {
     macro_rules! def_unicode_parser {
         ($(#[$attr:meta])* $name:ident, $f:ident) => {
             $(#[$attr])*
-            pub fn $name<S>() -> Cond<S, fn(&S::Item) -> bool>
+            pub fn $name<S>() -> Satisfy<S, fn(&S::Item) -> bool>
             where
                 S: Stream<Item = char>,
                 S::Position: Position<S::Stream>,
             {
-                Cond {
+                Satisfy {
                     f: |&c| <char>::$f(c),
                     _marker: PhantomData,
                 }
@@ -326,8 +326,8 @@ mod test {
     }
 
     #[test]
-    fn test_cond() {
-        let mut parser = cond(|&c: &char| c.is_numeric());
+    fn test_satisfy() {
+        let mut parser = satisfy(|&c: &char| c.is_numeric());
         test_parser!(&str | parser, {
             "123abc" => (Ok('1'), "23abc");
         }, {
