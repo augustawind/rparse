@@ -105,13 +105,6 @@ where
     pub fn expected_range(range: S) -> Self {
         Error::Expected(Info::Range(range))
     }
-
-    pub fn is_eof(&self) -> bool {
-        match self {
-            Error::EOF => true,
-            _ => false,
-        }
-    }
 }
 
 impl<S, T> PartialEq for Error<S>
@@ -166,7 +159,6 @@ impl<S: Stream, E: StdError + Send + Sync + 'static> From<Box<E>> for Error<S> {
 pub struct Errors<S: Stream, X: Position<S::Item>> {
     pub position: X,
     pub errors: Vec<Error<S::Range>>,
-    is_eof: bool,
 }
 
 impl<S: Stream, X: Position<S::Item>> Errors<S, X> {
@@ -174,38 +166,23 @@ impl<S: Stream, X: Position<S::Item>> Errors<S, X> {
         Errors {
             position,
             errors: Vec::new(),
-            is_eof: false,
         }
     }
 
     pub fn from_error(position: X, error: Error<S::Range>) -> Self {
-        let is_eof = error.is_eof();
         Errors {
             position,
             errors: vec![error],
-            is_eof,
         }
     }
 
     pub fn from_errors(position: X, errors: Vec<Error<S::Range>>) -> Self {
-        let is_eof = errors.iter().any(|err| err.is_eof());
-        Errors {
-            position,
-            errors,
-            is_eof,
-        }
-    }
-
-    pub fn is_eof(&self) -> bool {
-        return self.is_eof;
+        Errors { position, errors }
     }
 
     pub fn add_error(&mut self, error: Error<S::Range>) {
         if self.errors.contains(&error) {
             return;
-        }
-        if error.is_eof() {
-            self.is_eof = true;
         }
         self.errors.push(error);
     }
@@ -220,16 +197,10 @@ impl<S: Stream, X: Position<S::Item>> Errors<S, X> {
         match errors.position.cmp(&self.position) {
             Ordering::Greater => {
                 self.position = errors.position.clone();
-                if errors.is_eof() {
-                    self.is_eof = true;
-                }
                 self.errors.clear();
                 self.errors.extend(errors.errors.drain(..));
             }
             Ordering::Equal => {
-                if errors.is_eof() {
-                    self.is_eof = true;
-                }
                 for err in errors.errors.drain(..) {
                     if !self.errors.contains(&err) {
                         self.errors.push(err);
