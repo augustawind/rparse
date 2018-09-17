@@ -1,18 +1,23 @@
 macro_rules! test_parser {
     ($stream_type:ty | $p:expr, {
-        $($stream:expr => ($expected_result:expr, $expected_stream:expr));+;
+        $($into_input:expr => $expected:expr);+;
     }) => {
         $(
-            let (parsed_result, parsed_stream): $crate::error::ParseResult<$stream_type, _> =
-                $p.parse($stream.into());
-            assert_eq!(parsed_result, $expected_result);
-            let expected_stream: $stream_type = $expected_stream.into();
-            assert_eq!(parsed_stream, expected_stream);
+            let result: $crate::ParseResult<$stream_type, _> = $p.parse($into_input.into());
+            test_parser!(@ok $stream_type, result, $expected);
         )+
     };
 
+    (@ok $stream_type:ty, $result:expr, $expected:expr) => {
+        let (parsed_result, parsed_stream) = $result;
+        let (expected_result, into_expected_stream) = $expected;
+        let expected_stream: $stream_type = into_expected_stream.into();
+        assert_eq!(parsed_result, expected_result);
+        assert_eq!(parsed_stream, expected_stream);
+    };
+
     ($stream_type:ty | $p:expr, {
-        $($stream:expr => $expected:tt);+;
+        $($stream:expr => $expected:expr);+;
     }, {
         $($stream_err:expr => $expected_err:expr);+;
     }) => {
