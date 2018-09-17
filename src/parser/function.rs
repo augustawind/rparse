@@ -97,6 +97,19 @@ where
     p.map(|output| output.into_iter().flatten().collect())
 }
 
+pub type Wrap<P> = Map<P, fn(<P as Parser>::Output) -> Vec<<P as Parser>::Output>>;
+
+pub fn wrap<P>(p: P) -> Wrap<P>
+where
+    P: Parser,
+{
+    p.map(|output| {
+        let mut v = Vec::new();
+        v.push(output);
+        v
+    })
+}
+
 pub struct Bind<P, F> {
     parser: P,
     f: F,
