@@ -1,8 +1,6 @@
 #[macro_use]
 extern crate rparse;
 
-// use rparse::parser::choice::optional;
-use rparse::parser::choice::optional;
 use rparse::parser::range::range;
 use rparse::parser::seq::{many, many1};
 use rparse::parser::token::{ascii, token};
@@ -111,7 +109,11 @@ mod test {
     #[test]
     fn test_url_path() {
         test_parser!(for<IndexedStream<&str>, String> | url_path().collect(), {
+            "/" => ok(Ok("/".to_string()), ("", 1)),
             "/my_img.jpeg" => ok(Ok("/my_img.jpeg".to_string()), ("", 12)),
+            "//a/b//``" => ok(Ok("//a/b//".to_string()), ("``", 7)),
+            "/%%bc" => ok(Ok("/".to_string()), ("%%bc", 1)),
+            "my_img.jpeg" => err(0, vec![Error::unexpected_token('m'), Error::expected_token('/')]),
         });
     }
 }
