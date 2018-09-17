@@ -1,32 +1,24 @@
-use std::iter;
-use std::marker::PhantomData;
-
 use error::ParseResult;
 use parser::Parser;
 use stream::Stream;
 
-pub struct Then<L, R, I> {
+pub struct Then<L, R> {
     left: L,
     right: R,
-    __marker: PhantomData<I>,
 }
 
-impl<S: Stream, O, I, L, R> Parser for Then<L, R, I>
+impl<S: Stream, O, L, R> Parser for Then<L, R>
 where
     L: Parser<Stream = S, Output = O>,
     R: Parser<Stream = S, Output = O>,
-    I: iter::FromIterator<O>,
 {
     type Stream = S;
-    type Output = I;
+    type Output = Vec<O>;
 
     fn parse_stream(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         match self.left.parse(stream) {
             (Ok(first), stream) => match self.right.parse(stream) {
-                (Ok(second), stream) => {
-                    let result: I = iter::once(first).chain(iter::once(second)).collect();
-                    stream.ok(result)
-                }
+                (Ok(second), stream) => stream.ok(vec![first, second]),
                 (Err(err), stream) => stream.errs(err),
             },
             (Err(err), stream) => stream.errs(err),
@@ -34,17 +26,12 @@ where
     }
 }
 
-pub fn then<S: Stream, O, I, L, R>(left: L, right: R) -> Then<L, R, I>
+pub fn then<S: Stream, O, L, R>(left: L, right: R) -> Then<L, R>
 where
     L: Parser<Stream = S, Output = O>,
     R: Parser<Stream = S, Output = O>,
-    I: iter::FromIterator<O>,
 {
-    Then {
-        left,
-        right,
-        __marker: PhantomData,
-    }
+    Then { left, right }
 }
 
 #[cfg(test)]
@@ -55,10 +42,10 @@ mod test {
 
     #[test]
     fn test_then() {
-        let mut parser = token('X').then::<_, String>(token('O'));
+        let mut parser = token('X').then(token('O'));
         test_parser!(IndexedStream<&str> | parser, {
-            "XO" => (Ok("XO".to_string()), ("", 2));
-            "XOXO" => (Ok("XO".to_string()), ("XO", 2));
+            "XO" => (Ok("XO".chars().collect()), ("", 2));
+            "XOXO" => (Ok("XO".chars().collect()), ("XO", 2));
         }, {
             "XY" => (1, vec![Error::unexpected_token('Y'), Error::expected_token('O')]);
             "ZY" => (0, vec![Error::unexpected_token('Z'), Error::expected_token('X')]);

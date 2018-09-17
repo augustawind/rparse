@@ -1,25 +1,19 @@
-use std::iter;
-use std::marker::PhantomData;
-
 use error::ParseResult;
 use parser::Parser;
 use stream::Stream;
 
-pub struct Extend<E, I, L, R> {
+pub struct Extend<L, R> {
     left: L,
     right: R,
-    __marker: PhantomData<(E, I)>,
 }
 
-impl<S: Stream, E, I, O, L, R> Parser for Extend<E, I, L, R>
+impl<S: Stream, O, L, R> Parser for Extend<L, R>
 where
-    L: Parser<Stream = S, Output = E>,
-    R: Parser<Stream = S, Output = I>,
-    E: iter::Extend<O>,
-    I: IntoIterator<Item = O>,
+    L: Parser<Stream = S, Output = Vec<O>>,
+    R: Parser<Stream = S, Output = Vec<O>>,
 {
     type Stream = S;
-    type Output = E;
+    type Output = Vec<O>;
 
     fn parse_stream(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         match self.left.parse_stream(stream) {
@@ -35,18 +29,12 @@ where
     }
 }
 
-pub fn extend<S: Stream, E, I, O, L, R>(left: L, right: R) -> Extend<E, I, L, R>
+pub fn extend<S: Stream, O, L, R>(left: L, right: R) -> Extend<L, R>
 where
-    L: Parser<Stream = S, Output = E>,
-    R: Parser<Stream = S, Output = I>,
-    E: iter::Extend<O>,
-    I: IntoIterator<Item = O>,
+    L: Parser<Stream = S, Output = Vec<O>>,
+    R: Parser<Stream = S, Output = Vec<O>>,
 {
-    Extend {
-        left,
-        right,
-        __marker: PhantomData,
-    }
+    Extend { left, right }
 }
 
 #[macro_export]
@@ -69,11 +57,11 @@ mod test {
 
     #[test]
     fn test_extend() {
-        let mut parser = extend::<_, String, Vec<char>, _, _, _>(many(letter()), many1(token('?')));
+        let mut parser = extend(many(letter()), many1(token('?')));
         test_parser!(IndexedStream<&str> | parser, {
-            "huh???" => (Ok("huh???".to_string()), ("", 6));
-            "oh?? cool" => (Ok("oh??".to_string()), (" cool", 4));
-            "???" => (Ok("???".to_string()), ("", 3));
+            "huh???" => (Ok("huh???".chars().collect()), ("", 6));
+            "oh?? cool" => (Ok("oh??".chars().collect()), (" cool", 4));
+            "???" => (Ok("???".chars().collect()), ("", 3));
         }, {
             "" => (0, vec![Error::EOF, Error::expected_token('?')]);
             "whoops!" => (6, vec![Error::unexpected_token('!'), Error::expected_token('?')]);

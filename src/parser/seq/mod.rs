@@ -3,7 +3,6 @@
 pub mod append;
 pub mod extend;
 pub mod many;
-#[macro_use]
 pub mod then;
 
 pub use self::append::*;

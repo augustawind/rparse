@@ -1,23 +1,18 @@
-use std::iter::FromIterator;
-use std::marker::PhantomData;
-
 use error::ParseResult;
 use parser::Parser;
 use stream::Stream;
 
-pub struct Many<O, P> {
+pub struct Many<P> {
     p: P,
     min: usize,
-    __marker: PhantomData<O>,
 }
 
-impl<O, P> Parser for Many<O, P>
+impl<P> Parser for Many<P>
 where
     P: Parser,
-    O: FromIterator<P::Output>,
 {
     type Stream = P::Stream;
-    type Output = O;
+    type Output = Vec<P::Output>;
 
     fn parse_stream(
         &mut self,
@@ -35,7 +30,7 @@ where
                     if i < self.min {
                         return stream.errs(errors);
                     }
-                    return stream.ok(output.into_iter().collect());
+                    return stream.ok(output);
                 }
             };
 
@@ -44,28 +39,18 @@ where
     }
 }
 
-pub fn many<O, P>(p: P) -> Many<O, P>
+pub fn many<P>(p: P) -> Many<P>
 where
     P: Parser,
-    O: FromIterator<P::Output>,
 {
-    Many {
-        p,
-        min: 0,
-        __marker: PhantomData,
-    }
+    Many { p, min: 0 }
 }
 
-pub fn many1<O, P>(p: P) -> Many<O, P>
+pub fn many1<P>(p: P) -> Many<P>
 where
     P: Parser,
-    O: FromIterator<P::Output>,
 {
-    Many {
-        p,
-        min: 1,
-        __marker: PhantomData,
-    }
+    Many { p, min: 1 }
 }
 
 #[cfg(test)]
@@ -79,21 +64,27 @@ mod test {
     fn test_many() {
         assert_eq!(
             many(token('a')).parse("aaabcd"),
-            (Ok("aaa".to_string()), "bcd")
+            (Ok("aaa".chars().collect()), "bcd")
         );
         assert_eq!(
             many(token('a')).parse("aaabcd"),
             (Ok(vec!['a', 'a', 'a']), "bcd")
         );
-        assert_eq!(many(token('b')).parse("abcd"), (Ok("".to_string()), "abcd"));
-        assert_eq!(many(token('a')).parse("aaaa"), (Ok("aaaa".to_string()), ""));
+        assert_eq!(
+            many(token('b')).parse("abcd"),
+            (Ok("".chars().collect()), "abcd")
+        );
+        assert_eq!(
+            many(token('a')).parse("aaaa"),
+            (Ok("aaaa".chars().collect()), "")
+        );
         assert_eq!(
             many(many1(token('a'))).parse("aaabcd"),
-            (Ok(vec!["aaa".to_string()]), "bcd")
+            (Ok(vec!["aaa".chars().collect()]), "bcd")
         );
         assert_eq!(
             many(many1(token('b'))).parse("aaabcd"),
-            (Ok(Vec::<String>::new()), "aaabcd")
+            (Ok(Vec::<Vec<char>>::new()), "aaabcd")
         );
     }
 
@@ -101,9 +92,9 @@ mod test {
     fn test_many1() {
         let mut parser = many1(token('a'));
         test_parser!(IndexedStream<&str> | parser, {
-            "aaabcd" => (Ok("aaa".to_string()), ("bcd", 3));
-            "abcd" => (Ok("a".to_string()), ("bcd", 1));
-            "aaaa" => (Ok("aaaa".to_string()), ("", 4));
+            "aaabcd" => (Ok("aaa".chars().collect()), ("bcd", 3));
+            "abcd" => (Ok("a".chars().collect()), ("bcd", 1));
+            "aaaa" => (Ok("aaaa".chars().collect()), ("", 4));
         }, {
             "baaa" => (0, vec![Error::unexpected_token('b'), Error::expected_token('a')]);
         });

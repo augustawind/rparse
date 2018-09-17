@@ -15,8 +15,6 @@ pub mod range;
 pub mod token;
 
 use std::fmt::Display;
-use std::iter;
-use std::iter::FromIterator;
 use std::str;
 
 use self::choice::{and, or, And, Or};
@@ -85,30 +83,26 @@ pub trait Parser {
         or(self, other)
     }
 
-    fn then<P, O>(self, other: P) -> Then<Self, P, O>
+    fn then<P>(self, other: P) -> Then<Self, P>
     where
         Self: Sized,
         P: Parser<Stream = Self::Stream, Output = Self::Output>,
-        O: FromIterator<Self::Output>,
     {
         then(self, other)
     }
 
-    fn append<P, O>(self, other: P) -> Append<Self, P, Self::Output>
+    fn append<P, O>(self, other: P) -> Append<Self, P>
     where
-        Self: Sized,
-        Self::Output: iter::Extend<O>,
+        Self: Sized + Parser<Output = Vec<O>>,
         P: Parser<Stream = Self::Stream, Output = O>,
     {
         append(self, other)
     }
 
-    fn extend<I, O, P>(self, other: P) -> Extend<Self::Output, I, Self, P>
+    fn extend<P, O>(self, other: P) -> Extend<Self, P>
     where
-        Self: Sized,
-        Self::Output: iter::Extend<O>,
-        P: Parser<Stream = Self::Stream, Output = I>,
-        I: IntoIterator<Item = O>,
+        Self: Sized + Parser<Output = Vec<O>>,
+        P: Parser<Stream = Self::Stream, Output = Vec<O>>,
     {
         extend(self, other)
     }
