@@ -33,6 +33,14 @@ pub trait Parser {
 
     fn parse_lazy(&mut self, Self::Stream) -> ParseResult<Self::Stream, Self::Output>;
 
+    fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        let mut result = self.parse_lazy(stream);
+        if let Err(ref mut errors) = result.0 {
+            self.add_expected_error(errors);
+        }
+        result
+    }
+
     fn parse(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output>
     where
         Self: Sized,
@@ -220,13 +228,16 @@ mod test {
         S: Stream,
         S::Position: Position<S::Stream>,
     {
-        match stream.pop().ok_or_else(|| Error::unexpected_eoi()).and_then(|t| {
-            if t == b'\n'.into() {
-                Ok(t)
-            } else {
-                Err(Error::unexpected_token(t))
-            }
-        }) {
+        match stream
+            .pop()
+            .ok_or_else(|| Error::unexpected_eoi())
+            .and_then(|t| {
+                if t == b'\n'.into() {
+                    Ok(t)
+                } else {
+                    Err(Error::unexpected_token(t))
+                }
+            }) {
             Ok(ok) => stream.ok(ok),
             Err(err) => stream.err(err),
         }
