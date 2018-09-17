@@ -9,30 +9,24 @@ use rparse::{Parser, Stream};
 fn http_version<'a, S>() -> impl Parser<Stream = S, Output = Vec<S::Range>>
 where
     S: Stream,
-    S::Range: From<&'a str>,
 {
-    range("HTTP/".into()).then(choice![
-        range("1".into()),
-        range("1.1".into()),
-        range("2".into())
-    ])
+    range("HTTP/").then(choice![range("1"), range("1.1"), range("2")])
 }
 
 fn http_method<'a, S>() -> impl Parser<Stream = S, Output = S::Range>
 where
     S: Stream,
-    S::Range: From<&'a str>,
 {
     choice![
-        range("GET".into()),
-        range("PUT".into()),
-        range("POST".into()),
-        range("HEAD".into()),
-        range("PATCH".into()),
-        range("TRACE".into()),
-        range("DELETE".into()),
-        range("OPTIONS".into()),
-        range("CONNECT".into()),
+        range("GET"),
+        range("PUT"),
+        range("POST"),
+        range("HEAD"),
+        range("PATCH"),
+        range("TRACE"),
+        range("DELETE"),
+        range("OPTIONS"),
+        range("CONNECT"),
     ]
 }
 
@@ -99,17 +93,19 @@ mod test {
     // TODO: [u8]
     #[test]
     fn test_http_method() {
-        let method_errors: Vec<Error<IndexedStream<&str>>> = vec![
+        let method_errors: Vec<Error<IndexedStream<&[u8]>>> = vec![
             "GET", "PUT", "POST", "HEAD", "PATCH", "TRACE", "DELETE", "OPTIONS", "CONNECT",
         ].into_iter()
-            .map(|method| Error::expected_range(method))
+            .map(|method| Error::expected_range(method.as_bytes()))
             .collect();
 
-        test_parser!(IndexedStream<&str> => &str | http_method(), {
-            "GET" => ok(Ok("GET"), ("", 3)),
-            "HEAD\n/" => ok(Ok("HEAD"), ("\n/", 4)),
-            "GARBLEDIGOOK" => err(0, method_errors.clone()),
+        test_parser!(IndexedStream<&[u8]> => &[u8] | http_method(), {
+            &b"GET"[..] => ok(Ok(&b"GET"[..]), (&b""[..], 3)),
+            &b"HEAD\n/"[..] => ok(Ok(&b"HEAD"[..]), (&b"\n/"[..], 4)),
+            &b"GARBLEDIGOOK"[..] => err(0, method_errors.clone()),
         });
+
+        assert_eq!(http_method().parse("TRACE it"), (Ok("TRACE"), " it"));
     }
 
     #[test]
