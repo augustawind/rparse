@@ -50,14 +50,14 @@ mod test {
     use super::*;
     use error::Error;
     use parser::seq::{many, many1};
-    use parser::token::ascii::letter;
+    use parser::token::ascii;
     use parser::token::token;
     use parser::Parser;
     use stream::IndexedStream;
 
     #[test]
     fn test_extend() {
-        let mut parser = extend(many(letter()), many1(token('?')));
+        let mut parser = extend(many(ascii::letter()), many1(token('?')));
         test_parser!(IndexedStream<&str> | parser, {
             "huh???" => (Ok("huh???".chars().collect()), ("", 6));
             "oh?? cool" => (Ok("oh??".chars().collect()), (" cool", 4));
@@ -69,22 +69,22 @@ mod test {
         });
     }
 
-    // #[test]
-    // fn test_concat_macro() {
-    //     let mut parser: Extend<String, String, _, _> = concat![
-    //         many(ascii::whitespace()),
-    //         ascii::letter().s(),
-    //         many1(ascii::alpha_num()),
-    //     ];
-    //     test_parser!(IndexedStream<&str> | parser, {
-    //             "x9" => (Ok("x9".to_string()), "", 2);
-    //             "t1t3 man" => (Ok("t1t3".to_string()), " man", 5);
-    //             "  xs = [2, 3]" => (Ok("  xs".to_string()), " = [2, 3]", 5);
-    //         });
-    //         // test_parser_errors!(IndexedStream<&str> | parser, {
-    //         //     "" => (0, vec![Error::EOF, Error::expected_token('%')]);
-    //         //     "%0" => (2, vec![Error::EOF]);
-    //         //     "%zz" => (1, vec![Error::unexpected_token('z')]);
-    //         // });
-    //     }
+    #[test]
+    fn test_concat_macro() {
+        let mut parser = concat![
+            many(ascii::whitespace()),
+            ascii::letter().then(ascii::alpha_num()),
+            many(ascii::alpha_num()),
+        ].collect();
+        test_parser!(IndexedStream<&str> | parser, {
+            "x9" => (Ok("x9".to_string()), ("", 2));
+            "t1t3 man" => (Ok("t1t3".to_string()), (" man", 4));
+            "  xs = [2, 3]" => (Ok("  xs".to_string()), (" = [2, 3]", 4));
+        }, {
+            "" => (0, vec![Error::EOF]);
+            "a" => (1, vec![Error::EOF]);
+            "?" => (0, vec![Error::unexpected_token('?')]);
+            "a?" => (1, vec![Error::unexpected_token('?')]);
+        });
+    }
 }
