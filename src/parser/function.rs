@@ -5,6 +5,7 @@ use std::iter::FromIterator;
 use std::marker::PhantomData;
 use std::str;
 
+use traits::StrLike;
 use {Error, ParseResult, Parser, Stream};
 
 pub struct Expect<P: Parser> {
@@ -137,46 +138,6 @@ where
     F: Fn(P::Output, P::Stream) -> O,
 {
     Bind { parser: p, f }
-}
-
-pub trait StrLike {
-    fn from_utf8(&self) -> Result<&str, ()>;
-}
-
-impl StrLike for String {
-    fn from_utf8(&self) -> Result<&str, ()> {
-        Ok(self)
-    }
-}
-
-impl<'a> StrLike for &'a str {
-    fn from_utf8(&self) -> Result<&str, ()> {
-        Ok(*self)
-    }
-}
-
-impl StrLike for str {
-    fn from_utf8(&self) -> Result<&str, ()> {
-        Ok(self)
-    }
-}
-
-impl StrLike for Vec<u8> {
-    fn from_utf8(&self) -> Result<&str, ()> {
-        (**self).from_utf8()
-    }
-}
-
-impl<'a> StrLike for &'a [u8] {
-    fn from_utf8(&self) -> Result<&str, ()> {
-        (**self).from_utf8()
-    }
-}
-
-impl StrLike for [u8] {
-    fn from_utf8(&self) -> Result<&str, ()> {
-        str::from_utf8(self).map_err(|_| ())
-    }
 }
 
 pub struct FromStr<P, O> {

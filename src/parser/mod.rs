@@ -20,11 +20,12 @@ use std::str;
 use self::choice::{and, optional, or, And, Optional, Or};
 use self::function::{
     bind, collect, flatten, from_str, iter, map, wrap, Bind, Collect, Flatten, FromStr, Iter, Map,
-    StrLike, Wrap,
+    Wrap,
 };
 use self::seq::{append, extend, then, Append, Extend, Then};
 use error::ParseResult;
 use stream::Stream;
+use traits::StrLike;
 
 pub trait Parser {
     type Stream: Stream;
