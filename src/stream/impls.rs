@@ -1,4 +1,50 @@
-use super::{NullPosition, Stream, StreamRange, Tokens};
+use super::{NullPosition, Stream, StreamItem, StreamRange, Tokens};
+
+macro_rules! impl_StreamItem {
+    ($T:ty) => {
+        impl StreamItem for $T {
+            fn is_ascii(&self) -> bool {
+                <$T>::is_ascii(self)
+            }
+            fn is_ascii_alphabetic(&self) -> bool {
+                <$T>::is_ascii_alphabetic(self)
+            }
+            fn is_ascii_alphanumeric(&self) -> bool {
+                <$T>::is_ascii_alphanumeric(self)
+            }
+            fn is_ascii_digit(&self) -> bool {
+                <$T>::is_ascii_digit(self)
+            }
+            fn is_ascii_hexdigit(&self) -> bool {
+                <$T>::is_ascii_hexdigit(self)
+            }
+            fn is_ascii_punctuation(&self) -> bool {
+                <$T>::is_ascii_punctuation(self)
+            }
+            fn is_ascii_graphic(&self) -> bool {
+                <$T>::is_ascii_graphic(self)
+            }
+            fn is_ascii_whitespace(&self) -> bool {
+                <$T>::is_ascii_whitespace(self)
+            }
+            fn is_ascii_control(&self) -> bool {
+                <$T>::is_ascii_control(self)
+            }
+            fn is_ascii_uppercase(&self) -> bool {
+                <$T>::is_ascii_uppercase(self)
+            }
+            fn is_ascii_lowercase(&self) -> bool {
+                <$T>::is_ascii_lowercase(self)
+            }
+            fn eq_ignore_ascii_case(&self, other: &$T) -> bool {
+                <$T>::eq_ignore_ascii_case(self, other)
+            }
+        }
+    };
+}
+
+impl_StreamItem!(char);
+impl_StreamItem!(u8);
 
 impl<'a> StreamRange for &'a str {
     fn len(&self) -> usize {

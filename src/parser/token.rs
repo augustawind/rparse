@@ -1,18 +1,16 @@
 //! Parsers that parse a single token.
 
-use std::fmt::Debug;
 use std::marker::PhantomData;
 
 use error::{Error, ParseResult};
 use parser::{parser, Parser};
-use stream::{Position, Stream, StreamRange};
+use stream::{Position, Stream, StreamItem, StreamRange};
 
 // TODO: refactor this to use a struct impl (e.g. `struct Any<S, O>`)
-pub fn any<S, O>() -> impl Parser<Stream = S, Output = O>
+pub fn any<S>() -> impl Parser<Stream = S, Output = S::Item>
 where
-    S: Stream<Item = O>,
+    S: Stream,
     S::Position: Position<S::Stream>,
-    O: Copy + PartialEq + Debug,
 {
     parser(|mut stream: S| match stream.pop() {
         Some(t) => stream.ok(t),
@@ -99,56 +97,60 @@ where
     }
 }
 
-macro_rules! def_char_parser {
-    ($(#[$attr:meta])* $name:ident, $f:ident) => {
-        $(#[$attr])*
-        pub fn $name<S, T>() -> Cond<S, fn(&S::Item) -> bool>
-        where
-            S: Stream<Item = T>,
-            T: Copy + PartialEq + Debug + Into<char> + From<char> + ,
-            S::Position: Position<S::Stream>,
-        {
-            Cond {
-                f: |&c: &T| c.into().$f().into(),
-                _marker: PhantomData,
-            }
-        }
-    };
-}
-
 pub mod ascii {
     //! Parsers for ASCII characters.
 
     use super::*;
 
-    def_char_parser!(
+    macro_rules! def_ascii_parser {
+        ($(#[$attr:meta])* $name:ident, $f:ident) => {
+            $(#[$attr])*
+            pub fn $name<S>() -> Cond<S, fn(&S::Item) -> bool>
+            where
+                S: Stream,
+                S::Position: Position<S::Stream>,
+            {
+                Cond {
+                    f: <S::Item as StreamItem>::$f,
+                    _marker: PhantomData,
+                }
+            }
+        };
+    }
+
+    def_ascii_parser!(
+        /// Parses any ASCII character.
+        ascii,
+        is_ascii
+    );
+    def_ascii_parser!(
         /// Parses an ASCII letter.
         letter,
         is_ascii_alphabetic
     );
-    def_char_parser!(
+    def_ascii_parser!(
+        /// Parses an ASCII letter or digit.
+        alpha_num,
+        is_ascii_alphanumeric
+    );
+    def_ascii_parser!(
         /// Parses a digit according to [`std::char::is_ascii_digit`].
         ///
         /// [`std::char::is_ascii_digit`]: https://doc.rust-lang.org/std/primitive.char.html#method.is_ascii_digit
         digit,
         is_ascii_digit
     );
-    def_char_parser!(
+    def_ascii_parser!(
         /// Parses a hexadecimal digit.
         hexdigit,
         is_ascii_hexdigit
     );
-    def_char_parser!(
-        /// Parses an ASCII letter or digit.
-        alpha_num,
-        is_ascii_alphanumeric
-    );
-    def_char_parser!(
+    def_ascii_parser!(
         /// Parses an ASCII whitespace character.
         whitespace,
         is_ascii_whitespace
     );
-    def_char_parser!(
+    def_ascii_parser!(
         /// Parses an ASCII punctuation character.
         punctuation,
         is_ascii_punctuation
@@ -193,22 +195,38 @@ pub mod unicode {
 
     use super::*;
 
-    def_char_parser!(
+    macro_rules! def_unicode_parser {
+        ($(#[$attr:meta])* $name:ident, $f:ident) => {
+            $(#[$attr])*
+            pub fn $name<S>() -> Cond<S, fn(&S::Item) -> bool>
+            where
+                S: Stream<Item = char>,
+                S::Position: Position<S::Stream>,
+            {
+                Cond {
+                    f: |&c| <char>::$f(c),
+                    _marker: PhantomData,
+                }
+            }
+        };
+    }
+
+    def_unicode_parser!(
         /// Parses a Unicode alphabetic character.
         letter,
         is_alphabetic
     );
-    def_char_parser!(
+    def_unicode_parser!(
         /// Parses a Unicode numeric character.
         numeric,
         is_numeric
     );
-    def_char_parser!(
+    def_unicode_parser!(
         /// Parses a Unicode alphabetic or numeric character.
         alpha_num,
         is_alphanumeric
     );
-    def_char_parser!(
+    def_unicode_parser!(
         /// Parses a Unicode whitespace character.
         whitespace,
         is_whitespace

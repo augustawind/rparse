@@ -206,14 +206,13 @@ mod test {
         });
     }
 
-    fn newline<S, O>(mut stream: S) -> ParseResult<S, O>
+    fn newline<S>(mut stream: S) -> ParseResult<S, S::Item>
     where
-        S: Stream<Item = O>,
+        S: Stream,
         S::Position: Position<S::Stream>,
-        O: Copy + PartialEq + Debug + Into<char>,
     {
         match stream.pop().ok_or_else(|| Error::EOF).and_then(|t| {
-            if t.into() == '\n' {
+            if t == b'\n'.into() {
                 Ok(t)
             } else {
                 Err(Error::unexpected_token(t))

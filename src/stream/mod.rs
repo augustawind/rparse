@@ -34,6 +34,22 @@ impl<'a, T> Iterator for Tokens<'a, T> {
     }
 }
 
+pub trait StreamItem: Copy + PartialEq + Debug + From<u8> {
+    fn is_ascii(&self) -> bool;
+    fn is_ascii_alphabetic(&self) -> bool;
+    fn is_ascii_alphanumeric(&self) -> bool;
+    fn is_ascii_digit(&self) -> bool;
+    fn is_ascii_hexdigit(&self) -> bool;
+    fn is_ascii_punctuation(&self) -> bool;
+    fn is_ascii_graphic(&self) -> bool;
+    fn is_ascii_whitespace(&self) -> bool;
+    fn is_ascii_control(&self) -> bool;
+
+    fn is_ascii_uppercase(&self) -> bool;
+    fn is_ascii_lowercase(&self) -> bool;
+    fn eq_ignore_ascii_case(&self, &Self) -> bool;
+}
+
 pub trait StreamRange: Stream + PartialEq + Clone + Debug {
     fn len(&self) -> usize;
     fn from_str(s: &'static str) -> Self;
@@ -49,7 +65,7 @@ pub trait Stream: Sized + Clone + Debug {
     type Position: Position<Self::Stream>;
 
     /// The type of a single token.
-    type Item: Copy + PartialEq + Debug;
+    type Item: StreamItem;
 
     /// The type of a range of tokens.
     type Range: StreamRange<Item = Self::Item>;

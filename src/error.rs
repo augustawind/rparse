@@ -3,7 +3,6 @@
 use std::cmp::Ordering;
 use std::error::Error as StdError;
 use std::fmt;
-use std::fmt::Debug;
 use std::iter::FromIterator;
 
 use stream::{Position, Stream};
@@ -59,11 +58,10 @@ where
     }
 }
 
-impl<S, T> PartialEq for Info<S>
+impl<S> PartialEq for Info<S>
 where
-    S: Stream<Item = T>,
+    S: Stream,
     S::Position: Position<S::Stream>,
-    T: Copy + Debug + PartialEq,
 {
     fn eq(&self, other: &Info<S>) -> bool {
         match (self, other) {
@@ -86,17 +84,16 @@ pub enum Error<S: Stream> {
     Message(Info<S>),
 }
 
-impl<S, T> Error<S>
+impl<S> Error<S>
 where
-    S: Stream<Item = T>,
+    S: Stream,
     S::Position: Position<S::Stream>,
-    T: Copy + PartialEq + Debug,
 {
-    pub fn expected_token(token: T) -> Self {
+    pub fn expected_token(token: S::Item) -> Self {
         Error::Expected(Info::Token(token))
     }
 
-    pub fn unexpected_token(token: T) -> Self {
+    pub fn unexpected_token(token: S::Item) -> Self {
         Error::Unexpected(Info::Token(token))
     }
 
@@ -109,11 +106,10 @@ where
     }
 }
 
-impl<S, T> PartialEq for Error<S>
+impl<S> PartialEq for Error<S>
 where
-    S: Stream<Item = T>,
+    S: Stream,
     S::Position: Position<S::Stream>,
-    T: Copy + Debug + PartialEq,
 {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
