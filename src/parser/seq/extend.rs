@@ -74,8 +74,7 @@ mod test {
             "huh???" => (Ok("huh???".to_string()), ("", 6));
             "oh?? cool" => (Ok("oh??".to_string()), (" cool", 4));
             "???" => (Ok("???".to_string()), ("", 3));
-        });
-        test_parser_errors!(IndexedStream<&str> | parser, {
+        }, {
             "" => (0, vec![Error::EOF, Error::expected_token('?')]);
             "whoops!" => (6, vec![Error::unexpected_token('!'), Error::expected_token('?')]);
             "!?" => (0, vec![Error::unexpected_token('!'), Error::expected_token('?')]);

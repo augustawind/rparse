@@ -232,10 +232,9 @@ mod test {
         );
         test_parser!(IndexedStream<&str> | parser, {
             "324 dogs" => (Ok(324 as usize), (" dogs", 3));
-        });
+        }, {
         // TODO: add ability to control consumption, e.g. make this error show at beginning (0)
         // TODO: e.g.: many1(alpha_num()).bind(...).try()
-        test_parser_errors!(IndexedStream<&str> | parser, {
             "324dogs" => (7, vec!["invalid digit found in string".into()]);
         });
     }

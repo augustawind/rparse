@@ -220,11 +220,10 @@ pub mod unicode {
 
         #[test]
         fn test_letter() {
-            test_parser!(&str | letter(), {
-                "京34a" => (Ok('京'), "34a");
-                "a京34" => (Ok('a'), "京34");
-            });
-            test_parser_errors!(IndexedStream<&str> | letter(), {
+            test_parser!(IndexedStream<&str> | letter(), {
+                "京34a" => (Ok('京'), ("34a", 1));
+                "a京34" => (Ok('a'), ("京34", 1));
+            }, {
                 "3京4a" => (0, vec![Unexpected(Token('3'))]);
             });
         }
@@ -257,8 +256,7 @@ mod test {
         let mut parser = cond(|&c: &char| c.is_numeric());
         test_parser!(&str | parser, {
             "123abc" => (Ok('1'), "23abc");
-        });
-        test_parser_errors!(&str | parser, {
+        }, {
             "abc123" => vec![Error::unexpected_token('a')];
         });
     }

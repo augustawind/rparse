@@ -104,8 +104,7 @@ mod test {
             "aaabcd" => (Ok("aaa".to_string()), ("bcd", 3));
             "abcd" => (Ok("a".to_string()), ("bcd", 1));
             "aaaa" => (Ok("aaaa".to_string()), ("", 4));
-        });
-        test_parser_errors!(IndexedStream<&str> | parser, {
+        }, {
             "baaa" => (0, vec![Error::unexpected_token('b'), Error::expected_token('a')]);
         });
     }
