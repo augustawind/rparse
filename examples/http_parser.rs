@@ -1,19 +1,16 @@
 #[macro_use]
 extern crate rparse;
 
-use std::iter::FromIterator;
-
 // use rparse::parser::choice::optional;
 use rparse::parser::range::range;
 use rparse::parser::seq::many; //{many, many1};
 use rparse::parser::token::{ascii, token};
 use rparse::{Parser, Stream};
 
-fn http_version<'a, S, O>() -> impl Parser<Stream = S, Output = O>
+fn http_version<'a, S>() -> impl Parser<Stream = S, Output = Vec<S::Range>>
 where
     S: Stream,
     S::Range: From<&'a str>,
-    O: FromIterator<S::Range>,
 {
     range("HTTP/".into()).then(choice![
         range("1".into()),
@@ -81,11 +78,10 @@ where
 //     ]
 // }
 
-fn url_path_segment<'a, S, O>() -> impl Parser<Stream = S, Output = O>
+fn url_path_segment<'a, S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
 where
     S: Stream,
-    S::Item: From<char> + Into<char> + FromIterator<S::Item>,
-    O: FromIterator<S::Item>,
+    S::Item: From<char> + Into<char>,
 {
     choice![many(url_token()), percent_encoded()]
 }
@@ -104,15 +100,14 @@ where
     ]
 }
 
-fn percent_encoded<S, O>() -> impl Parser<Stream = S, Output = O>
+fn percent_encoded<S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
 where
     S: Stream,
-    S::Item: From<char> + Into<char> + FromIterator<S::Item>,
-    O: FromIterator<S::Item>,
+    S::Item: From<char> + Into<char>,
 {
     token('%'.into())
         .then(ascii::hexdigit())
-        .then(ascii::hexdigit())
+        .append(ascii::hexdigit())
 }
 
 fn main() {}
