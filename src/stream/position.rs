@@ -11,7 +11,7 @@ pub trait Position<S: Stream>: Default + Debug + Display + Clone + Ord {
 
     fn value(&self) -> Self::Value;
     fn update(&mut self, item: &S::Item);
-    fn update_range(&mut self, range: S::Range);
+    fn update_range(&mut self, range: &S::Range);
 
     fn fmt_msg(&self, msg: &str) -> String {
         format!("{} at {}", msg, self)
@@ -37,7 +37,7 @@ impl<S: Stream> Position<S> for NullPosition {
     }
 
     fn update(&mut self, _: &S::Item) {}
-    fn update_range(&mut self, _: S::Range) {}
+    fn update_range(&mut self, _: &S::Range) {}
 
     fn fmt_msg(&self, msg: &str) -> String {
         msg.to_string()
@@ -72,7 +72,7 @@ impl<S: Stream> Position<S> for IndexPosition {
         self.0 += 1;
     }
 
-    fn update_range(&mut self, range: S::Range) {
+    fn update_range(&mut self, range: &S::Range) {
         self.0 += range.len();
     }
 }
@@ -125,7 +125,7 @@ impl<'a> Position<&'a str> for LinePosition {
         }
     }
 
-    fn update_range(&mut self, range: &str) {
+    fn update_range(&mut self, range: &&str) {
         for item in range.chars() {
             self.update(&item);
         }

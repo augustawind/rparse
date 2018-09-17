@@ -61,9 +61,7 @@ where
 
     fn range(&mut self, idx: usize) -> Option<Self::Range> {
         self.stream.range(idx).map(|range| {
-            for token in range.tokens() {
-                self.position.update(&token);
-            }
+            self.position.update_range(&range);
             range
         })
     }
