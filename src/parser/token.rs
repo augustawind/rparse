@@ -97,6 +97,27 @@ where
     }
 }
 
+#[cfg(test)]
+macro_rules! def_token_parser_tests {
+    ($name:ident, $p:expr, $t_ok:expr, $t_err:expr) => {
+        #[test]
+        fn $name() {
+            test_parser!(IndexedStream<&str> => char | $p(), {
+                        concat!($t_ok) => ok(Ok($t_ok), ("", 1)),
+                        concat!($t_err) => err(0, vec![Error::unexpected_token($t_err)]),
+                        "" => err(0, vec![Error::EOF]),
+                    });
+            static T_OK: u8 = $t_ok as u8;
+            static T_ERR: u8 = $t_err as u8;
+            test_parser!(IndexedStream<&[u8]> => u8 | $p(), {
+                        concat!($t_ok).as_bytes() => ok(Ok(T_OK), ("".as_bytes(), 1)),
+                        concat!($t_err).as_bytes() => err(0, vec![Error::unexpected_token(T_ERR)]),
+                        "".as_bytes() => err(0, vec![Error::EOF]),
+                    });
+        }
+    };
+}
+
 pub mod ascii {
     //! Parsers for ASCII characters.
 
@@ -179,34 +200,13 @@ pub mod ascii {
     #[cfg(test)]
     mod test {
         use super::*;
+        use parser::Parser;
+        use stream::IndexedStream;
 
-        #[test]
-        fn test_letter() {
-            test_parser!(&str | letter(), {
-                "a" => (Ok('a'), "");
-            }, {
-                "1" => vec![Error::unexpected_token('1')];
-            });
-        }
-
-        #[test]
-        fn test_digit() {
-            test_parser!(&str | digit(), {
-                "1" => (Ok('1'), "");
-            }, {
-                "a" => vec![Error::unexpected_token('a')];
-            });
-        }
-
-        #[test]
-        fn test_alpha_num() {
-            test_parser!(&str | alpha_num(), {
-                "a" => (Ok('a'), "");
-                "1" => (Ok('1'), "");
-            }, {
-                "." => vec![Error::unexpected_token('.')];
-            });
-        }
+        // def_token_parser_tests!(test_ascii, ascii, '5', 'û');
+        def_token_parser_tests!(test_letter, letter, 'a', '_');
+        def_token_parser_tests!(test_alpha_num, alpha_num, '3', '!');
+        def_token_parser_tests!(test_digit, digit, '1', 'a');
     }
 }
 
