@@ -8,8 +8,8 @@ impl<P: Parser> Parser for Optional<P> {
     type Stream = P::Stream;
     type Output = Option<P::Output>;
 
-    fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        match self.0.parse_partial(stream) {
+    fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        match self.0.parse_lazy(stream) {
             (Ok(output), stream) => stream.ok(Some(output)),
             (Err(_), stream) => stream.ok(None),
         }
@@ -33,7 +33,7 @@ where
     type Stream = S;
     type Output = O;
 
-    fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+    fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         match self.left.parse(stream) {
             (Ok(_), stream) => self.right.parse(stream),
             err => err,
@@ -62,7 +62,7 @@ where
     type Stream = S;
     type Output = O;
 
-    fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+    fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         let (mut err, stream) = match self.left.parse(stream) {
             (Ok(result), stream) => return stream.ok(result),
             (Err(err), stream) => (err, stream),

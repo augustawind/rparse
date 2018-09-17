@@ -31,14 +31,14 @@ pub trait Parser {
     type Stream: Stream;
     type Output;
 
-    fn parse_partial(&mut self, Self::Stream) -> ParseResult<Self::Stream, Self::Output>;
+    fn parse_lazy(&mut self, Self::Stream) -> ParseResult<Self::Stream, Self::Output>;
 
     fn parse(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output>
     where
         Self: Sized,
     {
         let backup = stream.backup();
-        let mut result = self.parse_partial(stream);
+        let mut result = self.parse_lazy(stream);
         if let (Err(ref mut errors), ref mut stream) = result {
             stream.restore(backup);
             self.add_expected_error(errors);
@@ -165,7 +165,7 @@ impl<'a, S: Stream, O> Parser for FnMut(S) -> ParseResult<S, O> + 'a {
     type Stream = S;
     type Output = O;
 
-    fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+    fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         self(stream)
     }
 }
@@ -174,7 +174,7 @@ impl<S: Stream, O> Parser for fn(S) -> ParseResult<S, O> {
     type Stream = S;
     type Output = O;
 
-    fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+    fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         self(stream)
     }
 }

@@ -14,14 +14,14 @@ where
     type Stream = P::Stream;
     type Output = Vec<P::Output>;
 
-    fn parse_partial(
+    fn parse_lazy(
         &mut self,
         mut stream: Self::Stream,
     ) -> ParseResult<Self::Stream, Self::Output> {
         let mut output = Vec::new();
         let mut i = 0;
         loop {
-            stream = match self.p.parse_partial(stream) {
+            stream = match self.p.parse_lazy(stream) {
                 (Ok(result), stream) => {
                     output.push(result);
                     stream

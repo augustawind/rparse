@@ -12,7 +12,7 @@ impl<S: Stream> Parser for Range<S> {
     type Stream = S;
     type Output = S::Range;
 
-    fn parse_partial(
+    fn parse_lazy(
         &mut self,
         mut stream: Self::Stream,
     ) -> ParseResult<Self::Stream, Self::Output> {
