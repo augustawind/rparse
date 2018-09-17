@@ -26,24 +26,20 @@ where
 {
     choice![
         range("GET".into()),
-        (range("POST".into())),
-        (range("PUT".into())),
-        (range("PATCH".into())),
-        (range("DELETE".into())),
-        (range("HEAD".into())),
-        (range("OPTIONS".into())),
-        (range("CONNECT".into())),
-        (range("TRACE".into())),
+        range("POST".into()),
+        range("PUT".into()),
+        range("PATCH".into()),
+        range("DELETE".into()),
+        range("HEAD".into()),
+        range("OPTIONS".into()),
+        range("CONNECT".into()),
+        range("TRACE".into()),
     ]
 }
 
-// FIXME: this needs new methods/functions/macros!
 // TODO:
-//  - fn parser.s()             ~>  convert parser output from token to stream
-//  - fn parser.concat()        ~>  flatten nested parser output
 //  - fn optional(p: Parser)    ~>  ignore result if subparser fails
 //      *~> should this be first-class Parser functionality?
-//  - macro seq!                ~>  chain multiple parsers
 //
 fn url_path<'a, S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
 where
@@ -54,20 +50,20 @@ where
     token('/'.into()).wrap().extend(concat![
         // (optional) one or more path segments, which consist of any arrangement of
         many1(
-            // forward slashes and url segments
-            many(token('/'.into())).or(url_segment_chars()),
+            // forward slashes and url path segments
+            many(token('/'.into())).or(url_segment_part()),
         ).flatten(),
         // (optional) and an extension, which is
         concat![
             // a period
             token('.'.into()).wrap(),
-            // and one or more segment characters
-            many1(url_segment_chars()).flatten(),
+            // and some url tokens
+            many1(url_segment_part()).flatten(),
         ],
     ])
 }
 
-fn url_segment_chars<'a, S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
+fn url_segment_part<S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
 where
     S: Stream,
     S::Item: From<char> + Into<char>,
@@ -101,3 +97,19 @@ where
 }
 
 fn main() {}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use rparse::Error;
+
+    #[test]
+    fn test_percent_encoded() {
+        test_parser!(&str | percent_encoded().collect::<String>(), {
+            "%A9" => ok(Ok("%A9".to_string()), "");
+            "%0f/hello" => ok(Ok("%0f".to_string()), "/hello");
+            "" => err(vec![Error::EOF, Error::expected_token('%')]);
+            "%xy" => err(vec![Error::unexpected_token('x')]);
+        });
+    }
+}
