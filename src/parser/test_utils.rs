@@ -2,15 +2,15 @@
 macro_rules! test_parser {
     // New API
 
-    (for<$stream_ty:ty, $output_ty:ty> | $p:expr, {
+    ($stream_ty:ty => $output_ty:ty | $p:expr, {
         $($into_input:expr => $assertion:ident $expected:expr),+ $(,)*
     }) => {
         $(
-            test_parser!(@dispatch $assertion <$stream_ty, $output_ty> $p, $into_input => $expected);
+            test_parser!(@dispatch $assertion $stream_ty, $output_ty, $p, $into_input, $expected);
         )+
     };
 
-    (@dispatch ok <$stream_ty:ty, $output_ty:ty> $p:expr, $into_input:expr => $expected:expr) => {
+    (@dispatch ok $stream_ty:ty, $output_ty:ty, $p:expr, $into_input:expr, $expected:expr) => {
         let input: $stream_ty = $into_input.into();
         let (result, stream): $crate::ParseResult<$stream_ty, $output_ty> = $p.parse(input.clone());
         let (expected_result, into_expected_stream) = $expected;
@@ -19,7 +19,7 @@ macro_rules! test_parser {
         assert_eq!(stream, expected_stream);
     };
 
-    (@dispatch err <$stream_ty:ty, $output_ty:ty> $p:expr, $into_input:expr => $expected:expr) => {
+    (@dispatch err $stream_ty:ty, $output_ty:ty, $p:expr, $into_input:expr, $expected:expr) => {
         let input: $stream_ty = $into_input.into();
         let (result, stream): $crate::ParseResult<$stream_ty, $output_ty> = $p.parse(input.clone());
         let result = result.expect_err("assertion failed: expected an Err(_)");

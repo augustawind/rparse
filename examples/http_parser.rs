@@ -25,14 +25,14 @@ where
 {
     choice![
         range("GET".into()),
-        range("POST".into()),
         range("PUT".into()),
-        range("PATCH".into()),
-        range("DELETE".into()),
+        range("POST".into()),
         range("HEAD".into()),
+        range("PATCH".into()),
+        range("TRACE".into()),
+        range("DELETE".into()),
         range("OPTIONS".into()),
         range("CONNECT".into()),
-        range("TRACE".into()),
     ]
 }
 
@@ -99,12 +99,22 @@ mod test {
     // TODO: [u8]
     #[test]
     fn test_http_method() {
-        test_parser!(for<IndexedStream<&str>, String> | http_method().collect(), {})
+        let method_errors: Vec<Error<IndexedStream<&str>>> = vec![
+            "GET", "PUT", "POST", "HEAD", "PATCH", "TRACE", "DELETE", "OPTIONS", "CONNECT",
+        ].into_iter()
+            .map(|method| Error::expected_range(method))
+            .collect();
+
+        test_parser!(IndexedStream<&str> => &str | http_method(), {
+            "GET" => ok(Ok("GET"), ("", 3)),
+            "HEAD\n/" => ok(Ok("HEAD"), ("\n/", 4)),
+            "GARBLEDIGOOK" => err(0, method_errors.clone()),
+        });
     }
 
     #[test]
     fn test_percent_encoded() {
-        test_parser!(for<&str, String> | percent_encoded().collect(), {
+        test_parser!(&str => String | percent_encoded().collect(), {
             "%A9" => ok(Ok("%A9".to_string()), ""),
             "%0f/hello" => ok(Ok("%0f".to_string()), "/hello"),
             "" => err(vec![Error::EOF, Error::expected_token('%')]),
@@ -114,7 +124,7 @@ mod test {
 
     #[test]
     fn test_url_path() {
-        test_parser!(for<IndexedStream<&str>, String> | url_path().collect(), {
+        test_parser!(IndexedStream<&str> => String | url_path().collect(), {
             "/" => ok(Ok("/".to_string()), ("", 1)),
             "/my_img.jpeg" => ok(Ok("/my_img.jpeg".to_string()), ("", 12)),
             "//a/b//``" => ok(Ok("//a/b//".to_string()), ("``", 7)),

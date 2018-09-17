@@ -103,6 +103,10 @@ where
     pub fn expected_range(range: S::Range) -> Self {
         Error::Expected(Info::Range(range))
     }
+
+    pub fn unexpected_range(range: S::Range) -> Self {
+        Error::Unexpected(Info::Range(range))
+    }
 }
 
 impl<S, T> PartialEq for Error<S>

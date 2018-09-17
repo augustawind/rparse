@@ -17,6 +17,7 @@ impl<S: Stream> Parser for Range<S> {
         mut stream: Self::Stream,
     ) -> ParseResult<Self::Stream, Self::Output> {
         let idx = self.range.len();
+        let pos = stream.position().clone();
         let result = match stream.range(idx) {
             Some(range) => {
                 if range == self.range {
@@ -31,6 +32,7 @@ impl<S: Stream> Parser for Range<S> {
         match result {
             (Err(mut errors), stream) => {
                 errors.add_error(Error::expected_range(self.range.clone()));
+                errors.position = pos;
                 stream.errs(errors)
             }
             ok => ok,
