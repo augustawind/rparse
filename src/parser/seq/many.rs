@@ -1,3 +1,4 @@
+use error::Errors;
 use error::ParseResult;
 use parser::Parser;
 use stream::Stream;
@@ -14,10 +15,7 @@ where
     type Stream = P::Stream;
     type Output = Vec<P::Output>;
 
-    fn parse_lazy(
-        &mut self,
-        mut stream: Self::Stream,
-    ) -> ParseResult<Self::Stream, Self::Output> {
+    fn parse_lazy(&mut self, mut stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         let mut output = Vec::new();
         let mut i = 0;
         loop {
@@ -36,6 +34,10 @@ where
 
             i += 1;
         }
+    }
+
+    fn add_expected_error(&self, errors: &mut Errors<Self::Stream>) {
+        self.p.add_expected_error(errors)
     }
 }
 

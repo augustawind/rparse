@@ -20,8 +20,8 @@ where
     type Output = L::Output;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        match self.left.parse_lazy(stream) {
-            (Ok(mut left), stream) => match self.right.parse_lazy(stream) {
+        match self.left.parse_partial(stream) {
+            (Ok(mut left), stream) => match self.right.parse_partial(stream) {
                 (Ok(right), stream) => {
                     left.extend(right.into_iter());
                     stream.ok(left)
