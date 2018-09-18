@@ -98,7 +98,7 @@ macro_rules! choice {
 #[cfg(test)]
 mod test {
     use super::*;
-    use error::Error;
+    use error::Error::*;
     use parser::seq::{many, many1, then};
     use parser::token::{any, ascii, token};
     use stream::IndexedStream;
@@ -130,21 +130,25 @@ mod test {
     #[test]
     fn test_and() {
         let mut parser = and(token(b'a'), token(b'b'));
-        test_parser!(IndexedStream<&str> | parser, {
-            "abcd" => (Ok('b'), ("cd", 2));
-            "ab" => (Ok('b'), ("", 2));
-        }, {
-            "def" => (0, vec![Error::unexpected_token('d'), Error::expected_token('a')]);
-            "aab" => (1, vec![Error::unexpected_token('a'), Error::expected_token('b')]);
-            "bcd" => (0, vec![Error::unexpected_token('b'), Error::expected_token('a')]);
+        test_parser!(IndexedStream<&str> => char | parser, {
+            "abcd" => ok(Ok('b'), ("cd", 2)),
+            "ab" => ok(Ok('b'), ("", 2)),
+            "def" => err(0, vec![Unexpected('d'.into()), Expected('a'.into())]),
+            "aab" => err(1, vec![Unexpected('a'.into()), Expected('b'.into())]),
+            "bcd" => err(0, vec![Unexpected('b'.into()), Expected('a'.into())]),
         });
 
         let mut parser = and(many1(ascii::digit()), many1(ascii::letter()));
-        test_parser!(IndexedStream<&str> | parser, {
-            "123abc456" => (Ok(vec!['a', 'b', 'c']), ("456", 6));
-        }, {
-            " 1 2 3" => (0, vec![Error::unexpected_token(' ')]);
-            "123 abc" => (3, vec![Error::unexpected_token(' ')]);
+        test_parser!(IndexedStream<&str> => Vec<char> | parser, {
+            "123abc456" => ok(Ok(vec!['a', 'b', 'c']), ("456", 6)),
+            " 1 2 3" => err(0, vec![
+                Unexpected(' '.into()), 
+                Expected("an ascii digit".into())
+            ]),
+            "123 abc" => err(3, vec![
+                 Unexpected(' '.into()),
+                 Expected("an ascii letter".into())
+            ]),
         });
     }
 
@@ -156,9 +160,9 @@ mod test {
             "a" => (Ok('a'), ("", 1));
         }, {
             "def" => (0, vec![
-                Error::unexpected_token('d'),
-                Error::expected_token('a'),
-                Error::expected_token('b'),
+                Unexpected('d'.into()),
+                Expected('a'.into()),
+                Expected('b'.into()),
             ]);
         });
 
@@ -177,12 +181,16 @@ mod test {
         assert_eq!(choice!(token(b'a'), token(b'b')).parse("a"), (Ok('a'), ""));
 
         let mut parser = choice!(token(b'a'), ascii::digit(), ascii::punctuation());
-        test_parser!(IndexedStream<&str> | parser, {
-            "a9." => (Ok('a'), ("9.", 1));
-            "9.a" => (Ok('9'), (".a", 1));
-            ".a9" => (Ok('.'), ("a9", 1));
-        }, {
-            "ba9." => (0, vec![Error::unexpected_token('b'), Error::expected_token('a')]);
+        test_parser!(IndexedStream<&str> => char | parser, {
+            "a9." => ok(Ok('a'), ("9.", 1)),
+            "9.a" => ok(Ok('9'), (".a", 1)),
+            ".a9" => ok(Ok('.'), ("a9", 1)),
+            "ba9." => err(0, vec![
+                Unexpected('b'.into()), 
+                Expected('a'.into()),
+                Expected("an ascii digit".into()),
+                Expected("an ascii punctuation character".into()),
+            ]),
         });
 
         assert_eq!(
@@ -196,9 +204,9 @@ mod test {
             many1(ascii::digit()),
             then(ascii::letter(), ascii::whitespace()),
         ).collect();
-        test_parser!(IndexedStream<&str> | parser, {
-            "123a bc" => (Ok("123".to_string()), ("a bc", 3));
-            "a b c" => (Ok("a ".to_string()), ("b c", 2));
+        test_parser!(IndexedStream<&str> => String | parser, {
+            "123a bc" => ok(Ok("123".to_string()), ("a bc", 3)),
+            "a b c" => ok(Ok("a ".to_string()), ("b c", 2)),
         });
     }
 }

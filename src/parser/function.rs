@@ -14,6 +14,12 @@ pub struct Expect<P: Parser> {
     error: Error<P::Stream>,
 }
 
+impl<P: Parser> Expect<P> {
+    pub fn expected_error(&self) -> Error<P::Stream> {
+        self.error.clone()
+    }
+}
+
 impl<P: Parser> Parser for Expect<P> where {
     type Stream = P::Stream;
     type Output = P::Output;

@@ -13,10 +13,7 @@ impl<S: Stream> Parser for Any<S> {
     type Stream = S;
     type Output = S::Item;
 
-    fn parse_lazy(
-        &mut self,
-        mut stream: Self::Stream,
-    ) -> ParseResult<Self::Stream, Self::Output> {
+    fn parse_lazy(&mut self, mut stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         match stream.pop() {
             Some(t) => stream.ok(t),
             None => stream.err(Error::unexpected_eoi()),
@@ -43,10 +40,7 @@ where
     type Stream = S;
     type Output = S::Item;
 
-    fn parse_lazy(
-        &mut self,
-        mut stream: Self::Stream,
-    ) -> ParseResult<Self::Stream, Self::Output> {
+    fn parse_lazy(&mut self, mut stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         match stream.peek() {
             Some(t) if t == self.token => {
                 stream.pop();
@@ -85,10 +79,7 @@ where
     type Stream = S;
     type Output = S::Item;
 
-    fn parse_lazy(
-        &mut self,
-        mut stream: Self::Stream,
-    ) -> ParseResult<Self::Stream, Self::Output> {
+    fn parse_lazy(&mut self, mut stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         match stream.peek() {
             Some(ref t) if (self.f)(t) => {
                 stream.pop();
@@ -115,22 +106,24 @@ macro_rules! def_token_parser_tests {
     ($name:ident => $p:expr; valid( $($t_ok:expr),+ ) error( $($t_err:expr),+ ) ) => {
         #[test]
         fn $name() {
-            test_parser!(IndexedStream<&str> => char | $p(), {
+            let mut p = $p();
+            test_parser!(IndexedStream<&str> => char | p, {
                 $(
                     concat!($t_ok) => ok(Ok($t_ok), ("", 1)),
                 )+
-                "" => err(0, vec![Error::unexpected_eoi()]),
+                "" => err(0, vec![Error::unexpected_eoi(), p.expected_error()]),
                 $(
-                    concat!($t_err) => err(0, vec![Error::unexpected_token($t_err)]),
+                    concat!($t_err) => err(0, vec![Error::unexpected_token($t_err), p.expected_error()]),
                 )+
             });
-            test_parser!(IndexedStream<&[u8]> => u8 | $p(), {
+            let mut p = $p();
+            test_parser!(IndexedStream<&[u8]> => u8 | p, {
                 $(
                     concat!($t_ok).as_bytes() => ok(Ok($t_ok as u8), ("".as_bytes(), 1)),
                 )+
-                "".as_bytes() => err(0, vec![Error::unexpected_eoi()]),
+                "".as_bytes() => err(0, vec![Error::unexpected_eoi(), p.expected_error()]),
                 $(
-                    concat!($t_err).as_bytes() => err(0, vec![Error::unexpected_token($t_err as u8)]),
+                    concat!($t_err).as_bytes() => err(0, vec![Error::unexpected_token($t_err as u8), p.expected_error()]),
                 )+
             });
         }
