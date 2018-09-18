@@ -12,10 +12,7 @@ impl<S: Stream> Parser for Range<S> {
     type Stream = S;
     type Output = S::Range;
 
-    fn parse_lazy(
-        &mut self,
-        mut stream: Self::Stream,
-    ) -> ParseResult<Self::Stream, Self::Output> {
+    fn parse_lazy(&mut self, mut stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         let idx = self.range.len();
         let mut start_pos = stream.position().clone();
         let mut result = match stream.range(idx) {
@@ -62,6 +59,7 @@ pub fn range<S: Stream>(range: &'static str) -> Range<S> where
 mod test {
     use super::*;
     use stream::IndexedStream;
+    use Error::*;
 
     #[test]
     fn test_range() {
@@ -72,7 +70,7 @@ mod test {
             "" => err(0, vec![Error::unexpected_eoi(), Error::expected_range("def")]),
             "de" => err(0, vec![Error::unexpected_eoi(), Error::expected_range("def")]),
             "dr" => err(0, vec![Error::unexpected_eoi(), Error::expected_range("def")]),
-            "deg" => err(0, vec![Error::expected_range("def")]),
+            "deg" => err(2, vec![Unexpected('g'.into()), Error::expected_range("def")]),
         });
     }
 }

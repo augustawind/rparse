@@ -161,7 +161,7 @@ where
     type Output = O;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        match self.parser.parse_lazy(stream) {
+        match self.parser.parse_partial(stream) {
             (Ok(s), stream) => (
                 s.from_utf8()
                     .map_err(|_| "invalid UTF-8".into())
@@ -194,7 +194,7 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use error::Error;
+    use error::Error::*;
     use parser::seq::many1;
     use parser::token::{ascii, token};
     use stream::{IndexedStream, SourceCode};
@@ -202,10 +202,9 @@ mod test {
     #[test]
     fn test_map() {
         let mut parser = map(ascii::digit(), |c: char| c.to_string());
-        test_parser!(&str | parser, {
-            "3" => (Ok("3".to_string()), "");
-        }, {
-            "a3" => vec![Error::unexpected_token('a')];
+        test_parser!(&str => String | parser, {
+            "3" => ok(Ok("3".to_string()), ""),
+            "a3" => err(vec![Unexpected('a'.into()), Expected("an ascii digit".into())]),
         });
 
         let mut parser = map(many1(ascii::letter()).collect::<String>(), |s| {
@@ -216,9 +215,9 @@ mod test {
         let mut parser = map(many1(ascii::alpha_num()).collect::<String>(), |s| {
             s.parse::<usize>().unwrap_or(0)
         });
-        test_parser!(&str | parser, {
-            "324 dogs" => (Ok(324 as usize), " dogs");
-            "324dogs" => (Ok(0 as usize), "");
+        test_parser!(&str => usize | parser, {
+            "324 dogs" => ok(Ok(324 as usize), " dogs"),
+            "324dogs" => ok(Ok(0 as usize), ""),
         });
     }
 
@@ -226,10 +225,9 @@ mod test {
     fn test_bind() {
         // TODO: use realistic use cases for these tests. many of these are better suited to map()
         let mut parser = ascii::digit().bind(|c: char, stream: &str| stream.ok(c.to_string()));
-        test_parser!(&str | parser, {
-            "3" =>  (Ok("3".to_string()), "");
-        }, {
-            "a3" => vec![Error::unexpected_token('a')];
+        test_parser!(&str => String | parser, {
+            "3" => ok(Ok("3".to_string()), ""),
+            "a3" => err(vec![Error::unexpected_token('a')]),
         });
 
         let mut parser = many1(ascii::letter())
@@ -255,29 +253,26 @@ mod test {
     #[test]
     fn test_from_str() {
         let mut parser = many1(ascii::digit()).collect::<String>().from_str::<u32>();
-        test_parser!(&str | parser, {
-            "369" => (Ok(369 as u32), "");
-            "369abc" => (Ok(369 as u32), "abc");
-        }, {
-            "abc" => vec![Error::unexpected_token('a')];
+        test_parser!(&str => u32 | parser, {
+            "369" => ok(Ok(369 as u32), ""),
+            "369abc" => ok(Ok(369 as u32), "abc"),
+            "abc" => err(vec![Unexpected('a'.into()), Expected("an ascii digit".into())]),
         });
 
         let mut parser = many1(choice!(token(b'-'), token(b'.'), ascii::digit()))
             .collect::<String>()
             .from_str::<f32>();
-        test_parser!(&str | parser, {
-            "12e" => (Ok(12 as f32), "e");
-            "-12e" => (Ok(-12 as f32), "e");
-            "-12.5e" => (Ok(-12.5 as f32), "e");
-        }, {
-            "12.5.9" =>  vec!["invalid float literal".into()];
+        test_parser!(&str => f32 | parser, {
+            "12e" => ok(Ok(12 as f32), "e"),
+            "-12e" => ok(Ok(-12 as f32), "e"),
+            "-12.5e" => ok(Ok(-12.5 as f32), "e"),
+            "12.5.9" =>  err(vec!["invalid float literal".into()]),
         });
 
         let mut parser = many1(ascii::digit()).collect::<String>().from_str::<f32>();
-        test_parser!(SourceCode | parser, {
-            "12e" => (Ok(12f32), ("e", (1, 3)));
-        }, {
-            "e12" => vec![Error::unexpected_token('e')];
+        test_parser!(SourceCode => f32 | parser, {
+            "12e" => ok(Ok(12f32), ("e", (1, 3))),
+            "e12" => err((1, 1), vec![Unexpected('e'.into()), Expected("an ascii digit".into())]),
         });
     }
 }

@@ -64,6 +64,7 @@ mod test {
     use parser::token::token;
     use parser::Parser;
     use stream::IndexedStream;
+    use Error::*;
 
     #[test]
     fn test_append() {
@@ -82,14 +83,13 @@ mod test {
 
     #[test]
     fn test_seq_macro() {
-        let mut parser = seq![token(b'%'), hexdigit(), hexdigit()];
-        test_parser!(IndexedStream<&str> | parser, {
-            "%AF" => (Ok("%AF".chars().collect()), ("", 3));
-            "%d8_/^/_" => (Ok("%d8".chars().collect()), ("_/^/_", 3));
-        }, {
-            "" => (0, vec![Error::unexpected_eoi(), Error::expected_token('%')]);
-            "%0" => (2, vec![Error::unexpected_eoi()]);
-            "%zz" => (1, vec![Error::unexpected_token('z')]);
+        let mut parser = seq![token(b'%'), hexdigit(), hexdigit()].collect();
+        test_parser!(IndexedStream<&str> => String | parser, {
+            "%AF" => ok(Ok("%AF".to_string()), ("", 3)),
+            "%d8_/^/_" => ok(Ok("%d8".to_string()), ("_/^/_", 3)),
+            "" => err(0, vec![Error::unexpected_eoi(), Expected('%'.into())]),
+            "%0" => err(2, vec![Error::unexpected_eoi(), Expected("a hexadecimal digit".into())]),
+            "%zz" => err(1, vec![Unexpected('z'.into()), Expected("a hexadecimal digit".into())]),
         });
     }
 }
