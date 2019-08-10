@@ -235,12 +235,15 @@ mod test {
             .bind(|s: String, stream: &str| stream.ok(s.to_uppercase()));
         assert_eq!(parser.parse("aBcD12e"), (Ok("ABCD".to_string()), "12e"));
 
-        let mut parser = many1(ascii::alpha_num()).collect().bind(
-            |s: String, stream: IndexedStream<&str>| match s.parse::<usize>() {
-                Ok(n) => stream.ok(n),
-                Err(e) => stream.err(Box::new(e).into()),
-            },
-        );
+        let mut parser =
+            many1(ascii::alpha_num())
+                .collect()
+                .bind(
+                    |s: String, stream: IndexedStream<&str>| match s.parse::<usize>() {
+                        Ok(n) => stream.ok(n),
+                        Err(e) => stream.err(Box::new(e).into()),
+                    },
+                );
         test_parser!(IndexedStream<&str> | parser, {
             "324 dogs" => (Ok(324 as usize), (" dogs", 3));
         }, {

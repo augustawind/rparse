@@ -57,7 +57,8 @@ where
         many(
             // forward slashes and url path segments
             many1(token(b'/')).or(url_segment_part()),
-        ).flatten(),
+        )
+        .flatten(),
     )
 }
 
@@ -104,9 +105,10 @@ mod test {
     fn test_http_method() {
         let method_errors: Vec<Error<IndexedStream<&[u8]>>> = vec![
             "GET", "PUT", "POST", "HEAD", "PATCH", "TRACE", "DELETE", "OPTIONS", "CONNECT",
-        ].into_iter()
-            .map(|method| Error::expected_range(method.as_bytes()))
-            .collect();
+        ]
+        .into_iter()
+        .map(|method| Error::expected_range(method.as_bytes()))
+        .collect();
 
         test_parser!(IndexedStream<&[u8]> => &[u8] | http_method(), {
             &b"GET"[..] => ok(Ok(&b"GET"[..]), (&b""[..], 3)),
