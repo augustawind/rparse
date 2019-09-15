@@ -56,6 +56,9 @@ impl<'a> StreamRange for &'a str {
     fn from_str(s: &'static str) -> Self {
         s
     }
+    fn to_string(self) -> String {
+        String::from(self)
+    }
     fn item_from_byte(b: u8) -> Self::Item {
         b.into()
     }
@@ -109,6 +112,9 @@ impl<'a> StreamRange for &'a [u8] {
     }
     fn from_str(s: &'static str) -> Self {
         s.as_ref()
+    }
+    fn to_string(self) -> String {
+        String::from(std::str::from_utf8(self).unwrap())
     }
     fn item_from_byte(b: u8) -> Self::Item {
         b

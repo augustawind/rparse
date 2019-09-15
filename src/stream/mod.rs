@@ -1,6 +1,6 @@
 //! Traits and implementations defining parsable input streams.
 
-mod impls;
+pub mod impls;
 pub mod position;
 pub mod state;
 
@@ -34,7 +34,7 @@ impl<'a, T> Iterator for Tokens<'a, T> {
     }
 }
 
-pub trait StreamItem: Copy + PartialEq + Debug + From<u8> {
+pub trait StreamItem: Copy + PartialEq + Debug + From<u8> + Into<char> {
     fn is_ascii(&self) -> bool;
     fn is_ascii_alphabetic(&self) -> bool;
     fn is_ascii_alphanumeric(&self) -> bool;
@@ -54,6 +54,7 @@ pub trait StreamRange: Stream + PartialEq + Clone + Debug {
     fn empty() -> Self;
     fn len(&self) -> usize;
     fn from_str(&'static str) -> Self;
+    fn to_string(self) -> String;
     fn item_from_byte(u8) -> Self::Item;
 }
 

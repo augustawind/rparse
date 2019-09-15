@@ -4,6 +4,7 @@ extern crate rparse;
 use rparse::parser::range::range;
 use rparse::parser::seq::{many, many1};
 use rparse::parser::token::{ascii, token};
+use rparse::stream::StreamRange;
 use rparse::{Parser, Stream};
 
 // fn http_request_line<S>() -> impl Parser<Stream = S, Output = Vec<S::Range>>
@@ -19,14 +20,23 @@ use rparse::{Parser, Stream};
 //         .append(range("\r\n"))
 // }
 
-fn http_version<S>() -> impl Parser<Stream = S, Output = Vec<S::Range>>
+fn http_version<S>() -> impl Parser<Stream = S, Output = String>
 where
     S: Stream,
 {
-    range("HTTP/").then(choice![range("1"), range("1.1"), range("2")])
+    // an HTTP version is
+    (
+        // the text "HTTP/"
+        range("HTTP/"),
+        // followed by a version number
+        choice![range("1"), range("1.1"), range("2")],
+    )
+        .map(|(httpslash, version): (S::Range, S::Range)| {
+            format!("{}{}", httpslash.to_string(), version.to_string())
+        })
 }
 
-fn http_method<S>() -> impl Parser<Stream = S, Output = S::Range>
+fn http_method<S>() -> impl Parser<Stream = S, Output = String>
 where
     S: Stream,
 {
@@ -41,55 +51,63 @@ where
         range("OPTIONS"),
         range("CONNECT"),
     ]
+    .map(StreamRange::to_string)
 }
 
-fn uri_scheme<S>() -> impl Parser<Stream = S, Output = S::Range>
+fn uri_scheme<S>() -> impl Parser<Stream = S, Output = String>
 where
     S: Stream,
 {
-    choice![range("http"), range("https"),]
+    choice![range("http"), range("https"),].map(StreamRange::to_string)
 }
 
-fn uri_host<S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
+fn uri_host<S>() -> impl Parser<Stream = S, Output = String>
 where
     S: Stream,
 {
     // a URI host is a URI segment
-    uri_segment().extend(
-        // followed by one or more
-        many1(
-            // URI segments preceded by dots (.)
-            token(b'.').wrap().extend(uri_segment()),
+    uri_segment()
+        .extend(
+            // followed by one or more
+            many1(
+                // URI segments preceded by dots (.)
+                token(b'.').wrap().extend(uri_segment()),
+            )
+            .flatten(),
         )
-        .flatten(),
-    )
+        .map(|s| s.into_iter().map(Into::into).collect())
 }
 
 // TODO:
 //  - fn optional(p: Parser)    ~>  ignore result if subparser fails
 //      *~> should this be first-class Parser functionality?
 //
-fn uri_path<S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
+fn uri_path<S>() -> impl Parser<Stream = S, Output = String>
 where
     S: Stream,
 {
     // a URI path is a forward slash
-    token(b'/').wrap().extend(
-        // (optional) one or more path segments, which consist of any arrangement of
-        many(
-            // forward slashes and URI path segments
-            many1(token(b'/')).or(uri_segment()),
+    token(b'/')
+        .wrap()
+        .extend(
+            // (optional) one or more path segments, which consist of any arrangement of
+            many(
+                // forward slashes and URI path segments
+                many1(token(b'/')).or(uri_segment()),
+            )
+            .flatten(),
         )
-        .flatten(),
-    )
+        .map(|s| s.into_iter().map(Into::into).collect())
 }
 
 fn uri_segment<S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
 where
     S: Stream,
 {
-    // one or more URI-safe characters, or a percent-encoded octets
-    many1(uri_token()).or(percent_encoded())
+    // a URI segment is one or more URI-safe characters
+    many1(uri_token())
+        // or a percent-encoded octet
+        .or(percent_encoded())
 }
 
 fn uri_token<S>() -> impl Parser<Stream = S, Output = S::Item>

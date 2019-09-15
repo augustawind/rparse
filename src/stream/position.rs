@@ -40,7 +40,7 @@ impl<S: Stream> Position<S> for NullPosition {
     fn update_range(&mut self, _: &S::Range) {}
 
     fn fmt_msg(&self, msg: &str) -> String {
-        msg.to_string()
+        String::from(msg)
     }
 }
 
