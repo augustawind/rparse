@@ -62,28 +62,24 @@ where
     (
         // a scheme
         uri_scheme(),
-        // followed by a host
-        uri_host(),
         // followed by a path
         uri_path(),
     )
-        .map(|(r0, r1, r2)| format!("{}{}{}", r0, r1, r2))
+        .map(|(r0, r1)| format!("{}{}", r0, r1))
 }
 
 fn uri_scheme<S>() -> impl Parser<Stream = S, Output = String>
 where
     S: Stream,
 {
-    (choice![range("http"), range("https")], range("://"))
+    // a URI scheme is
+    (
+        // a scheme identifier
+        choice![range("http"), range("https")],
+        // followed by a delimiter
+        range("://"),
+    )
         .map(|(r0, r1): (S::Range, S::Range)| format!("{}{}", r0.to_string(), r1.to_string()))
-}
-
-fn uri_host<S>() -> impl Parser<Stream = S, Output = String>
-where
-    S: Stream,
-{
-    // a URI host is just a string of URI tokens
-    uri_segment().map(|s| s.into_iter().map(Into::into).collect())
 }
 
 // TODO:
@@ -94,18 +90,27 @@ fn uri_path<S>() -> impl Parser<Stream = S, Output = String>
 where
     S: Stream,
 {
-    // a URI path is a forward slash
-    token(b'/')
-        .wrap()
-        .extend(
-            // (optional) one or more path segments, which consist of any arrangement of
-            many(
-                // forward slashes and URI path segments
-                many1(token(b'/')).or(uri_segment()),
-            )
-            .flatten(),
-        )
-        .map(|s| s.into_iter().map(Into::into).collect())
+    choice![
+        concat![
+            token(b'/').optional(),
+            uri_segment(),
+            many(concat![
+                token(b'/').wrap(),
+                uri_segment(),
+            ]).flatten(),
+        ],
+        token(b'/').wrap(),
+        concat![
+            uri_segment(),
+            many(concat![
+                token(b'/').wrap(),
+                uri_segment(),
+            ]).flatten(),
+        ],
+    ]
+        .optional()
+        .flatten()
+        .map(|s: Vec<S::Item>| s.into_iter().map(Into::into).collect())
 }
 
 fn uri_segment<S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
