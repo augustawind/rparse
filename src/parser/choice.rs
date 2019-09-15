@@ -142,7 +142,7 @@ mod test {
         test_parser!(IndexedStream<&str> => Vec<char> | parser, {
             "123abc456" => ok(Ok(vec!['a', 'b', 'c']), ("456", 6)),
             " 1 2 3" => err(0, vec![
-                Unexpected(' '.into()), 
+                Unexpected(' '.into()),
                 Expected("an ascii digit".into())
             ]),
             "123 abc" => err(3, vec![
@@ -169,7 +169,8 @@ mod test {
         let mut parser = or(
             many1(ascii::digit()),
             then(ascii::letter(), ascii::whitespace()),
-        ).collect();
+        )
+        .collect();
         test_parser!(IndexedStream<&str> | parser, {
             "123a bc" => (Ok("123".to_string()), ("a bc", 3));
             "a b c" => (Ok("a ".to_string()), ("b c", 2));
@@ -186,7 +187,7 @@ mod test {
             "9.a" => ok(Ok('9'), (".a", 1)),
             ".a9" => ok(Ok('.'), ("a9", 1)),
             "ba9." => err(0, vec![
-                Unexpected('b'.into()), 
+                Unexpected('b'.into()),
                 Expected('a'.into()),
                 Expected("an ascii digit".into()),
                 Expected("an ascii punctuation character".into()),
@@ -203,7 +204,8 @@ mod test {
         let mut parser = choice!(
             many1(ascii::digit()),
             then(ascii::letter(), ascii::whitespace()),
-        ).collect();
+        )
+        .collect();
         test_parser!(IndexedStream<&str> => String | parser, {
             "123a bc" => ok(Ok("123".to_string()), ("a bc", 3)),
             "a b c" => ok(Ok("a ".to_string()), ("b c", 2)),

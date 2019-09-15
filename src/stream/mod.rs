@@ -18,7 +18,7 @@ pub type IndexedStream<S> = State<S, IndexPosition>;
 
 /// Tokens is an iterator over the tokens of some `Stream`.
 /// It is returned by the `tokens` method of `Stream`.
-pub struct Tokens<'a, T>(Box<Iterator<Item = T> + 'a>);
+pub struct Tokens<'a, T>(Box<dyn Iterator<Item = T> + 'a>);
 
 impl<'a, T> Tokens<'a, T> {
     fn new<I: Iterator<Item = T> + 'a>(iter: I) -> Self {
@@ -52,8 +52,8 @@ pub trait StreamItem: Copy + PartialEq + Debug + From<u8> {
 
 pub trait StreamRange: Stream + PartialEq + Clone + Debug {
     fn len(&self) -> usize;
-    fn from_str(s: &'static str) -> Self;
-    fn item_from_byte(c: u8) -> Self::Item;
+    fn from_str(&'static str) -> Self;
+    fn item_from_byte(u8) -> Self::Item;
 }
 
 /// The Stream trait represents data that can be consumed by a `Parser`.

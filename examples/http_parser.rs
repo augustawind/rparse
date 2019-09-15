@@ -13,7 +13,7 @@ use rparse::{Parser, Stream};
 //     http_method()
 //         .wrap()
 //         .extend(concat![
-//             token(b' ').and(url_path()),
+//             token(b' ').and(uri_path()),
 //             token(b' ').and(http_version()),
 //         ])
 //         .append(range("\r\n"))
@@ -43,33 +43,59 @@ where
     ]
 }
 
+fn uri_scheme<S>() -> impl Parser<Stream = S, Output = S::Range>
+where
+    S: Stream,
+{
+    choice![
+        range("http"),
+        range("https"),
+    ]
+}
+
+fn uri_host<S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
+where
+    S: Stream
+{
+    // a URI host is a URI segment
+    uri_segment().extend(
+        // followed by one or more
+        many1(
+            // URI segments preceded by dots (.)
+            token(b'.').wrap().extend(uri_segment())
+        )
+        .flatten()
+    )
+}
+
 // TODO:
 //  - fn optional(p: Parser)    ~>  ignore result if subparser fails
 //      *~> should this be first-class Parser functionality?
 //
-fn url_path<S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
+fn uri_path<S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
 where
     S: Stream,
 {
-    // a url path is a forward slash
+    // a URI path is a forward slash
     token(b'/').wrap().extend(
         // (optional) one or more path segments, which consist of any arrangement of
         many(
-            // forward slashes and url path segments
-            many1(token(b'/')).or(url_segment_part()),
-        ).flatten(),
+            // forward slashes and URI path segments
+            many1(token(b'/')).or(uri_segment()),
+        )
+        .flatten(),
     )
 }
 
-fn url_segment_part<S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
+fn uri_segment<S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
 where
     S: Stream,
 {
-    // one or more url-safe characters, or a percent-encoded octets
-    many1(url_token()).or(percent_encoded())
+    // one or more URI-safe characters, or a percent-encoded octets
+    many1(uri_token()).or(percent_encoded())
 }
 
-fn url_token<S>() -> impl Parser<Stream = S, Output = S::Item>
+fn uri_token<S>() -> impl Parser<Stream = S, Output = S::Item>
 where
     S: Stream,
 {
@@ -104,9 +130,10 @@ mod test {
     fn test_http_method() {
         let method_errors: Vec<Error<IndexedStream<&[u8]>>> = vec![
             "GET", "PUT", "POST", "HEAD", "PATCH", "TRACE", "DELETE", "OPTIONS", "CONNECT",
-        ].into_iter()
-            .map(|method| Error::expected_range(method.as_bytes()))
-            .collect();
+        ]
+        .into_iter()
+        .map(|method| Error::expected_range(method.as_bytes()))
+        .collect();
 
         test_parser!(IndexedStream<&[u8]> => &[u8] | http_method(), {
             &b"GET"[..] => ok(Ok(&b"GET"[..]), (&b""[..], 3)),
@@ -128,8 +155,8 @@ mod test {
     }
 
     #[test]
-    fn test_url_path() {
-        test_parser!(IndexedStream<&str> => String | url_path().collect(), {
+    fn test_uri_path() {
+        test_parser!(IndexedStream<&str> => String | uri_path().collect(), {
             "/" => ok(Ok("/".to_string()), ("", 1)),
             "/my_img.jpeg" => ok(Ok("/my_img.jpeg".to_string()), ("", 12)),
             "//a/b//``" => ok(Ok("//a/b//".to_string()), ("``", 7)),
