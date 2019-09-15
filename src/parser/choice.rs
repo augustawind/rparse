@@ -19,7 +19,14 @@ where
     type Output = O;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        let initial_pos = stream.position().clone();
         let (result, stream) = self.parser.parse(stream);
+        // Ignore error if it occured at the top of the stream.
+        if stream.position() > &initial_pos {
+            if let Err(err) = result {
+                return stream.errs(err);
+            }
+        }
         stream.ok(O::from_result(result))
     }
 }
