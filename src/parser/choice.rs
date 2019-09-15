@@ -1,23 +1,34 @@
+use std::marker::PhantomData;
+
 use error::ParseResult;
 use parser::Parser;
 use stream::Stream;
+use traits::Maybe;
 
-pub struct Optional<P>(P);
+pub struct Optional<P, O> {
+    parser: P,
+    _marker: PhantomData<O>,
+}
 
-impl<P: Parser> Parser for Optional<P> {
+impl<P, O> Parser for Optional<P, O>
+where
+    P: Parser,
+    O: Maybe<P::Output>,
+{
     type Stream = P::Stream;
-    type Output = Option<P::Output>;
+    type Output = O;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        match self.0.parse_lazy(stream) {
-            (Ok(output), stream) => stream.ok(Some(output)),
-            (Err(_), stream) => stream.ok(None),
-        }
+        let (result, stream) = self.parser.parse(stream);
+        stream.ok(O::from_result(result))
     }
 }
 
-pub fn optional<P: Parser>(p: P) -> Optional<P> {
-    Optional(p)
+pub fn optional<P: Parser, O>(parser: P) -> Optional<P, O> {
+    Optional {
+        parser,
+        _marker: PhantomData,
+    }
 }
 
 pub struct And<L, R> {
@@ -99,6 +110,7 @@ macro_rules! choice {
 mod test {
     use super::*;
     use error::Error::*;
+    use parser::Parser;
     use parser::seq::{many, many1, then};
     use parser::token::{any, ascii, token};
     use stream::IndexedStream;
@@ -113,14 +125,23 @@ mod test {
             "xyz" => (Ok(Some('x')), "yz");
         });
 
-        let mut parser = optional(many1(ascii::alpha_num()).collect());
+        let mut parser = optional(token(b'x'));
         test_parser!(&str | parser, {
-            "abc123" => (Ok(Some("abc123".to_string())), "");
+            "" => (Ok(vec![]), "");
+            "y" => (Ok(vec![]), "y");
+            "x" => (Ok(vec!['x']), "");
+            "xyz" => (Ok(vec!['x']), "yz");
         });
 
-        assert_eq!(optional(many(any())).parse(""), (Ok(Some(Vec::new())), ""));
+        let mut parser = optional(many1(ascii::alpha_num()));
+        test_parser!(&str | parser, {
+            "abc123" => (Ok(Some("abc123".chars().collect())), "");
+        });
 
-        let mut parser = token(b'x').optional().collect();
+        let mut parser = optional(many(any()));
+        assert_eq!(parser.parse(""), (Ok(vec![vec![]]), ""));
+
+        let mut parser = token(b'x').optional();
         test_parser!(&str => String | parser, {
             "x" => ok(Ok("x".to_string()), ""),
             "y" => ok(Ok("".to_string()), "y"),

@@ -65,7 +65,7 @@ pub trait Parser {
         expect(self, i)
     }
 
-    fn optional(self) -> Optional<Self>
+    fn optional<O>(self) -> Optional<Self, O>
     where
         Self: Sized,
     {
