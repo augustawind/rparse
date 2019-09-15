@@ -7,6 +7,7 @@ use std::iter::FromIterator;
 
 use stream::{Position, Stream};
 
+/// The content of a parse error.
 #[derive(Debug, Clone)]
 pub enum Info<S: Stream> {
     Token(S::Item),
@@ -83,6 +84,7 @@ pub enum Error<S: Stream> {
     Message(Info<S>),
 }
 
+/// A parse error.
 impl<S> Error<S>
 where
     S: Stream,
@@ -154,6 +156,7 @@ impl<S: Stream, E: StdError + Send + Sync + 'static> From<Box<E>> for Error<S> {
     }
 }
 
+/// A sequence of one or more parse errors.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Errors<S: Stream> {
     pub position: S::Position,
