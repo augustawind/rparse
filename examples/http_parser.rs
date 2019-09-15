@@ -29,7 +29,7 @@ where
         // the text "HTTP/"
         range("HTTP/"),
         // followed by a version number
-        choice![range("1"), range("1.1"), range("2")],
+        choice![range("1.1"), range("1"), range("2")],
     )
         .map(|(httpslash, version): (S::Range, S::Range)| {
             format!("{}{}", httpslash.to_string(), version.to_string())
