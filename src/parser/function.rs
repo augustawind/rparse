@@ -6,7 +6,6 @@ use std::marker::PhantomData;
 use std::str;
 
 use error::{Errors, Info};
-use stream::StreamRange;
 use traits::StrLike;
 use {Error, ParseResult, Parser, Stream};
 
@@ -114,24 +113,6 @@ where
         let mut v = Vec::new();
         v.push(output);
         v
-    })
-}
-
-pub type FlattenRange<P, S> =
-    Bind<P, fn(<P as Parser>::Output, S) -> ParseResult<S, <S as Stream>::Range>>;
-
-pub fn flatten_range<P, S>(p: P) -> FlattenRange<P, S>
-where
-    S: Stream,
-    S::Range: std::iter::FromIterator<S::Item>,
-    P: Parser<Stream = S, Output = Vec<S::Range>>,
-{
-    p.bind(|parts: P::Output, stream: P::Stream| {
-        let mut chain: Box<Iterator<Item = S::Item>> = Box::new(parts[0].tokens());
-        for part in &parts[1..] {
-            chain = Box::new(chain.chain(part.tokens()));
-        }
-        stream.ok(chain.collect())
     })
 }
 
