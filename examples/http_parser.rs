@@ -47,24 +47,21 @@ fn uri_scheme<S>() -> impl Parser<Stream = S, Output = S::Range>
 where
     S: Stream,
 {
-    choice![
-        range("http"),
-        range("https"),
-    ]
+    choice![range("http"), range("https"),]
 }
 
 fn uri_host<S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
 where
-    S: Stream
+    S: Stream,
 {
     // a URI host is a URI segment
     uri_segment().extend(
         // followed by one or more
         many1(
             // URI segments preceded by dots (.)
-            token(b'.').wrap().extend(uri_segment())
+            token(b'.').wrap().extend(uri_segment()),
         )
-        .flatten()
+        .flatten(),
     )
 }
 

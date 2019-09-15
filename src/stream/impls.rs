@@ -47,6 +47,9 @@ impl_StreamItem!(char);
 impl_StreamItem!(u8);
 
 impl<'a> StreamRange for &'a str {
+    fn empty() -> Self {
+        ""
+    }
     fn len(&self) -> usize {
         <str>::len(self)
     }
@@ -98,6 +101,9 @@ impl<'a> Stream for &'a str {
 }
 
 impl<'a> StreamRange for &'a [u8] {
+    fn empty() -> Self {
+        &[]
+    }
     fn len(&self) -> usize {
         <[u8]>::len(self)
     }

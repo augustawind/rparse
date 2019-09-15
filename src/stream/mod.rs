@@ -51,6 +51,7 @@ pub trait StreamItem: Copy + PartialEq + Debug + From<u8> {
 }
 
 pub trait StreamRange: Stream + PartialEq + Clone + Debug {
+    fn empty() -> Self;
     fn len(&self) -> usize;
     fn from_str(&'static str) -> Self;
     fn item_from_byte(u8) -> Self::Item;
