@@ -87,34 +87,36 @@ where
     S: Stream,
 {
     // a URI path is either
-    choice![
-        // a slash followed by one or more URI segments separated by slashes
+    concat![
+        // a slash
+        token(b'/').wrap(),
+        // followed by zero or more URI segments separated by slashes
         concat![
-            token(b'/').optional(),
             uri_segment(),
             many(token(b'/').wrap().or(uri_segment())).flatten(),
-        ],
-        // just a slash
-        token(b'/').wrap(),
+        ].optional().flatten()
+    ].xor(
         // or a URI segment followed by zero or more URI segments separated by slashes
         concat![
             uri_segment(),
             many(token(b'/').wrap().or(uri_segment())).flatten(),
-        ],
-    ]
-    .map(|s: Vec<S::Item>| s.into_iter().map(Into::into).collect())
+        ]
+    )
+    .map(|s| s.into_iter().map(Into::into).collect())
 }
 
 fn uri_segment<S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
 where
     S: Stream,
 {
-    // a URI segment is any number of
+    // a URI segment is one or more
     many1(
-        // URI-safe characters
-        many1(uri_token())
-            // and percent-encoded octets
-            .or(percent_encoded()),
+        xchoice![
+            // percent-encoded octets
+            percent_encoded(),
+            // and URI-safe character sequences
+            many1(uri_token()),
+        ]
     )
     .flatten()
 }
@@ -206,8 +208,8 @@ mod test {
             "foo" => ok(Ok("foo".into()), ("", 3)),
             "/my_img.jpeg" => ok(Ok("/my_img.jpeg".into()), ("", 12)),
             "foo/x%20y/z.gif/" => ok(Ok("foo/x%20y/z.gif/".into()), ("", 16)),
-            "/%%bc" => err(2, vec![Error::unexpected_token('%')]),
-            "//a/b//``" => err(1, vec![Error::unexpected_token('/')]),
+            "/%%bc" => ok(Ok("/".into()), ("%%bc", 1)),
+            "//a/" => ok(Ok("/".into()), ("/a/", 1)),
         });
     }
 }
