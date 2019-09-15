@@ -58,7 +58,8 @@ fn uri_scheme<S>() -> impl Parser<Stream = S, Output = String>
 where
     S: Stream,
 {
-    choice![range("http"), range("https"),].map(StreamRange::to_string)
+    (choice![range("http"), range("https")], range("://"))
+        .map(|(r0, r1): (S::Range, S::Range)| format!("{}{}", r0.to_string(), r1.to_string()))
 }
 
 fn uri_host<S>() -> impl Parser<Stream = S, Output = String>
