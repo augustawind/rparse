@@ -43,6 +43,31 @@ where
     ]
 }
 
+fn uri_scheme<S>() -> impl Parser<Stream = S, Output = S::Range>
+where
+    S: Stream,
+{
+    choice![
+        range("http"),
+        range("https"),
+    ]
+}
+
+fn uri_host<S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
+where
+    S: Stream
+{
+    // a URI host is a URI segment
+    uri_segment().extend(
+        // followed by one or more
+        many1(
+            // URI segments preceded by dots (.)
+            token(b'.').wrap().extend(uri_segment())
+        )
+        .flatten()
+    )
+}
+
 // TODO:
 //  - fn optional(p: Parser)    ~>  ignore result if subparser fails
 //      *~> should this be first-class Parser functionality?
