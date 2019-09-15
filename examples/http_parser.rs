@@ -62,8 +62,8 @@ where
     (
         // a scheme
         uri_scheme(),
-        // followed by a path
-        uri_path(),
+        // optionally followed by a path
+        uri_path().optional::<String>(),
     )
         .map(|(r0, r1)| format!("{}{}", r0, r1))
 }
@@ -82,35 +82,27 @@ where
         .map(|(r0, r1): (S::Range, S::Range)| format!("{}{}", r0.to_string(), r1.to_string()))
 }
 
-// TODO:
-//  - fn optional(p: Parser)    ~>  ignore result if subparser fails
-//      *~> should this be first-class Parser functionality?
-//
 fn uri_path<S>() -> impl Parser<Stream = S, Output = String>
 where
     S: Stream,
 {
+    // a URI path is either
     choice![
+        // a slash followed by one or more URI segments separated by slashes
         concat![
             token(b'/').optional(),
             uri_segment(),
-            many(concat![
-                token(b'/').wrap(),
-                uri_segment(),
-            ]).flatten(),
+            many(concat![token(b'/').wrap(), uri_segment(),]).flatten(),
         ],
+        // just a slash
         token(b'/').wrap(),
+        // or a URI segment followed by zero or more URI segments separated by slashes
         concat![
             uri_segment(),
-            many(concat![
-                token(b'/').wrap(),
-                uri_segment(),
-            ]).flatten(),
+            many(concat![token(b'/').wrap(), uri_segment(),]).flatten(),
         ],
     ]
-        .optional()
-        .flatten()
-        .map(|s: Vec<S::Item>| s.into_iter().map(Into::into).collect())
+    .map(|s: Vec<S::Item>| s.into_iter().map(Into::into).collect())
 }
 
 fn uri_segment<S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
@@ -118,9 +110,12 @@ where
     S: Stream,
 {
     // a URI segment is one or more URI-safe characters
-    many1(uri_token())
-        // or a percent-encoded octet
-        .or(percent_encoded())
+    many1(
+        many1(uri_token())
+            // or a percent-encoded octet
+            .or(percent_encoded()),
+    )
+    .flatten()
 }
 
 fn uri_token<S>() -> impl Parser<Stream = S, Output = S::Item>

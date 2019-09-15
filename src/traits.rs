@@ -74,7 +74,7 @@ impl<T> Maybe<T> for Option<T> {
 
 impl<T> Maybe<T> for String
 where
-    T: ToString
+    T: ToString,
 {
     fn from_result<E>(r: Result<T, E>) -> Self {
         r.map(|t| t.to_string()).unwrap_or_default()

@@ -110,9 +110,9 @@ macro_rules! choice {
 mod test {
     use super::*;
     use error::Error::*;
-    use parser::Parser;
     use parser::seq::{many, many1, then};
     use parser::token::{any, ascii, token};
+    use parser::Parser;
     use stream::IndexedStream;
 
     #[test]
