@@ -261,37 +261,6 @@ mod test {
     }
 
     #[test]
-    fn test_xor() {
-        let mut parser = xor(range("bar"), range("dar"));
-        test_parser!(IndexedStream<&str> => &str | parser, {
-            "bar9" => ok(Ok("bar"), ("9", 3)),
-            "dar9" => ok(Ok("dar"), ("9", 3)),
-            "bam" => err(2, vec![Unexpected('m'.into()), Error::expected_range("bar")]),
-            "rar" => err(0, vec![
-                Unexpected('r'.into()),
-                Error::expected_range("bar"),
-                Error::expected_range("dar"),
-            ]),
-        });
-
-        let mut parser = many1(ascii::digit())
-            .xor(token(b'x').wrap().extend(many1(token(b'x'))))
-            .xor(token(b'x').then(token(b'_')).append(token(b'x')))
-            .collect();
-        test_parser!(IndexedStream<&str> => String | parser, {
-            "12345?" => ok(Ok("12345".into()), ("?", 5)),
-            "xxx666" => ok(Ok("xxx".into()), ("666", 3)),
-            "" => err(0, vec![
-                Error::unexpected_eoi(),
-                Expected("an ascii digit".into()),
-                Expected('x'.into()),
-            ]),
-            "x12" => err(1, vec![Unexpected('1'.into()), Expected('x'.into())]),
-            "x_x" => err(1, vec![Unexpected('_'.into()), Expected('x'.into())]),
-        });
-    }
-
-    #[test]
     fn test_choice() {
         assert_eq!(choice!(token(b'a'), token(b'b')).parse("a"), (Ok('a'), ""));
 
@@ -323,6 +292,71 @@ mod test {
         test_parser!(IndexedStream<&str> => String | parser, {
             "123a bc" => ok(Ok("123".to_string()), ("a bc", 3)),
             "a b c" => ok(Ok("a ".to_string()), ("b c", 2)),
+        });
+    }
+
+    #[test]
+    fn test_xor() {
+        let mut parser = xor(range("bar"), range("dar"));
+        test_parser!(IndexedStream<&str> => &str | parser, {
+            "bar9" => ok(Ok("bar"), ("9", 3)),
+            "dar9" => ok(Ok("dar"), ("9", 3)),
+            "bam" => err(2, vec![Unexpected('m'.into()), Error::expected_range("bar")]),
+            "rar" => err(0, vec![
+                Unexpected('r'.into()),
+                Error::expected_range("bar"),
+                Error::expected_range("dar"),
+            ]),
+        });
+
+        let mut parser = many1(ascii::digit())
+            .xor(token(b'x').wrap().extend(many1(token(b'x'))))
+            .xor(token(b'x').then(token(b'_')).append(token(b'x')))
+            .collect();
+        test_parser!(IndexedStream<&str> => String | parser, {
+            "12345?" => ok(Ok("12345".into()), ("?", 5)),
+            "xxx666" => ok(Ok("xxx".into()), ("666", 3)),
+            "" => err(0, vec![
+                Error::unexpected_eoi(),
+                Expected("an ascii digit".into()),
+                Expected('x'.into()),
+            ]),
+            "x12" => err(1, vec![Unexpected('1'.into()), Expected('x'.into())]),
+            "x_x" => err(1, vec![Unexpected('_'.into()), Expected('x'.into())]),
+        });
+    }
+
+    #[test]
+    fn test_xchoice() {
+        let mut parser = xchoice!(range("bar"), range("dar"), range("bam"));
+        test_parser!(IndexedStream<&str> => &str | parser, {
+            "bar9" => ok(Ok("bar"), ("9", 3)),
+            "dar9" => ok(Ok("dar"), ("9", 3)),
+            "bam9" => err(2, vec![Unexpected('m'.into()), Error::expected_range("bar")]),
+            "rar" => err(0, vec![
+                Unexpected('r'.into()),
+                Error::expected_range("bar"),
+                Error::expected_range("dar"),
+                Error::expected_range("bam"),
+            ]),
+        });
+
+        let mut parser = xchoice![
+            many1(ascii::digit()),
+            token(b'x').wrap().extend(many1(token(b'x'))),
+            token(b'x').then(token(b'_')).append(token(b'x')),
+        ].collect();
+
+        test_parser!(IndexedStream<&str> => String | parser, {
+            "12345?" => ok(Ok("12345".into()), ("?", 5)),
+            "xxx666" => ok(Ok("xxx".into()), ("666", 3)),
+            "" => err(0, vec![
+                Error::unexpected_eoi(),
+                Expected("an ascii digit".into()),
+                Expected('x'.into()),
+            ]),
+            "x12" => err(1, vec![Unexpected('1'.into()), Expected('x'.into())]),
+            "x_x" => err(1, vec![Unexpected('_'.into()), Expected('x'.into())]),
         });
     }
 }
