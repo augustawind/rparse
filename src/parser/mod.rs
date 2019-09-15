@@ -118,7 +118,7 @@ pub trait Parser {
     fn and<P>(self, other: P) -> And<Self, P>
     where
         Self: Sized,
-        P: Parser<Stream = Self::Stream, Output = Self::Output>,
+        P: Parser<Stream = Self::Stream>,
     {
         and(self, other)
     }

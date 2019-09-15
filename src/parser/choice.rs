@@ -27,23 +27,23 @@ pub struct And<L, R> {
 
 impl<S: Stream, O, L, R> Parser for And<L, R>
 where
-    L: Parser<Stream = S, Output = O>,
+    L: Parser<Stream = S>,
     R: Parser<Stream = S, Output = O>,
 {
     type Stream = S;
     type Output = O;
 
-    fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+    fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, O> {
         match self.left.parse(stream) {
             (Ok(_), stream) => self.right.parse(stream),
-            err => err,
+            (Err(err), stream) => stream.errs(err),
         }
     }
 }
 
 pub fn and<S: Stream, O, L, R>(left: L, right: R) -> And<L, R>
 where
-    L: Parser<Stream = S, Output = O>,
+    L: Parser<Stream = S>,
     R: Parser<Stream = S, Output = O>,
 {
     And { left, right }
