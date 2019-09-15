@@ -1,7 +1,6 @@
 pub mod error;
-pub mod stream;
-#[macro_use]
 pub mod parser;
+pub mod stream;
 pub mod traits;
 
 pub use error::{Error, ParseResult};

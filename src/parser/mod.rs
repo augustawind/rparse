@@ -7,10 +7,9 @@ mod test_utils;
 
 #[macro_use]
 pub mod choice;
-#[macro_use]
-pub mod seq;
 pub mod function;
 pub mod range;
+pub mod seq;
 pub mod token;
 pub mod tuple;
 
@@ -18,7 +17,7 @@ use std::fmt::Display;
 use std::iter::FromIterator;
 use std::str;
 
-use self::choice::{and, optional, or, And, Optional, Or};
+use self::choice::{and, optional, or, xor, And, Optional, Or, Xor};
 use self::function::{
     bind, collect, expect, flatten, from_str, iter, map, wrap, Bind, Collect, Expect, Flatten,
     FromStr, Iter, Map, Wrap,
@@ -129,6 +128,14 @@ pub trait Parser {
         P: Parser<Stream = Self::Stream, Output = Self::Output>,
     {
         or(self, other)
+    }
+
+    fn xor<P>(self, other: P) -> Xor<Self, P>
+    where
+        Self: Sized,
+        P: Parser<Stream = Self::Stream, Output = Self::Output>,
+    {
+        xor(self, other)
     }
 
     fn then<P>(self, other: P) -> Then<Self, P>

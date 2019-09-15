@@ -113,10 +113,65 @@ macro_rules! choice {
     };
 }
 
+pub struct Xor<L, R> {
+    left: L,
+    right: R,
+}
+
+impl<S: Stream, O, L, R> Parser for Xor<L, R>
+where
+    L: Parser<Stream = S, Output = O>,
+    R: Parser<Stream = S, Output = O>,
+{
+    type Stream = S;
+    type Output = O;
+
+    fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        let initial_pos = stream.position().clone();
+
+        let (mut err, stream) = match self.left.parse(stream) {
+            (Ok(result), stream) => return stream.ok(result),
+            (Err(err), stream) => {
+                if err.position > initial_pos {
+                    return stream.errs(err);
+                }
+                (err, stream)
+            }
+        };
+
+        match self.right.parse(stream) {
+            (Ok(result), stream) => stream.ok(result),
+            (Err(mut err2), stream) => {
+                err.merge_errors(&mut err2);
+                stream.errs(err)
+            }
+        }
+    }
+}
+
+pub fn xor<S: Stream, O, L, R>(left: L, right: R) -> Xor<L, R>
+where
+    L: Parser<Stream = S, Output = O>,
+    R: Parser<Stream = S, Output = O>,
+{
+    Xor { left, right }
+}
+
+#[macro_export]
+macro_rules! xchoice {
+    ($head:expr) => {
+        $head
+    };
+    ($head:expr, $($tail:expr),+ $(,)*) => {
+        $head.xor(xchoice!($($tail),+))
+    };
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
-    use error::Error::*;
+    use error::Error::{self, *};
+    use parser::range::range;
     use parser::seq::{many, many1, then};
     use parser::token::{any, ascii, token};
     use parser::Parser;
@@ -202,6 +257,37 @@ mod test {
         test_parser!(IndexedStream<&str> | parser, {
             "123a bc" => (Ok("123".to_string()), ("a bc", 3));
             "a b c" => (Ok("a ".to_string()), ("b c", 2));
+        });
+    }
+
+    #[test]
+    fn test_xor() {
+        let mut parser = xor(range("bar"), range("dar"));
+        test_parser!(IndexedStream<&str> => &str | parser, {
+            "bar9" => ok(Ok("bar"), ("9", 3)),
+            "dar9" => ok(Ok("dar"), ("9", 3)),
+            "bam" => err(2, vec![Unexpected('m'.into()), Error::expected_range("bar")]),
+            "rar" => err(0, vec![
+                Unexpected('r'.into()),
+                Error::expected_range("bar"),
+                Error::expected_range("dar"),
+            ]),
+        });
+
+        let mut parser = many1(ascii::digit())
+            .xor(token(b'x').wrap().extend(many1(token(b'x'))))
+            .xor(token(b'x').then(token(b'_')).append(token(b'x')))
+            .collect();
+        test_parser!(IndexedStream<&str> => String | parser, {
+            "12345?" => ok(Ok("12345".into()), ("?", 5)),
+            "xxx666" => ok(Ok("xxx".into()), ("666", 3)),
+            "" => err(0, vec![
+                Error::unexpected_eoi(),
+                Expected("an ascii digit".into()),
+                Expected('x'.into()),
+            ]),
+            "x12" => err(1, vec![Unexpected('1'.into()), Expected('x'.into())]),
+            "x_x" => err(1, vec![Unexpected('_'.into()), Expected('x'.into())]),
         });
     }
 
