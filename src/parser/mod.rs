@@ -12,6 +12,7 @@ pub mod seq;
 pub mod function;
 pub mod range;
 pub mod token;
+pub mod tuple;
 
 use std::fmt::Display;
 use std::iter::FromIterator;
