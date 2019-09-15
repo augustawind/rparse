@@ -66,16 +66,8 @@ fn uri_host<S>() -> impl Parser<Stream = S, Output = String>
 where
     S: Stream,
 {
-    // a URI host is a URI segment
+    // a URI host is just a string of URI tokens
     uri_segment()
-        .extend(
-            // followed by one or more
-            many1(
-                // URI segments preceded by dots (.)
-                token(b'.').wrap().extend(uri_segment()),
-            )
-            .flatten(),
-        )
         .map(|s| s.into_iter().map(Into::into).collect())
 }
 
