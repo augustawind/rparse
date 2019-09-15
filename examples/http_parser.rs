@@ -166,22 +166,21 @@ fn main() {
 mod test {
     use super::*;
     use rparse::stream::IndexedStream;
-    use rparse::Error;
+    use rparse::Error::{self, *};
 
     // TODO: [u8]
     #[test]
     fn test_http_method() {
-        let method_errors: Vec<Error<IndexedStream<&[u8]>>> = vec![
-            "GET", "PUT", "POST", "HEAD", "PATCH", "TRACE", "DELETE", "OPTIONS", "CONNECT",
-        ]
-        .into_iter()
-        .map(|method| Error::expected_range(method.as_bytes()))
-        .collect();
-
         test_parser!(IndexedStream<&[u8]> => String | http_method(), {
             &b"GET"[..] => ok(Ok("GET".into()), (&b""[..], 3)),
             &b"HEAD\n/"[..] => ok(Ok("HEAD".into()), (&b"\n/"[..], 4)),
-            &b"GARBLEDIGOOK"[..] => err(0, method_errors.clone()),
+        });
+
+        test_parser!(IndexedStream<&[u8]> => String | http_method(), {
+            &b"PUPPYDOG"[..] => err(2, vec![
+                Error::unexpected_token(b'P'),
+                Error::expected_range("PUT".as_bytes()),
+            ]),
         });
 
         assert_eq!(http_method().parse("TRACE it"), (Ok("TRACE".into()), " it"));
@@ -193,7 +192,10 @@ mod test {
             "%A9" => ok(Ok("%A9".into()), ""),
             "%0f/hello" => ok(Ok("%0f".into()), "/hello"),
             "" => err(vec![Error::unexpected_eoi(), Error::expected_token('%')]),
-            "%xy" => err(vec![Error::unexpected_token('x')]),
+            "%xy" => err(vec![
+                Error::unexpected_token('x'),
+                Expected("a hexadecimal digit".into()),
+            ]),
         });
     }
 
