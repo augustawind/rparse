@@ -58,7 +58,16 @@ fn uri<S>() -> impl Parser<Stream = S, Output = String>
 where
     S: Stream,
 {
-    (uri_scheme(), uri_host(), uri_path()).map(|(r0, r1, r2)| format!("{}{}{}", r0, r1, r2))
+    // a URI is
+    (
+        // a scheme
+        uri_scheme(),
+        // followed by a host
+        uri_host(),
+        // followed by a path
+        uri_path(),
+    )
+        .map(|(r0, r1, r2)| format!("{}{}{}", r0, r1, r2))
 }
 
 fn uri_scheme<S>() -> impl Parser<Stream = S, Output = String>
@@ -74,8 +83,7 @@ where
     S: Stream,
 {
     // a URI host is just a string of URI tokens
-    uri_segment()
-        .map(|s| s.into_iter().map(Into::into).collect())
+    uri_segment().map(|s| s.into_iter().map(Into::into).collect())
 }
 
 // TODO:
