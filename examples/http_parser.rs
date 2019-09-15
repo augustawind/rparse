@@ -4,21 +4,21 @@ extern crate rparse;
 use rparse::parser::range::range;
 use rparse::parser::seq::{many, many1};
 use rparse::parser::token::{ascii, token};
-use rparse::stream::StreamRange;
+use rparse::stream::{IndexedStream, StreamRange};
 use rparse::{Parser, Stream};
 
-// fn http_request_line<S>() -> impl Parser<Stream = S, Output = Vec<S::Range>>
-// where
-//     S: Stream,
-// {
-//     http_method()
-//         .wrap()
-//         .extend(concat![
-//             token(b' ').and(uri_path()),
-//             token(b' ').and(http_version()),
-//         ])
-//         .append(range("\r\n"))
-// }
+fn http_request_line<S>() -> impl Parser<Stream = S, Output = Vec<String>>
+where
+    S: Stream,
+{
+    // an HTTP request line is an HTTP method
+    http_method()
+        // followed by a URI
+        .then(token(b' ').and(uri()))
+        // followed by an HTTP version
+        .append(token(b' ').and(http_version()))
+        .append(linebreak())
+}
 
 fn http_version<S>() -> impl Parser<Stream = S, Output = String>
 where
@@ -52,6 +52,13 @@ where
         range("CONNECT"),
     ]
     .map(StreamRange::to_string)
+}
+
+fn uri<S>() -> impl Parser<Stream = S, Output = String>
+where
+    S: Stream,
+{
+    (uri_scheme(), uri_host(), uri_path()).map(|(r0, r1, r2)| format!("{}{}{}", r0, r1, r2))
 }
 
 fn uri_scheme<S>() -> impl Parser<Stream = S, Output = String>
@@ -107,7 +114,13 @@ fn uri_token<S>() -> impl Parser<Stream = S, Output = S::Item>
 where
     S: Stream,
 {
-    choice![ascii::alpha_num(), token(b'-'), token(b'_'), token(b'~')]
+    choice![
+        ascii::alpha_num(),
+        token(b'-'),
+        token(b'.'),
+        token(b'_'),
+        token(b'~')
+    ]
 }
 
 fn percent_encoded<S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
@@ -119,7 +132,26 @@ where
         .append(ascii::hexdigit())
 }
 
-fn main() {}
+fn linebreak<S>() -> impl Parser<Stream = S, Output = String>
+where
+    S: Stream,
+{
+    range("\r\n").map(StreamRange::to_string)
+}
+
+fn main() {
+    let stream = IndexedStream::from("GET http://foo.bar/I%20like%20/50 HTTP/1.1\r\n");
+    match http_request_line().parse(stream) {
+        (Ok(result), _) => {
+            println!("Parsing succeeded!");
+            dbg!(result);
+        }
+        (Err(err), _) => {
+            println!("Parsing failed!");
+            dbg!(err);
+        }
+    };
+}
 
 #[cfg(test)]
 mod test {
