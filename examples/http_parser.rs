@@ -19,11 +19,14 @@ use rparse::{Parser, Stream};
 //         .append(range("\r\n"))
 // }
 
-fn http_version<S>() -> impl Parser<Stream = S, Output = Vec<S::Range>>
+fn http_version<S>() -> impl Parser<Stream = S, Output = S::Range>
 where
     S: Stream,
+    S::Range: std::iter::FromIterator<S::Item>,
 {
-    range("HTTP/").then(choice![range("1"), range("1.1"), range("2")])
+    range("HTTP/")
+        .then(choice![range("1"), range("1.1"), range("2")])
+        .flatten_range()
 }
 
 fn http_method<S>() -> impl Parser<Stream = S, Output = S::Range>

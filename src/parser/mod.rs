@@ -19,8 +19,8 @@ use std::str;
 
 use self::choice::{and, optional, or, And, Optional, Or};
 use self::function::{
-    bind, collect, expect, flatten, from_str, iter, map, wrap, Bind, Collect, Expect, Flatten,
-    FromStr, Iter, Map, Wrap,
+    bind, collect, expect, flatten, flatten_range, from_str, iter, map, wrap, Bind, Collect,
+    Expect, Flatten, FlattenRange, FromStr, Iter, Map, Wrap,
 };
 use self::seq::{append, extend, then, Append, Extend, Then};
 use error::{Errors, Info, ParseResult};
@@ -159,6 +159,15 @@ pub trait Parser {
         Self: Sized + Parser<Output = Vec<Vec<O>>>,
     {
         flatten(self)
+    }
+
+    fn flatten_range<S>(self) -> FlattenRange<Self, S>
+    where
+        S: Stream,
+        Self: Sized + Parser<Stream = S, Output = Vec<S::Range>>,
+        S::Range: std::iter::FromIterator<S::Item>,
+    {
+        flatten_range(self)
     }
 
     fn wrap(self) -> Wrap<Self>
