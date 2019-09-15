@@ -169,7 +169,7 @@ pub trait Parser {
     }
 }
 
-impl<'a, S: Stream, O> Parser for FnMut(S) -> ParseResult<S, O> + 'a {
+impl<'a, S: Stream, O> Parser for dyn FnMut(S) -> ParseResult<S, O> + 'a {
     type Stream = S;
     type Output = O;
 

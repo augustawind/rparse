@@ -18,7 +18,7 @@ pub type IndexedStream<S> = State<S, IndexPosition>;
 
 /// Tokens is an iterator over the tokens of some `Stream`.
 /// It is returned by the `tokens` method of `Stream`.
-pub struct Tokens<'a, T>(Box<Iterator<Item = T> + 'a>);
+pub struct Tokens<'a, T>(Box<dyn Iterator<Item = T> + 'a>);
 
 impl<'a, T> Tokens<'a, T> {
     fn new<I: Iterator<Item = T> + 'a>(iter: I) -> Self {
