@@ -115,13 +115,7 @@ fn uri_token<S>() -> impl Parser<Stream = S, Output = S::Item>
 where
     S: Stream,
 {
-    choice![
-        ascii::alpha_num(),
-        token(b'-'),
-        token(b'.'),
-        token(b'_'),
-        token(b'~')
-    ]
+    choice![ascii::alpha_num(), token(b'-'), token(b'_'), token(b'~')]
 }
 
 fn percent_encoded<S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
