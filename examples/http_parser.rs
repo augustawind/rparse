@@ -92,14 +92,14 @@ where
         concat![
             token(b'/').optional(),
             uri_segment(),
-            many(concat![token(b'/').wrap(), uri_segment(),]).flatten(),
+            many(token(b'/').wrap().or(uri_segment())).flatten(),
         ],
         // just a slash
         token(b'/').wrap(),
         // or a URI segment followed by zero or more URI segments separated by slashes
         concat![
             uri_segment(),
-            many(concat![token(b'/').wrap(), uri_segment(),]).flatten(),
+            many(token(b'/').wrap().or(uri_segment())).flatten(),
         ],
     ]
     .map(|s: Vec<S::Item>| s.into_iter().map(Into::into).collect())
@@ -109,10 +109,11 @@ fn uri_segment<S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
 where
     S: Stream,
 {
-    // a URI segment is one or more URI-safe characters
+    // a URI segment is any number of
     many1(
+        // URI-safe characters
         many1(uri_token())
-            // or a percent-encoded octet
+            // and percent-encoded octets
             .or(percent_encoded()),
     )
     .flatten()
@@ -177,20 +178,20 @@ mod test {
         .map(|method| Error::expected_range(method.as_bytes()))
         .collect();
 
-        test_parser!(IndexedStream<&[u8]> => &[u8] | http_method(), {
-            &b"GET"[..] => ok(Ok(&b"GET"[..]), (&b""[..], 3)),
-            &b"HEAD\n/"[..] => ok(Ok(&b"HEAD"[..]), (&b"\n/"[..], 4)),
+        test_parser!(IndexedStream<&[u8]> => String | http_method(), {
+            &b"GET"[..] => ok(Ok("GET".into()), (&b""[..], 3)),
+            &b"HEAD\n/"[..] => ok(Ok("HEAD".into()), (&b"\n/"[..], 4)),
             &b"GARBLEDIGOOK"[..] => err(0, method_errors.clone()),
         });
 
-        assert_eq!(http_method().parse("TRACE it"), (Ok("TRACE"), " it"));
+        assert_eq!(http_method().parse("TRACE it"), (Ok("TRACE".into()), " it"));
     }
 
     #[test]
     fn test_percent_encoded() {
         test_parser!(&str => String | percent_encoded().collect(), {
-            "%A9" => ok(Ok("%A9".to_string()), ""),
-            "%0f/hello" => ok(Ok("%0f".to_string()), "/hello"),
+            "%A9" => ok(Ok("%A9".into()), ""),
+            "%0f/hello" => ok(Ok("%0f".into()), "/hello"),
             "" => err(vec![Error::unexpected_eoi(), Error::expected_token('%')]),
             "%xy" => err(vec![Error::unexpected_token('x')]),
         });
@@ -198,12 +199,13 @@ mod test {
 
     #[test]
     fn test_uri_path() {
-        test_parser!(IndexedStream<&str> => String | uri_path().collect(), {
-            "/" => ok(Ok("/".to_string()), ("", 1)),
-            "/my_img.jpeg" => ok(Ok("/my_img.jpeg".to_string()), ("", 12)),
-            "//a/b//``" => ok(Ok("//a/b//".to_string()), ("``", 7)),
-            "/%%bc" => ok(Ok("/".to_string()), ("%%bc", 1)),
-            "my_img.jpeg" => err(0, vec![Error::unexpected_token('m'), Error::expected_token('/')]),
+        test_parser!(IndexedStream<&str> => String | uri_path(), {
+            "/" => ok(Ok("/".into()), ("", 1)),
+            "foo" => ok(Ok("foo".into()), ("", 3)),
+            "/my_img.jpeg" => ok(Ok("/my_img.jpeg".into()), ("", 12)),
+            "foo/x%20y/z.gif/" => ok(Ok("foo/x%20y/z.gif/".into()), ("", 16)),
+            "/%%bc" => err(2, vec![Error::unexpected_token('%')]),
+            "//a/b//``" => err(1, vec![Error::unexpected_token('/')]),
         });
     }
 }
