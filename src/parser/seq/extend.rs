@@ -21,13 +21,16 @@ where
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         match self.left.parse_partial(stream) {
-            (Ok(mut left), stream) => match self.right.parse_partial(stream) {
+            (Ok(Some(mut left)), stream) => match self.right.parse_partial(stream) {
                 (Ok(right), stream) => {
-                    left.extend(right.into_iter());
+                    if let Some(r) = right {
+                        left.extend(r.into_iter());
+                    }
                     stream.ok(left)
                 }
                 (Err(err), stream) => stream.errs(err),
             },
+            (Ok(None), stream) => stream.noop(),
             (Err(err), stream) => stream.errs(err),
         }
     }
@@ -63,14 +66,13 @@ mod test {
     #[test]
     fn test_extend() {
         let mut parser = extend(many(ascii::letter()), many1(token(b'?')));
-        test_parser!(IndexedStream<&str> | parser, {
-            "huh???" => (Ok("huh???".chars().collect()), ("", 6));
-            "oh?? cool" => (Ok("oh??".chars().collect()), (" cool", 4));
-            "???" => (Ok("???".chars().collect()), ("", 3));
-        }, {
-            "" => (0, vec![Error::unexpected_eoi(), Error::expected_token('?')]);
-            "whoops!" => (6, vec![Error::unexpected_token('!'), Error::expected_token('?')]);
-            "!?" => (0, vec![Error::unexpected_token('!'), Error::expected_token('?')]);
+        test_parser!(IndexedStream<&str> => Vec<char> | parser, {
+            "huh???" => ok("huh???".chars().collect(), ("", 6)),
+            "oh?? cool" => ok("oh??".chars().collect(), (" cool", 4)),
+            "???" => ok("???".chars().collect(), ("", 3)),
+            "" => err(0, vec![Error::unexpected_eoi(), Error::expected_token('?')]),
+            "whoops!" => err(6, vec![Error::unexpected_token('!'), Error::expected_token('?')]),
+            "!?" => err(0, vec![Error::unexpected_token('!'), Error::expected_token('?')]),
         });
     }
 

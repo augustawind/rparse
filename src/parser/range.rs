@@ -1,6 +1,6 @@
 //! Parsers that parse a continuous series of tokens.
 
-use error::{Error, Errors, ParseResult};
+use error::{Error, ParseResult};
 use parser::Parser;
 use stream::{Position, Stream, StreamRange};
 
@@ -43,8 +43,8 @@ impl<S: Stream> Parser for Range<S> {
         result
     }
 
-    fn add_expected_error(&self, errors: &mut Errors<Self::Stream>) {
-        errors.add_error(Error::expected_range(self.range.clone()));
+    fn expected_error(&self) -> Error<Self::Stream> {
+        Error::expected_range(self.range.clone())
     }
 }
 

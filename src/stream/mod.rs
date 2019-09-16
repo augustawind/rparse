@@ -5,6 +5,7 @@ pub mod position;
 pub mod state;
 
 use std::fmt::Debug;
+use std::option::Option::*;
 
 pub use self::position::{IndexPosition, LinePosition, NullPosition, Position};
 pub use self::state::State;
@@ -107,16 +108,21 @@ pub trait Stream: Sized + Clone + Debug {
         *self = backup;
     }
 
-    /// Return the given parse output as a `ParseResult`, using `Self` as the `Stream` type.
-    fn ok<O>(self, result: O) -> ParseResult<Self, O> {
+    fn result<O>(self, result: Option<O>) -> ParseResult<Self, O> {
         (Ok(result), self)
     }
 
-    fn empty_err(&self) -> Errors<Self> {
-        Errors::new(self.position().clone())
+    /// Create a successful `ParseResult` with the given output.
+    fn ok<O>(self, output: O) -> ParseResult<Self, O> {
+        (Ok(Some(output)), self)
     }
 
-    /// Return the given parse error as a `ParseResult`, using `Self` as the `Stream` type.
+    /// Create a successful `ParseResult` with no output.
+    fn noop<O>(self) -> ParseResult<Self, O> {
+        (Ok(None), self)
+    }
+
+    /// Create a failed `ParseResult` with the given `Error`.
     fn err<O>(self, error: Error<Self>) -> ParseResult<Self, O> {
         (
             Err(Errors::from_error(self.position().clone(), error)),
@@ -124,8 +130,12 @@ pub trait Stream: Sized + Clone + Debug {
         )
     }
 
-    /// Return multiple parse errors as a `ParseResult`, using `Self` as the `Stream` type.
+    /// Create a failed `ParseResult with the given `Errors`.
     fn errs<O>(self, errors: Errors<Self>) -> ParseResult<Self, O> {
         (Err(errors), self)
+    }
+
+    fn empty_err(&self) -> Errors<Self> {
+        Errors::new(self.position().clone())
     }
 }

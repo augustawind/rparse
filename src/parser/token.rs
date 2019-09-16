@@ -2,7 +2,7 @@
 
 use std::marker::PhantomData;
 
-use error::{Error, Errors, ParseResult};
+use error::{Error, ParseResult};
 use parser::function::Expect;
 use parser::Parser;
 use stream::{Position, Stream, StreamItem};
@@ -20,8 +20,8 @@ impl<S: Stream> Parser for Any<S> {
         }
     }
 
-    fn add_expected_error(&self, errors: &mut Errors<Self::Stream>) {
-        errors.add_error(Error::Expected("a token".into()));
+    fn expected_error(&self) -> Error<Self::Stream> {
+        Error::Expected("a token".into())
     }
 }
 
@@ -53,8 +53,8 @@ where
         }
     }
 
-    fn add_expected_error(&self, errors: &mut Errors<Self::Stream>) {
-        errors.add_error(Error::expected_token(self.token));
+    fn expected_error(&self) -> Error<Self::Stream> {
+        Error::expected_token(self.token)
     }
 }
 

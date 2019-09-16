@@ -20,14 +20,18 @@ where
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         let initial_pos = stream.position().clone();
-        let (result, stream) = self.parser.parse(stream);
-        // Ignore error if it occured at the top of the stream.
-        if stream.position() > &initial_pos {
-            if let Err(err) = result {
-                return stream.errs(err);
+        match self.parser.parse(stream) {
+            (Ok(None), stream) => stream.noop(),
+            // Ignore error if it occured at the top of the stream.
+            (Err(err), stream) => {
+                if stream.position() > &initial_pos {
+                    stream.errs(err)
+                } else {
+                    stream.noop()
+                }
             }
+            (result, stream) => stream.ok(O::from_result(result)),
         }
-        stream.ok(O::from_result(result))
     }
 }
 
@@ -82,11 +86,11 @@ where
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         let (mut err, stream) = match self.left.parse(stream) {
-            (Ok(result), stream) => return stream.ok(result),
+            (Ok(result), stream) => return stream.result(result),
             (Err(err), stream) => (err, stream),
         };
         match self.right.parse(stream) {
-            (Ok(result), stream) => stream.ok(result),
+            (Ok(result), stream) => stream.result(result),
             (Err(mut err2), stream) => {
                 err.merge_errors(&mut err2);
                 stream.errs(err)
@@ -127,23 +131,20 @@ where
     type Output = O;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        let initial_pos = stream.position().clone();
-
-        let (mut err, stream) = match self.left.parse(stream) {
-            (Ok(result), stream) => return stream.ok(result),
-            (Err(err), stream) => {
-                if err.position > initial_pos {
-                    return stream.errs(err);
-                }
-                (err, stream)
-            }
+        let stream = match self.left.parse(stream) {
+            (Ok(Some(output)), stream) => return stream.ok(output),
+            (Err(err), stream) => return stream.errs(err),
+            (Ok(None), stream) => stream,
         };
 
         match self.right.parse(stream) {
-            (Ok(result), stream) => stream.ok(result),
-            (Err(mut err2), stream) => {
-                err.merge_errors(&mut err2);
-                stream.errs(err)
+            (Ok(Some(output)), stream) => stream.ok(output),
+            (Err(err), stream) => stream.errs(err),
+            (Ok(None), stream) => {
+                let mut errors = stream.empty_err();
+                self.left.add_expected_error(&mut errors);
+                self.right.add_expected_error(&mut errors);
+                stream.errs(errors)
             }
         }
     }
@@ -173,6 +174,7 @@ mod test {
     use error::Error::{self, *};
     use parser::range::range;
     use parser::seq::{many, many1, then};
+    use parser::test_utils::*;
     use parser::token::{any, ascii, token};
     use parser::Parser;
     use stream::IndexedStream;
@@ -180,33 +182,33 @@ mod test {
     #[test]
     fn test_optional() {
         let mut parser = optional(token(b'x'));
-        test_parser!(&str | parser, {
-            "" => (Ok(None), "");
-            "y" => (Ok(None), "y");
-            "x" => (Ok(Some('x')), "");
-            "xyz" => (Ok(Some('x')), "yz");
+        test_parser!(&str => Option<char> | parser, {
+            "" => ok(None, ""),
+            "y" => ok(None, "y"),
+            "x" => ok(Some('x'), ""),
+            "xyz" => ok(Some('x'), "yz"),
         });
 
         let mut parser = optional(token(b'x'));
-        test_parser!(&str | parser, {
-            "" => (Ok(vec![]), "");
-            "y" => (Ok(vec![]), "y");
-            "x" => (Ok(vec!['x']), "");
-            "xyz" => (Ok(vec!['x']), "yz");
+        test_parser!(&str => Vec<char> | parser, {
+            "" => ok(vec![], ""),
+            "y" => ok(vec![], "y"),
+            "x" => ok(vec!['x'], ""),
+            "xyz" => ok(vec!['x'], "yz"),
         });
 
         let mut parser = optional(many1(ascii::alpha_num()));
-        test_parser!(&str | parser, {
-            "abc123" => (Ok(Some("abc123".chars().collect())), "");
+        test_parser!(&str => Vec<char> | parser, {
+            "abc123" => ok("abc123".chars().collect(), ""),
         });
 
         let mut parser = optional(many(any()));
-        assert_eq!(parser.parse(""), (Ok(vec![vec![]]), ""));
+        assert_eq!(parser.parse(""), ok_result(vec![vec![]], ""));
 
         let mut parser = token(b'x').optional();
         test_parser!(&str => String | parser, {
-            "x" => ok(Ok("x".to_string()), ""),
-            "y" => ok(Ok("".to_string()), "y"),
+            "x" => ok("x".to_string(), ""),
+            "y" => ok("".to_string(), "y"),
         });
     }
 
@@ -214,8 +216,8 @@ mod test {
     fn test_and() {
         let mut parser = and(token(b'a'), token(b'b'));
         test_parser!(IndexedStream<&str> => char | parser, {
-            "abcd" => ok(Ok('b'), ("cd", 2)),
-            "ab" => ok(Ok('b'), ("", 2)),
+            "abcd" => ok('b', ("cd", 2)),
+            "ab" => ok('b', ("", 2)),
             "def" => err(0, vec![Unexpected('d'.into()), Expected('a'.into())]),
             "aab" => err(1, vec![Unexpected('a'.into()), Expected('b'.into())]),
             "bcd" => err(0, vec![Unexpected('b'.into()), Expected('a'.into())]),
@@ -223,7 +225,7 @@ mod test {
 
         let mut parser = and(many1(ascii::digit()), many1(ascii::letter()));
         test_parser!(IndexedStream<&str> => Vec<char> | parser, {
-            "123abc456" => ok(Ok(vec!['a', 'b', 'c']), ("456", 6)),
+            "123abc456" => ok(vec!['a', 'b', 'c'], ("456", 6)),
             " 1 2 3" => err(0, vec![
                 Unexpected(' '.into()),
                 Expected("an ascii digit".into())
@@ -238,15 +240,14 @@ mod test {
     #[test]
     fn test_or() {
         let mut parser = or(token(b'a'), token(b'b'));
-        test_parser!(IndexedStream<&str> | parser, {
-            "bcd" => (Ok('b'), ("cd", 1));
-            "a" => (Ok('a'), ("", 1));
-        }, {
-            "def" => (0, vec![
+        test_parser!(IndexedStream<&str> => char | parser, {
+            "bcd" => ok('b', ("cd", 1)),
+            "a" => ok('a', ("", 1)),
+            "def" => err(0, vec![
                 Unexpected('d'.into()),
                 Expected('a'.into()),
                 Expected('b'.into()),
-            ]);
+            ]),
         });
 
         let mut parser = or(
@@ -254,21 +255,24 @@ mod test {
             then(ascii::letter(), ascii::whitespace()),
         )
         .collect();
-        test_parser!(IndexedStream<&str> | parser, {
-            "123a bc" => (Ok("123".to_string()), ("a bc", 3));
-            "a b c" => (Ok("a ".to_string()), ("b c", 2));
+        test_parser!(IndexedStream<&str> => String | parser, {
+            "123a bc" => ok("123".into(), ("a bc", 3)),
+            "a b c" => ok("a ".into(), ("b c", 2)),
         });
     }
 
     #[test]
     fn test_choice() {
-        assert_eq!(choice!(token(b'a'), token(b'b')).parse("a"), (Ok('a'), ""));
+        assert_eq!(
+            choice!(token(b'a'), token(b'b')).parse("a"),
+            ok_result('a', "")
+        );
 
         let mut parser = choice!(token(b'a'), ascii::digit(), ascii::punctuation());
         test_parser!(IndexedStream<&str> => char | parser, {
-            "a9." => ok(Ok('a'), ("9.", 1)),
-            "9.a" => ok(Ok('9'), (".a", 1)),
-            ".a9" => ok(Ok('.'), ("a9", 1)),
+            "a9." => ok('a', ("9.", 1)),
+            "9.a" => ok('9', (".a", 1)),
+            ".a9" => ok('.', ("a9", 1)),
             "ba9." => err(0, vec![
                 Unexpected('b'.into()),
                 Expected('a'.into()),
@@ -279,10 +283,10 @@ mod test {
 
         assert_eq!(
             choice!(token(b'a'), token(b'b'), token(b'c')).parse("bcd"),
-            (Ok('b'), "cd")
+            ok_result('b', "cd"),
         );
 
-        assert_eq!(choice!(ascii::letter()).parse("Z"), (Ok('Z'), ""));
+        assert_eq!(choice!(ascii::letter()).parse("Z"), ok_result('Z', ""));
 
         let mut parser = choice!(
             many1(ascii::digit()),
@@ -290,8 +294,8 @@ mod test {
         )
         .collect();
         test_parser!(IndexedStream<&str> => String | parser, {
-            "123a bc" => ok(Ok("123".to_string()), ("a bc", 3)),
-            "a b c" => ok(Ok("a ".to_string()), ("b c", 2)),
+            "123a bc" => ok("123".to_string(), ("a bc", 3)),
+            "a b c" => ok("a ".to_string(), ("b c", 2)),
         });
     }
 
@@ -299,8 +303,8 @@ mod test {
     fn test_xor() {
         let mut parser = xor(range("bar"), range("dar"));
         test_parser!(IndexedStream<&str> => &str | parser, {
-            "bar9" => ok(Ok("bar"), ("9", 3)),
-            "dar9" => ok(Ok("dar"), ("9", 3)),
+            "bar9" => ok("bar", ("9", 3)),
+            "dar9" => ok("dar", ("9", 3)),
             "bam" => err(2, vec![Unexpected('m'.into()), Error::expected_range("bar")]),
             "rar" => err(0, vec![
                 Unexpected('r'.into()),
@@ -314,8 +318,8 @@ mod test {
             .xor(token(b'x').then(token(b'_')).append(token(b'x')))
             .collect();
         test_parser!(IndexedStream<&str> => String | parser, {
-            "12345?" => ok(Ok("12345".into()), ("?", 5)),
-            "xxx666" => ok(Ok("xxx".into()), ("666", 3)),
+            "12345?" => ok("12345".into(), ("?", 5)),
+            "xxx666" => ok("xxx".into(), ("666", 3)),
             "" => err(0, vec![
                 Error::unexpected_eoi(),
                 Expected("an ascii digit".into()),
@@ -330,8 +334,8 @@ mod test {
     fn test_xchoice() {
         let mut parser = xchoice!(range("bar"), range("dar"), range("bam"));
         test_parser!(IndexedStream<&str> => &str | parser, {
-            "bar9" => ok(Ok("bar"), ("9", 3)),
-            "dar9" => ok(Ok("dar"), ("9", 3)),
+            "bar9" => ok("bar", ("9", 3)),
+            "dar9" => ok("dar", ("9", 3)),
             "bam9" => err(2, vec![Unexpected('m'.into()), Error::expected_range("bar")]),
             "rar" => err(0, vec![
                 Unexpected('r'.into()),
@@ -349,8 +353,8 @@ mod test {
         .collect();
 
         test_parser!(IndexedStream<&str> => String | parser, {
-            "12345?" => ok(Ok("12345".into()), ("?", 5)),
-            "xxx666" => ok(Ok("xxx".into()), ("666", 3)),
+            "12345?" => ok("12345".into(), ("?", 5)),
+            "xxx666" => ok("xxx".into(), ("666", 3)),
             "" => err(0, vec![
                 Error::unexpected_eoi(),
                 Expected("an ascii digit".into()),

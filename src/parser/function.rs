@@ -3,11 +3,12 @@
 use std::fmt::Display;
 use std::iter::FromIterator;
 use std::marker::PhantomData;
+use std::option::Option::*;
 use std::str;
 
-use error::{Errors, Info};
+use error::{Error, Info};
 use traits::StrLike;
-use {Error, ParseResult, Parser, Stream};
+use {ParseResult, Parser, Stream};
 
 pub struct Expect<P: Parser> {
     parser: P,
@@ -28,8 +29,8 @@ impl<P: Parser> Parser for Expect<P> where {
         self.parser.parse_lazy(stream)
     }
 
-    fn add_expected_error(&self, errors: &mut Errors<Self::Stream>) {
-        errors.add_error(self.error.clone());
+    fn expected_error(&self) -> Error<Self::Stream> {
+        self.error.clone()
     }
 }
 
@@ -59,7 +60,7 @@ where
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         match self.parser.parse(stream) {
-            (Ok(result), remaining) => (Ok((self.f)(result)), remaining),
+            (Ok(result), remaining) => (Ok(result.map(|output| (self.f)(output))), remaining),
             (Err(err), remaining) => (Err(err), remaining),
         }
     }
@@ -124,7 +125,7 @@ pub struct Bind<P, F> {
 impl<P, F, O> Parser for Bind<P, F>
 where
     P: Parser,
-    F: Fn(P::Output, P::Stream) -> ParseResult<P::Stream, O>,
+    F: Fn(Option<P::Output>, P::Stream) -> ParseResult<P::Stream, O>,
 {
     type Stream = P::Stream;
     type Output = O;
@@ -140,7 +141,7 @@ where
 pub fn bind<P, F, O>(p: P, f: F) -> Bind<P, F>
 where
     P: Parser,
-    F: Fn(P::Output, P::Stream) -> O,
+    F: Fn(Option<P::Output>, P::Stream) -> O,
 {
     Bind { parser: p, f }
 }
@@ -162,18 +163,18 @@ where
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         match self.parser.parse_partial(stream) {
-            (Ok(s), stream) => (
-                s.from_utf8()
+            (Ok(Some(s)), stream) => {
+                let result = s
+                    .from_utf8()
                     .map_err(|_| "invalid UTF-8".into())
-                    .and_then(|s| s.parse().map_err(|e: O::Err| e.to_string().into()))
-                    .map_err(|e| {
-                        let mut errors = stream.empty_err();
-                        errors.add_error(e);
-                        errors
-                    }),
-                stream,
-            ),
-            (Err(err), stream) => (Err(err), stream),
+                    .and_then(|s: &str| s.parse::<O>().map_err(|e: O::Err| e.to_string().into()));
+                match result {
+                    Ok(output) => stream.ok(output),
+                    Err(err) => stream.err(err),
+                }
+            }
+            (Ok(None), stream) => stream.noop(),
+            (Err(err), stream) => stream.errs(err),
         }
     }
 }
@@ -196,6 +197,7 @@ mod test {
     use super::*;
     use error::Error::*;
     use parser::seq::many1;
+    use parser::test_utils::*;
     use parser::token::{ascii, token};
     use stream::{IndexedStream, SourceCode};
 
@@ -203,53 +205,59 @@ mod test {
     fn test_map() {
         let mut parser = map(ascii::digit(), |c: char| c.to_string());
         test_parser!(&str => String | parser, {
-            "3" => ok(Ok("3".to_string()), ""),
+            "3" => ok("3".to_string(), ""),
             "a3" => err(vec![Unexpected('a'.into()), Expected("an ascii digit".into())]),
         });
 
         let mut parser = map(many1(ascii::letter()).collect::<String>(), |s| {
             s.to_uppercase()
         });
-        assert_eq!(parser.parse("aBcD12e"), (Ok("ABCD".to_string()), "12e"));
+        assert_eq!(
+            parser.parse("aBcD12e"),
+            ok_result("ABCD".to_string(), "12e")
+        );
 
         let mut parser = map(many1(ascii::alpha_num()).collect::<String>(), |s| {
             s.parse::<usize>().unwrap_or(0)
         });
         test_parser!(&str => usize | parser, {
-            "324 dogs" => ok(Ok(324 as usize), " dogs"),
-            "324dogs" => ok(Ok(0 as usize), ""),
+            "324 dogs" => ok(324 as usize, " dogs"),
+            "324dogs" => ok(0 as usize, ""),
         });
     }
 
     #[test]
     fn test_bind() {
         // TODO: use realistic use cases for these tests. many of these are better suited to map()
-        let mut parser = ascii::digit().bind(|c: char, stream: &str| stream.ok(c.to_string()));
+        let mut parser = ascii::digit()
+            .bind(|r: Option<char>, stream: &str| stream.result(r.map(|c| c.to_string())));
         test_parser!(&str => String | parser, {
-            "3" => ok(Ok("3".to_string()), ""),
+            "3" => ok("3".to_string(), ""),
             "a3" => err(vec![Error::unexpected_token('a')]),
         });
 
         let mut parser = many1(ascii::letter())
             .collect()
-            .bind(|s: String, stream: &str| stream.ok(s.to_uppercase()));
-        assert_eq!(parser.parse("aBcD12e"), (Ok("ABCD".to_string()), "12e"));
+            .bind(|r: Option<String>, stream: &str| stream.result(r.map(|s| s.to_uppercase())));
+        assert_eq!(
+            parser.parse("aBcD12e"),
+            ok_result("ABCD".to_string(), "12e")
+        );
 
-        let mut parser =
-            many1(ascii::alpha_num())
-                .collect()
-                .bind(
-                    |s: String, stream: IndexedStream<&str>| match s.parse::<usize>() {
-                        Ok(n) => stream.ok(n),
-                        Err(e) => stream.err(Box::new(e).into()),
-                    },
-                );
-        test_parser!(IndexedStream<&str> | parser, {
-            "324 dogs" => (Ok(324 as usize), (" dogs", 3));
-        }, {
+        let mut parser = many1(ascii::alpha_num()).collect().bind(
+            |r: Option<String>, stream: IndexedStream<&str>| match r {
+                Some(s) => match s.parse::<usize>() {
+                    Ok(n) => stream.ok(n),
+                    Err(e) => stream.err(Box::new(e).into()),
+                },
+                _ => stream.noop(),
+            },
+        );
+        test_parser!(IndexedStream<&str> => usize | parser, {
+            "324 dogs" => ok(324 as usize, (" dogs", 3)),
         // TODO: add ability to control consumption, e.g. make this error show at beginning (0)
         // TODO: e.g.: many1(alpha_num()).bind(...).try()
-            "324dogs" => (7, vec!["invalid digit found in string".into()]);
+            "324dogs" => err(7, vec!["invalid digit found in string".into()]),
         });
     }
 
@@ -257,8 +265,8 @@ mod test {
     fn test_from_str() {
         let mut parser = many1(ascii::digit()).collect::<String>().from_str::<u32>();
         test_parser!(&str => u32 | parser, {
-            "369" => ok(Ok(369 as u32), ""),
-            "369abc" => ok(Ok(369 as u32), "abc"),
+            "369" => ok(369 as u32, ""),
+            "369abc" => ok(369 as u32, "abc"),
             "abc" => err(vec![Unexpected('a'.into()), Expected("an ascii digit".into())]),
         });
 
@@ -266,15 +274,15 @@ mod test {
             .collect::<String>()
             .from_str::<f32>();
         test_parser!(&str => f32 | parser, {
-            "12e" => ok(Ok(12 as f32), "e"),
-            "-12e" => ok(Ok(-12 as f32), "e"),
-            "-12.5e" => ok(Ok(-12.5 as f32), "e"),
+            "12e" => ok(12 as f32, "e"),
+            "-12e" => ok(-12 as f32, "e"),
+            "-12.5e" => ok(-12.5 as f32, "e"),
             "12.5.9" =>  err(vec!["invalid float literal".into()]),
         });
 
         let mut parser = many1(ascii::digit()).collect::<String>().from_str::<f32>();
         test_parser!(SourceCode => f32 | parser, {
-            "12e" => ok(Ok(12f32), ("e", (1, 3))),
+            "12e" => ok(12f32, ("e", (1, 3))),
             "e12" => err((1, 1), vec![Unexpected('e'.into()), Expected("an ascii digit".into())]),
         });
     }

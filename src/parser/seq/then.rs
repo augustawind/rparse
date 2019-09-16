@@ -18,7 +18,9 @@ where
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         match self.left.parse_partial(stream) {
             (Ok(first), stream) => match self.right.parse_partial(stream) {
-                (Ok(second), stream) => stream.ok(vec![first, second]),
+                (Ok(second), stream) => {
+                    stream.ok(first.into_iter().chain(second.into_iter()).collect())
+                }
                 (Err(err), stream) => stream.errs(err),
             },
             (Err(err), stream) => stream.errs(err),
@@ -43,12 +45,11 @@ mod test {
     #[test]
     fn test_then() {
         let mut parser = token(b'X').then(token(b'O'));
-        test_parser!(IndexedStream<&str> | parser, {
-            "XO" => (Ok("XO".chars().collect()), ("", 2));
-            "XOXO" => (Ok("XO".chars().collect()), ("XO", 2));
-        }, {
-            "XY" => (1, vec![Error::unexpected_token('Y'), Error::expected_token('O')]);
-            "ZY" => (0, vec![Error::unexpected_token('Z'), Error::expected_token('X')]);
+        test_parser!(IndexedStream<&str> => Vec<char> | parser, {
+            "XO" => ok("XO".chars().collect(), ("", 2)),
+            "XOXO" => ok("XO".chars().collect(), ("XO", 2)),
+            "XY" => err(1, vec![Error::unexpected_token('Y'), Error::expected_token('O')]),
+            "ZY" => err(0, vec![Error::unexpected_token('Z'), Error::expected_token('X')]),
         });
     }
 }

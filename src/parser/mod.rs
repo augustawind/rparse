@@ -2,6 +2,7 @@
 //!
 //! Defines the `Parser` trait.
 
+#[cfg(test)]
 #[macro_use]
 mod test_utils;
 
@@ -23,7 +24,7 @@ use self::function::{
     FromStr, Iter, Map, Wrap,
 };
 use self::seq::{append, extend, then, Append, Extend, Then};
-use error::{Errors, Info, ParseResult};
+use error::{Error, Errors, Info, ParseResult};
 use stream::Stream;
 use traits::StrLike;
 
@@ -54,7 +55,13 @@ pub trait Parser {
         result
     }
 
-    fn add_expected_error(&self, _: &mut Errors<Self::Stream>) {}
+    fn expected_error(&self) -> Error<Self::Stream> {
+        "parse error".into()
+    }
+
+    fn add_expected_error(&self, errors: &mut Errors<Self::Stream>) {
+        errors.add_error(self.expected_error());
+    }
 
     fn expect<I>(self, i: I) -> Expect<Self>
     where
@@ -99,7 +106,7 @@ pub trait Parser {
     fn bind<F, O>(self, f: F) -> Bind<Self, F>
     where
         Self: Sized,
-        F: Fn(Self::Output, Self::Stream) -> O,
+        F: Fn(Option<Self::Output>, Self::Stream) -> O,
     {
         bind(self, f)
     }
@@ -221,13 +228,12 @@ mod test {
 
     #[test]
     fn test_parser_from_closure() {
-        test_parser!(IndexedStream<&str> | vowel(), {
-            "a" => (Ok('a'), ("", 1));
-            "ooh" => (Ok('o'), ("oh", 1));
-        }, {
-            "" => (0, vec![Error::unexpected_eoi()]);
-            "d" => (1, vec![Error::unexpected_token('d')]);
-            "du" => (1, vec![Error::unexpected_token('d')]);
+        test_parser!(IndexedStream<&str> => char | vowel(), {
+            "a" => ok('a', ("", 1)),
+            "ooh" => ok('o', ("oh", 1)),
+            "" => err(0, vec![Error::unexpected_eoi()]),
+            "d" => err(1, vec![Error::unexpected_token('d')]),
+            "du" => err(1, vec![Error::unexpected_token('d')]),
         });
     }
 
@@ -253,12 +259,11 @@ mod test {
 
     #[test]
     fn test_parser_from_fn() {
-        test_parser!(IndexedStream<&[u8]> | parser(newline), {
-            "\n".as_bytes() => (Ok(b'\n'), ("".as_bytes(), 1));
-            "\nx".as_bytes() => (Ok(b'\n'), ("x".as_bytes(), 1));
-        }, {
-            "".as_bytes() => (0, vec![Error::unexpected_eoi()]);
-            "x\n".as_bytes() => (1, vec![Error::unexpected_token(b'x')]);
+        test_parser!(IndexedStream<&[u8]> => u8 | parser(newline), {
+            "\n".as_bytes() => ok(b'\n', ("".as_bytes(), 1)),
+            "\nx".as_bytes() => ok(b'\n', ("x".as_bytes(), 1)),
+            "".as_bytes() => err(0, vec![Error::unexpected_eoi()]),
+            "x\n".as_bytes() => err(1, vec![Error::unexpected_token(b'x')]),
         });
     }
 }

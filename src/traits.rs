@@ -57,18 +57,18 @@ impl StrLike for [u8] {
 }
 
 pub trait Maybe<T> {
-    fn from_result<E>(Result<T, E>) -> Self;
+    fn from_result<E>(Result<Option<T>, E>) -> Self;
 }
 
 impl<T> Maybe<T> for Vec<T> {
-    fn from_result<E>(r: Result<T, E>) -> Self {
-        r.into_iter().collect()
+    fn from_result<E>(r: Result<Option<T>, E>) -> Self {
+        r.unwrap_or(None).into_iter().collect()
     }
 }
 
 impl<T> Maybe<T> for Option<T> {
-    fn from_result<E>(r: Result<T, E>) -> Self {
-        r.ok()
+    fn from_result<E>(r: Result<Option<T>, E>) -> Self {
+        r.unwrap_or(None)
     }
 }
 
@@ -76,8 +76,8 @@ impl<T> Maybe<T> for String
 where
     T: ToString,
 {
-    fn from_result<E>(r: Result<T, E>) -> Self {
-        r.map(|t| t.to_string()).unwrap_or_default()
+    fn from_result<E>(r: Result<Option<T>, E>) -> Self {
+        r.unwrap_or(None).map(|t| t.to_string()).unwrap_or_default()
     }
 }
 

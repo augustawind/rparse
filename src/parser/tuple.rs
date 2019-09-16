@@ -12,11 +12,13 @@ where
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         match self.0.parse_partial(stream) {
-            (Ok(r0), stream) => match self.1.parse_partial(stream) {
-                (Ok(r1), stream) => stream.ok((r0, r1)),
+            (Ok(Some(r0)), stream) => match self.1.parse_partial(stream) {
+                (Ok(Some(r1)), stream) => stream.ok((r0, r1)),
                 (Err(err), stream) => stream.errs(err),
+                (Ok(None), stream) => stream.err(self.1.expected_error()),
             },
             (Err(err), stream) => stream.errs(err),
+            (Ok(None), stream) => stream.err(self.0.expected_error()),
         }
     }
 }
@@ -32,14 +34,17 @@ where
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         match self.0.parse_partial(stream) {
-            (Ok(r0), stream) => match self.1.parse_partial(stream) {
-                (Ok(r1), stream) => match self.2.parse_partial(stream) {
-                    (Ok(r2), stream) => stream.ok((r0, r1, r2)),
+            (Ok(Some(r0)), stream) => match self.1.parse_partial(stream) {
+                (Ok(Some(r1)), stream) => match self.2.parse_partial(stream) {
+                    (Ok(Some(r2)), stream) => stream.ok((r0, r1, r2)),
                     (Err(err), stream) => stream.errs(err),
+                    (Ok(None), stream) => stream.err(self.2.expected_error()),
                 },
                 (Err(err), stream) => stream.errs(err),
+                (Ok(None), stream) => stream.err(self.1.expected_error()),
             },
             (Err(err), stream) => stream.errs(err),
+            (Ok(None), stream) => stream.err(self.0.expected_error()),
         }
     }
 }

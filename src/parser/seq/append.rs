@@ -17,13 +17,16 @@ where
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         match self.left.parse_partial(stream) {
-            (Ok(mut left), stream) => match self.right.parse_partial(stream) {
+            (Ok(Some(mut left)), stream) => match self.right.parse_partial(stream) {
                 (Ok(right), stream) => {
-                    left.push(right);
+                    if let Some(r) = right {
+                        left.push(r);
+                    }
                     stream.ok(left)
                 }
                 (Err(err), stream) => stream.errs(err),
             },
+            (Ok(None), stream) => stream.noop(),
             (Err(err), stream) => stream.errs(err),
         }
     }
@@ -69,15 +72,14 @@ mod test {
     #[test]
     fn test_append() {
         let mut parser = append(many(letter()), token(b'?'));
-        test_parser!(IndexedStream<&str> | parser, {
-            "huh?" => (Ok("huh?".chars().collect()), ("", 4));
-            "oh? cool" => (Ok("oh?".chars().collect()), (" cool", 3));
-            "???" => (Ok("?".chars().collect()), ("??", 1));
-        }, {
-            "" => (0, vec![Error::unexpected_eoi(), Error::expected_token('?')]);
-            "" => (0, vec![Error::unexpected_eoi(), Error::expected_token('?')]);
-            "whoops!" => (6, vec![Error::unexpected_token('!'), Error::expected_token('?')]);
-            "!?" => (0, vec![Error::unexpected_token('!'), Error::expected_token('?')]);
+        test_parser!(IndexedStream<&str> => Vec<char> | parser, {
+            "huh?" => ok("huh?".chars().collect(), ("", 4)),
+            "oh? cool" => ok("oh?".chars().collect(), (" cool", 3)),
+            "???" => ok("?".chars().collect(), ("??", 1)),
+            "" => err(0, vec![Error::unexpected_eoi(), Error::expected_token('?')]),
+            "" => err(0, vec![Error::unexpected_eoi(), Error::expected_token('?')]),
+            "whoops!" => err(6, vec![Error::unexpected_token('!'), Error::expected_token('?')]),
+            "!?" => err(0, vec![Error::unexpected_token('!'), Error::expected_token('?')]),
         });
     }
 
