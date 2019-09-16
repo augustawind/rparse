@@ -345,7 +345,8 @@ mod test {
             many1(ascii::digit()),
             token(b'x').wrap().extend(many1(token(b'x'))),
             token(b'x').then(token(b'_')).append(token(b'x')),
-        ].collect();
+        ]
+        .collect();
 
         test_parser!(IndexedStream<&str> => String | parser, {
             "12345?" => ok(Ok("12345".into()), ("?", 5)),

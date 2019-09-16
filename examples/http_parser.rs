@@ -87,21 +87,24 @@ where
     S: Stream,
 {
     // a URI path is either
-    concat![
-        // a slash
-        token(b'/').wrap(),
-        // followed by zero or more URI segments separated by slashes
+    xchoice![
         concat![
-            uri_segment(),
-            many(token(b'/').wrap().or(uri_segment())).flatten(),
-        ].optional().flatten()
-    ].xor(
+            // a slash
+            token(b'/').wrap(),
+            // followed by zero or more URI segments separated by slashes
+            concat![
+                uri_segment(),
+                many(token(b'/').wrap().or(uri_segment())).flatten(),
+            ]
+            .optional()
+            .flatten()
+        ],
         // or a URI segment followed by zero or more URI segments separated by slashes
         concat![
             uri_segment(),
             many(token(b'/').wrap().or(uri_segment())).flatten(),
-        ]
-    )
+        ],
+    ]
     .map(|s| s.into_iter().map(Into::into).collect())
 }
 
@@ -110,14 +113,12 @@ where
     S: Stream,
 {
     // a URI segment is one or more
-    many1(
-        xchoice![
-            // percent-encoded octets
-            percent_encoded(),
-            // and URI-safe character sequences
-            many1(uri_token()),
-        ]
-    )
+    many1(xchoice![
+        // percent-encoded octets
+        percent_encoded(),
+        // and URI-safe character sequences
+        many1(uri_token()),
+    ])
     .flatten()
 }
 
