@@ -78,11 +78,11 @@ where
     // a URI scheme is
     (
         // a scheme identifier
-        choice![range("http"), range("https")],
+        many1(ascii::letter()).map(|s| s.into_iter().map(Into::into).collect()),
         // followed by a delimiter
-        range("://"),
+        range("://").as_string(),
     )
-        .map(|(r0, r1): (S::Range, S::Range)| format!("{}{}", r0.to_string(), r1.to_string()))
+        .map(|(r0, r1): (String, String)| format!("{}{}", r0, r1))
 }
 
 fn uri_path<S>() -> impl Parser<Stream = S, Output = String>
