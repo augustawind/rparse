@@ -21,7 +21,7 @@ impl<P: Parser> Expect<P> {
     }
 }
 
-impl<P: Parser> Parser for Expect<P> where {
+impl<P: Parser> Parser for Expect<P> {
     type Stream = P::Stream;
     type Output = P::Output;
 

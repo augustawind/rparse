@@ -2,7 +2,6 @@
 //!
 //! Defines the `Parser` trait.
 
-#[cfg(test)]
 #[macro_use]
 mod test_utils;
 
@@ -25,7 +24,7 @@ use self::function::{
 };
 use self::seq::{append, extend, then, Append, Extend, Then};
 use error::{Error, Errors, Info, ParseResult};
-use stream::Stream;
+use stream::{Stream, StreamRange};
 use traits::StrLike;
 
 pub trait Parser {

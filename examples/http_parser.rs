@@ -175,8 +175,8 @@ mod test {
     #[test]
     fn test_http_method() {
         test_parser!(IndexedStream<&[u8]> => String | http_method(), {
-            &b"GET"[..] => ok(Ok("GET".into()), (&b""[..], 3)),
-            &b"HEAD\n/"[..] => ok(Ok("HEAD".into()), (&b"\n/"[..], 4)),
+            &b"GET"[..] => ok("GET".into(), (&b""[..], 3)),
+            &b"HEAD\n/"[..] => ok("HEAD".into(), (&b"\n/"[..], 4)),
         });
 
         test_parser!(IndexedStream<&[u8]> => String | http_method(), {
@@ -186,14 +186,17 @@ mod test {
             ]),
         });
 
-        assert_eq!(http_method().parse("TRACE it"), (Ok("TRACE".into()), " it"));
+        assert_eq!(
+            http_method().parse("TRACE it"),
+            (Ok(Some("TRACE".into())), " it")
+        );
     }
 
     #[test]
     fn test_percent_encoded() {
         test_parser!(&str => String | percent_encoded().collect(), {
-            "%A9" => ok(Ok("%A9".into()), ""),
-            "%0f/hello" => ok(Ok("%0f".into()), "/hello"),
+            "%A9" => ok("%A9".into(), ""),
+            "%0f/hello" => ok("%0f".into(), "/hello"),
             "" => err(vec![Error::unexpected_eoi(), Error::expected_token('%')]),
             "%xy" => err(vec![
                 Error::unexpected_token('x'),
@@ -205,12 +208,12 @@ mod test {
     #[test]
     fn test_uri_path() {
         test_parser!(IndexedStream<&str> => String | uri_path(), {
-            "/" => ok(Ok("/".into()), ("", 1)),
-            "foo" => ok(Ok("foo".into()), ("", 3)),
-            "/my_img.jpeg" => ok(Ok("/my_img.jpeg".into()), ("", 12)),
-            "foo/x%20y/z.gif/" => ok(Ok("foo/x%20y/z.gif/".into()), ("", 16)),
-            "/%%bc" => ok(Ok("/".into()), ("%%bc", 1)),
-            "//a/" => ok(Ok("/".into()), ("/a/", 1)),
+            "/" => ok("/".into(), ("", 1)),
+            "foo" => ok("foo".into(), ("", 3)),
+            "/my_img.jpeg" => ok("/my_img.jpeg".into(), ("", 12)),
+            "foo/x%20y/z.gif/" => ok("foo/x%20y/z.gif/".into(), ("", 16)),
+            "/%%bc" => ok("/".into(), ("%%bc", 1)),
+            "//a/" => ok("/".into(), ("/a/", 1)),
         });
     }
 }
