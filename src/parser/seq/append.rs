@@ -87,11 +87,16 @@ mod test {
     fn test_seq_macro() {
         let mut parser = seq![token(b'%'), hexdigit(), hexdigit()].collect();
         test_parser!(IndexedStream<&str> => String | parser, {
-            "%AF" => ok(Ok("%AF".to_string()), ("", 3)),
-            "%d8_/^/_" => ok(Ok("%d8".to_string()), ("_/^/_", 3)),
+            "%AF" => ok("%AF".into(), ("", 3)),
+            "%d8_/^/_" => ok("%d8".into(), ("_/^/_", 3)),
             "" => err(0, vec![Error::unexpected_eoi(), Expected('%'.into())]),
             "%0" => err(2, vec![Error::unexpected_eoi(), Expected("a hexadecimal digit".into())]),
             "%zz" => err(1, vec![Unexpected('z'.into()), Expected("a hexadecimal digit".into())]),
+        });
+
+        let mut parser = seq![token(b'x'), token(b'y')].collect();
+        test_parser!(IndexedStream<&str> => String | parser, {
+            "xy" => ok("xy".into(), ("", 2)),
         });
     }
 }

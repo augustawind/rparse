@@ -109,7 +109,7 @@ macro_rules! def_token_parser_tests {
             let mut p = $p();
             test_parser!(IndexedStream<&str> => char | p, {
                 $(
-                    concat!($t_ok) => ok(Ok($t_ok), ("", 1)),
+                    concat!($t_ok) => ok($t_ok, ("", 1)),
                 )+
                 "" => err(0, vec![Error::unexpected_eoi(), p.expected_error()]),
                 $(
@@ -119,7 +119,7 @@ macro_rules! def_token_parser_tests {
             let mut p = $p();
             test_parser!(IndexedStream<&[u8]> => u8 | p, {
                 $(
-                    concat!($t_ok).as_bytes() => ok(Ok($t_ok as u8), ("".as_bytes(), 1)),
+                    concat!($t_ok).as_bytes() => ok($t_ok as u8, ("".as_bytes(), 1)),
                 )+
                 "".as_bytes() => err(0, vec![Error::unexpected_eoi(), p.expected_error()]),
                 $(
@@ -321,14 +321,14 @@ mod test {
     #[test]
     fn test_any() {
         test_parser!(IndexedStream<&str> => char | any(), {
-            "hello, world." => ok(Ok('h'), ("ello, world.", 1)),
+            "hello, world." => ok('h', ("ello, world.", 1)),
         });
     }
 
     #[test]
     fn test_token() {
         test_parser!(&str => char | token(b'c'), {
-            "cat" => ok(Ok('c'), "at"),
+            "cat" => ok('c', "at"),
             "ace" => err(vec![Error::unexpected_token('a'), Error::expected_token('c')]),
         });
     }
@@ -337,7 +337,7 @@ mod test {
     fn test_satisfy() {
         let mut parser = satisfy(|&c: &char| c.is_numeric());
         test_parser!(&str => char | parser, {
-            "123abc" => ok(Ok('1'), "23abc"),
+            "123abc" => ok('1', "23abc"),
             "abc123" => err(vec![Error::unexpected_token('a')]),
         });
     }

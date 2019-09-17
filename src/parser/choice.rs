@@ -198,8 +198,8 @@ mod test {
         });
 
         let mut parser = optional(many1(ascii::alpha_num()));
-        test_parser!(&str => Vec<char> | parser, {
-            "abc123" => ok("abc123".chars().collect(), ""),
+        test_parser!(&str => Option<Vec<char>> | parser, {
+            "abc123" => ok(Some("abc123".chars().collect()), ""),
         });
 
         let mut parser = optional(many(any()));

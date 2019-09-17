@@ -86,9 +86,9 @@ mod test {
         .collect();
 
         test_parser!(IndexedStream<&str> => String | parser, {
-            "x9" => ok(Ok("x9".to_string()), ("", 2)),
-            "t1t3 man" => ok(Ok("t1t3".to_string()), (" man", 4)),
-            "  xs = [2, 3]" => ok(Ok("  xs".to_string()), (" = [2, 3]", 4)),
+            "x9" => ok("x9".to_string(), ("", 2)),
+            "t1t3 man" => ok("t1t3".to_string(), (" man", 4)),
+            "  xs = [2, 3]" => ok("  xs".to_string(), (" = [2, 3]", 4)),
             "" => err(0, vec![
                 Error::unexpected_eoi(),
                 Expected("an ascii letter".into()),

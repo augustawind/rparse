@@ -65,8 +65,8 @@ mod test {
     fn test_range() {
         let mut parser = range("def");
         test_parser!(IndexedStream<&str> => &str | parser, {
-            "def" => ok(Ok("def"), ("", 3)),
-            "defcon" => ok(Ok("def"), ("con", 3)),
+            "def" => ok("def", ("", 3)),
+            "defcon" => ok("def", ("con", 3)),
             "" => err(0, vec![Error::unexpected_eoi(), Error::expected_range("def")]),
             "de" => err(0, vec![Error::unexpected_eoi(), Error::expected_range("def")]),
             "dr" => err(0, vec![Error::unexpected_eoi(), Error::expected_range("def")]),
