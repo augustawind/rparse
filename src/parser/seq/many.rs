@@ -34,7 +34,7 @@ where
         }
     }
 
-    fn expected_error(&self) -> Error<Self::Stream> {
+    fn expected_error(&self) -> Option<Error<Self::Stream>> {
         self.p.expected_error()
     }
 }

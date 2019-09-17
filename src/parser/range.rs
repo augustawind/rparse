@@ -43,8 +43,8 @@ impl<S: Stream> Parser for Range<S> {
         result
     }
 
-    fn expected_error(&self) -> Error<Self::Stream> {
-        Error::expected_range(self.range.clone())
+    fn expected_error(&self) -> Option<Error<Self::Stream>> {
+        Some(Error::expected_range(self.range.clone()))
     }
 }
 
