@@ -17,7 +17,7 @@ use std::fmt::Display;
 use std::iter::FromIterator;
 use std::str;
 
-use self::choice::{and, optional, or, xor, And, Optional, Or, Xor};
+use self::choice::{and, optional, or, And, Optional, Or};
 use self::function::{
     bind, collect, expect, flatten, from_str, iter, map, wrap, Bind, Collect, Expect, Flatten,
     FromStr, Iter, Map, Wrap,
@@ -70,7 +70,7 @@ pub trait Parser {
         expect(self, i)
     }
 
-    fn optional<O>(self) -> Optional<Self, O>
+    fn optional(self) -> Optional<Self>
     where
         Self: Sized,
     {
