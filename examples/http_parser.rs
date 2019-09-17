@@ -4,7 +4,7 @@ extern crate rparse;
 use rparse::parser::range::range;
 use rparse::parser::seq::{many, many1};
 use rparse::parser::token::{ascii, token};
-use rparse::stream::{IndexedStream, StreamRange};
+use rparse::stream::IndexedStream;
 use rparse::{Parser, Stream};
 
 fn http_request_line<S>() -> impl Parser<Stream = S, Output = Vec<String>>
@@ -30,12 +30,12 @@ where
     // an HTTP version is
     (
         // the text "HTTP/"
-        range("HTTP/"),
+        range("HTTP/").as_string(),
         // followed by a version number
-        choice![range("1.1"), range("1"), range("2")],
+        choice![range("1.1"), range("1"), range("2")].as_string(),
     )
-        .map(|(httpslash, version): (S::Range, S::Range)| {
-            format!("{}{}", httpslash.to_string(), version.to_string())
+        .map(|(httpslash, version)| {
+            format!("{}{}", httpslash, version)
         })
 }
 
@@ -54,7 +54,7 @@ where
         range("OPTIONS"),
         range("CONNECT"),
     ]
-    .map(StreamRange::to_string)
+    .as_string()
 }
 
 fn uri<S>() -> impl Parser<Stream = S, Output = String>
@@ -150,7 +150,7 @@ fn crlf<S>() -> impl Parser<Stream = S, Output = String>
 where
     S: Stream,
 {
-    range("\r\n").map(StreamRange::to_string)
+    range("\r\n").as_string()
 }
 
 fn main() {
