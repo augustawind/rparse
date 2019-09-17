@@ -1,24 +1,12 @@
-use {error::Errors, ParseResult, Stream};
+#[cfg(test)]
+use {ParseResult, Stream};
 
+#[cfg(test)]
 pub fn ok_result<S, O>(output: O, stream: S) -> ParseResult<S, O>
 where
     S: Stream,
 {
-    stream.ok(output)
-}
-
-pub fn noop_result<S, O>(stream: S) -> ParseResult<S, O>
-where
-    S: Stream,
-{
-    stream.noop()
-}
-
-pub fn err_result<S, O>(errors: Errors<S>, stream: S) -> ParseResult<S, O>
-where
-    S: Stream,
-{
-    stream.errs(errors)
+    (Ok(Some(output)), stream)
 }
 
 #[macro_export]
