@@ -66,7 +66,7 @@ where
         // a scheme
         uri_scheme(),
         // optionally followed by a path
-        uri_path().optional::<String>(),
+        uri_path().optional(),
     )
         .map(|(r0, r1)| format!("{}{}", r0, r1))
 }
@@ -90,7 +90,7 @@ where
     S: Stream,
 {
     // a URI path is either
-    xchoice![
+    choice![
         concat![
             // a slash
             token(b'/').wrap(),
@@ -100,7 +100,6 @@ where
                 many(token(b'/').wrap().or(uri_segment())).flatten(),
             ]
             .optional()
-            .flatten()
         ],
         // or a URI segment followed by zero or more URI segments separated by slashes
         concat![
@@ -116,7 +115,7 @@ where
     S: Stream,
 {
     // a URI segment is one or more
-    many1(xchoice![
+    many1(choice![
         // percent-encoded octets
         percent_encoded(),
         // and URI-safe character sequences
@@ -147,7 +146,7 @@ where
         .append(ascii::hexdigit())
 }
 
-fn linebreak<S>() -> impl Parser<Stream = S, Output = String>
+fn crlf<S>() -> impl Parser<Stream = S, Output = String>
 where
     S: Stream,
 {
