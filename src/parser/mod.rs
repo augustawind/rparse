@@ -120,6 +120,14 @@ pub trait Parser {
         from_str(self)
     }
 
+    fn as_string(self) -> Map<Self, fn(Self::Output) -> String>
+    where
+        Self: Sized,
+        Self::Output: StreamRange,
+    {
+        map(self, StreamRange::to_string)
+    }
+
     fn and<P>(self, other: P) -> And<Self, P>
     where
         Self: Sized,
@@ -134,14 +142,6 @@ pub trait Parser {
         P: Parser<Stream = Self::Stream, Output = Self::Output>,
     {
         or(self, other)
-    }
-
-    fn xor<P>(self, other: P) -> Xor<Self, P>
-    where
-        Self: Sized,
-        P: Parser<Stream = Self::Stream, Output = Self::Output>,
-    {
-        xor(self, other)
     }
 
     fn then<P>(self, other: P) -> Then<Self, P>
