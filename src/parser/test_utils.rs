@@ -42,6 +42,13 @@ macro_rules! test_parser {
         assert_eq!(stream, expected_stream);
     };
 
+    (@dispatch noop $stream_ty:ty, $output_ty:ty, $p:expr, $into_input:expr, $expected:expr) => {
+        let input: $stream_ty = $into_input.into();
+        let (result, stream): $crate::ParseResult<$stream_ty, $output_ty> = $p.parse(input.clone());
+        assert_eq!(result.unwrap(), None);
+        assert_eq!(stream, input);
+    };
+
     (@dispatch err $stream_ty:ty, $output_ty:ty, $p:expr, $into_input:expr, $expected:expr) => {
         let input: $stream_ty = $into_input.into();
         let (result, stream): $crate::ParseResult<$stream_ty, $output_ty> = $p.parse(input.clone());
