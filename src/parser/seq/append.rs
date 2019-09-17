@@ -44,18 +44,21 @@ where
 // This is basically just syntactic sugar for chaining parsers with `append`.
 #[macro_export]
 macro_rules! seq {
-    ($init:expr, $head:expr $(, $tail:expr),* $(,)*) => {{
-        let head = $init.then($head);
-        seq!(@inner head, $($tail),*)
-    }};
+    ($init:expr, $head:expr $(,)*) => {
+        $init.then($head)
+    };
 
-    (@inner $head:expr $(,)*) => {{
+    ($init:expr, $head:expr, $($tail:expr),* $(,)*) => {
+        seq!(@inner $init.then($head) $(, $tail)*)
+    };
+
+    (@inner $head:expr $(,)*) => {
         $head
-    }};
+    };
 
-    (@inner $head:expr, $($tail:expr),* $(,)*) => {{
-        $head.append(seq!(@inner $($tail),*))
-    }};
+    (@inner $head:expr, $($tail:expr),* $(,)*) => {
+        $head $(.append($tail))*
+    };
 }
 
 #[cfg(test)]
@@ -97,6 +100,11 @@ mod test {
         let mut parser = seq![token(b'x'), token(b'y')].collect();
         test_parser!(IndexedStream<&str> => String | parser, {
             "xy" => ok("xy".into(), ("", 2)),
+        });
+
+        let mut parser = seq![token(b'a'), token(b'b'), token(b'c'), token(b'd')].collect();
+        test_parser!(IndexedStream<&str> => String | parser, {
+            "abcd" => ok("abcd".into(), ("", 4)),
         });
     }
 }

@@ -103,8 +103,7 @@ macro_rules! choice {
 #[cfg(test)]
 mod test {
     use super::*;
-    use error::Error::{self, *};
-    use parser::range::range;
+    use error::Error::*;
     use parser::seq::{many, many1, then};
     use parser::test_utils::*;
     use parser::token::{any, ascii, token};

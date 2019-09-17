@@ -11,13 +11,16 @@ fn http_request_line<S>() -> impl Parser<Stream = S, Output = Vec<String>>
 where
     S: Stream,
 {
-    // an HTTP request line is an HTTP method
-    http_method()
+    seq![
+        // an HTTP method
+        http_method(),
         // followed by a URI
-        .then(token(b' ').and(uri()))
+        token(b' ').and(uri()),
         // followed by an HTTP version
-        .append(token(b' ').and(http_version()))
-        .append(linebreak())
+        token(b' ').and(http_version()),
+        // terminated by a \r\n
+        crlf(),
+    ]
 }
 
 fn http_version<S>() -> impl Parser<Stream = S, Output = String>
