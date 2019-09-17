@@ -14,11 +14,23 @@ where
         match self.0.parse_partial(stream) {
             (Ok(Some(r0)), stream) => match self.1.parse_partial(stream) {
                 (Ok(Some(r1)), stream) => stream.ok((r0, r1)),
-                (Err(err), stream) => stream.errs(err),
-                (Ok(None), stream) => stream.err(self.1.expected_error()),
+                (result, stream) => {
+                    let mut errors = stream.empty_err();
+                    if let Err(mut err) = result {
+                        errors.merge_errors(&mut err);
+                    }
+                    self.1.add_expected_error(&mut errors);
+                    stream.errs(errors)
+                },
             },
-            (Err(err), stream) => stream.errs(err),
-            (Ok(None), stream) => stream.err(self.0.expected_error()),
+            (result, stream) => {
+                let mut errors = stream.empty_err();
+                if let Err(mut err) = result {
+                    errors.merge_errors(&mut err);
+                }
+                self.0.add_expected_error(&mut errors);
+                stream.errs(errors)
+            },
         }
     }
 }
@@ -37,14 +49,32 @@ where
             (Ok(Some(r0)), stream) => match self.1.parse_partial(stream) {
                 (Ok(Some(r1)), stream) => match self.2.parse_partial(stream) {
                     (Ok(Some(r2)), stream) => stream.ok((r0, r1, r2)),
-                    (Err(err), stream) => stream.errs(err),
-                    (Ok(None), stream) => stream.err(self.2.expected_error()),
+                    (result, stream) => {
+                        let mut errors = stream.empty_err();
+                        if let Err(mut err) = result {
+                            errors.merge_errors(&mut err);
+                        }
+                        self.2.add_expected_error(&mut errors);
+                        stream.errs(errors)
+                    },
                 },
-                (Err(err), stream) => stream.errs(err),
-                (Ok(None), stream) => stream.err(self.1.expected_error()),
+                (result, stream) => {
+                    let mut errors = stream.empty_err();
+                    if let Err(mut err) = result {
+                        errors.merge_errors(&mut err);
+                    }
+                    self.1.add_expected_error(&mut errors);
+                    stream.errs(errors)
+                },
             },
-            (Err(err), stream) => stream.errs(err),
-            (Ok(None), stream) => stream.err(self.0.expected_error()),
+            (result, stream) => {
+                let mut errors = stream.empty_err();
+                if let Err(mut err) = result {
+                    errors.merge_errors(&mut err);
+                }
+                self.0.add_expected_error(&mut errors);
+                stream.errs(errors)
+            },
         }
     }
 }
