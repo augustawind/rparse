@@ -22,9 +22,7 @@ where
 }
 
 pub fn optional<P: Parser>(parser: P) -> Optional<P> {
-    Optional {
-        parser,
-    }
+    Optional { parser }
 }
 
 pub struct And<L, R> {

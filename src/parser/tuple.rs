@@ -21,7 +21,7 @@ where
                     }
                     self.1.add_expected_error(&mut errors);
                     stream.errs(errors)
-                },
+                }
             },
             (result, stream) => {
                 let mut errors = stream.empty_err();
@@ -30,7 +30,7 @@ where
                 }
                 self.0.add_expected_error(&mut errors);
                 stream.errs(errors)
-            },
+            }
         }
     }
 }
@@ -56,7 +56,7 @@ where
                         }
                         self.2.add_expected_error(&mut errors);
                         stream.errs(errors)
-                    },
+                    }
                 },
                 (result, stream) => {
                     let mut errors = stream.empty_err();
@@ -65,7 +65,7 @@ where
                     }
                     self.1.add_expected_error(&mut errors);
                     stream.errs(errors)
-                },
+                }
             },
             (result, stream) => {
                 let mut errors = stream.empty_err();
@@ -74,7 +74,7 @@ where
                 }
                 self.0.add_expected_error(&mut errors);
                 stream.errs(errors)
-            },
+            }
         }
     }
 }
