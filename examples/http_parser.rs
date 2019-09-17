@@ -34,9 +34,7 @@ where
         // followed by a version number
         choice![range("1.1"), range("1"), range("2")].as_string(),
     )
-        .map(|(httpslash, version)| {
-            format!("{}{}", httpslash, version)
-        })
+        .map(|(httpslash, version)| format!("{}{}", httpslash, version))
 }
 
 fn http_method<S>() -> impl Parser<Stream = S, Output = String>

@@ -1,6 +1,7 @@
 //! Parsers that parse a continuous series of tokens.
 
 use error::{Error, ParseResult};
+use parser::function::Map;
 use parser::Parser;
 use stream::{Position, Stream, StreamRange};
 
@@ -48,11 +49,14 @@ impl<S: Stream> Parser for Range<S> {
     }
 }
 
-pub fn range<S: Stream>(range: &'static str) -> Range<S> where
-{
+pub fn range<S: Stream>(range: &'static str) -> Range<S> {
     Range {
         range: S::Range::from_str(range),
     }
+}
+
+pub fn tokens<S: Stream>(tokens: &'static str) -> Map<Range<S>, fn(S::Range) -> Vec<S::Item>> {
+    range(tokens).map(|range| range.tokens().collect())
 }
 
 #[cfg(test)]
