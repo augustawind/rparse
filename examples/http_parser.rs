@@ -7,20 +7,18 @@ use rparse::parser::token::{ascii, token};
 use rparse::stream::IndexedStream;
 use rparse::{Parser, Stream};
 
-fn http_request_line<S>() -> impl Parser<Stream = S, Output = Vec<String>>
+fn http_request_line<S>() -> impl Parser<Stream = S, Output = (String, String, String)>
 where
     S: Stream,
 {
-    seq![
+    (
         // an HTTP method
         http_method(),
         // followed by a URI
         token(b' ').and(uri()),
         // followed by an HTTP version
-        token(b' ').and(http_version()),
-        // terminated by a \r\n
-        crlf(),
-    ]
+        token(b' ').and(http_version()).then(crlf()).collect(),
+    )
 }
 
 fn http_version<S>() -> impl Parser<Stream = S, Output = String>
@@ -60,13 +58,13 @@ where
     S: Stream,
 {
     // a URI is
-    (
+    seq![
         // a scheme
         uri_scheme(),
         // optionally followed by a path
         uri_path().optional(),
-    )
-        .map(|(r0, r1)| format!("{}{}", r0, r1))
+    ]
+    .collect()
 }
 
 fn uri_scheme<S>() -> impl Parser<Stream = S, Output = String>
