@@ -60,8 +60,8 @@ where
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         match self.parser.parse(stream) {
-            (Ok(result), remaining) => (Ok(result.map(|output| (self.f)(output))), remaining),
-            (Err(err), remaining) => (Err(err), remaining),
+            Ok((result, stream)) => stream.result(result.map(|output| (self.f)(output))),
+            Err((err, stream)) => stream.errs(err),
         }
     }
 }
@@ -132,8 +132,8 @@ where
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         match self.parser.parse_lazy(stream) {
-            (Ok(result), remaining) => (self.f)(result, remaining),
-            (Err(err), remaining) => (Err(err), remaining),
+            Ok((result, stream)) => (self.f)(result, stream),
+            Err((err, stream)) => stream.errs(err),
         }
     }
 }
@@ -163,7 +163,7 @@ where
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         match self.parser.parse_partial(stream) {
-            (Ok(Some(s)), stream) => {
+            Ok((Some(s), stream)) => {
                 let result = s
                     .from_utf8()
                     .map_err(|_| "invalid UTF-8".into())
@@ -173,8 +173,8 @@ where
                     Err(err) => stream.err(err),
                 }
             }
-            (Ok(None), stream) => stream.noop(),
-            (Err(err), stream) => stream.errs(err),
+            Ok((None, stream)) => stream.noop(),
+            Err((err, stream)) => stream.errs(err),
         }
     }
 }

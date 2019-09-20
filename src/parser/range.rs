@@ -38,7 +38,7 @@ impl<S: Stream> Parser for Range<S> {
             }
             None => stream.err(Error::unexpected_eoi()),
         };
-        if let (Err(ref mut errors), _) = result {
+        if let Err((ref mut errors, _)) = result {
             errors.position = start_pos;
         }
         result

@@ -35,7 +35,7 @@ pub trait Parser {
 
     fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         let mut result = self.parse_lazy(stream);
-        if let Err(ref mut errors) = result.0 {
+        if let Err((ref mut errors, _)) = result {
             self.add_expected_error(errors);
         }
         result
@@ -47,7 +47,7 @@ pub trait Parser {
     {
         let backup = stream.backup();
         let mut result = self.parse_lazy(stream);
-        if let (Err(ref mut errors), ref mut stream) = result {
+        if let Err((ref mut errors, ref mut stream)) = result {
             stream.restore(backup);
             self.add_expected_error(errors);
         }

@@ -254,4 +254,4 @@ where
     }
 }
 
-pub type ParseResult<S, O> = (Result<Option<O>, Errors<S>>, S);
+pub type ParseResult<S, O> = Result<(Option<O>, S), (Errors<S>, S)>;

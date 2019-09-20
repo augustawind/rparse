@@ -15,8 +15,9 @@ where
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         match self.parser.parse(stream) {
-            (Ok(Some(result)), stream) => stream.ok(result),
-            (_, stream) => stream.noop(),
+            Ok((Some(result), stream)) => stream.ok(result),
+            Ok((None, stream)) => stream.noop(),
+            Err((_, stream)) => stream.noop(),
         }
     }
 }
@@ -40,8 +41,8 @@ where
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, O> {
         match self.left.parse(stream) {
-            (Ok(_), stream) => self.right.parse(stream),
-            (Err(err), stream) => stream.errs(err),
+            Ok((_, stream)) => self.right.parse(stream),
+            Err((err, stream)) => stream.errs(err),
         }
     }
 }
@@ -69,12 +70,12 @@ where
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         let (mut err, stream) = match self.left.parse(stream) {
-            (Ok(result), stream) => return stream.result(result),
-            (Err(err), stream) => (err, stream),
+            Ok((result, stream)) => return stream.result(result),
+            Err((err, stream)) => (err, stream),
         };
         match self.right.parse(stream) {
-            (Ok(result), stream) => stream.result(result),
-            (Err(mut err2), stream) => {
+            Ok((result, stream)) => stream.result(result),
+            Err((mut err2, stream)) => {
                 err.merge_errors(&mut err2);
                 stream.errs(err)
             }

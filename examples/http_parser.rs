@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate rparse;
 
+use rparse::parser::parser;
 use rparse::parser::range::range;
 use rparse::parser::seq::{many, many1};
 use rparse::parser::token::{ascii, token};
@@ -11,6 +12,13 @@ fn http_request_line<S>() -> impl Parser<Stream = S, Output = (String, String, S
 where
     S: Stream,
 {
+    // parser(|stream: S| {
+    //     let (method, stream) = http_method().parse(stream)?;
+    //     let (uri, stream) = token(b' ').and(uri()).parse(stream)?;
+    //     let (version, stream) = token(b' ').and(http_version()).parse(stream)?;
+    //     let (_, stream) = crlf().parse(stream)?;
+    //     stream.ok((method.unwrap(), uri.unwrap(), version.unwrap()))
+    // })
     (
         // an HTTP method
         http_method(),
@@ -152,11 +160,11 @@ where
 fn main() {
     let stream = IndexedStream::from("GET http://foo.bar/I%20like%20/50 HTTP/1.1\r\n");
     match http_request_line().parse(stream) {
-        (Ok(result), _) => {
+        Ok((result, _)) => {
             println!("Parsing succeeded!");
             dbg!(result);
         }
-        (Err(err), _) => {
+        Err((err, _)) => {
             println!("Parsing failed!");
             dbg!(err);
         }
@@ -186,13 +194,13 @@ mod test {
 
         assert_eq!(
             http_method().parse("TRACE it"),
-            (Ok(Some("TRACE".into())), " it")
+            Ok((Some("TRACE".into()), " it"))
         );
     }
 
     #[test]
     fn test_percent_encoded() {
-        test_parser!(&str => String | percent_encoded().collect(), {
+        test_parser!(&str => String | percent_encoded().collect::<String>(), {
             "%A9" => ok("%A9".into(), ""),
             "%0f/hello" => ok("%0f".into(), "/hello"),
             "" => err(vec![Error::unexpected_eoi(), Error::expected_token('%')]),

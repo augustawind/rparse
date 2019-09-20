@@ -17,17 +17,17 @@ where
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         match self.left.parse_partial(stream) {
-            (Ok(Some(mut left)), stream) => match self.right.parse_partial(stream) {
-                (Ok(right), stream) => {
+            Ok((Some(mut left), stream)) => match self.right.parse_partial(stream) {
+                Ok((right, stream)) => {
                     if let Some(r) = right {
                         left.push(r);
                     }
                     stream.ok(left)
                 }
-                (Err(err), stream) => stream.errs(err),
+                Err((err, stream)) => stream.errs(err),
             },
-            (Ok(None), stream) => stream.noop(),
-            (Err(err), stream) => stream.errs(err),
+            Ok((None, stream)) => stream.noop(),
+            Err((err, stream)) => stream.errs(err),
         }
     }
 }

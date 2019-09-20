@@ -17,12 +17,12 @@ where
         let mut i = 0;
         loop {
             stream = match self.p.parse_lazy(stream) {
-                (Ok(Some(result)), stream) => {
+                Ok((Some(result), stream)) => {
                     output.push(result);
                     stream
                 }
-                (Ok(None), stream) => stream,
-                (Err(errors), stream) => {
+                Ok((None, stream)) => stream,
+                Err((errors, stream)) => {
                     if i < self.min {
                         return stream.errs(errors);
                     }

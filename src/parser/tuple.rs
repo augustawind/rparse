@@ -12,22 +12,28 @@ where
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         match self.0.parse_partial(stream) {
-            (Ok(Some(r0)), stream) => match self.1.parse_partial(stream) {
-                (Ok(Some(r1)), stream) => stream.ok((r0, r1)),
-                (result, stream) => {
+            Ok((Some(r0), stream)) => match self.1.parse_partial(stream) {
+                Ok((Some(r1), stream)) => stream.ok((r0, r1)),
+                Ok((None, stream)) => {
                     let mut errors = stream.empty_err();
-                    if let Err(mut err) = result {
-                        errors.merge_errors(&mut err);
-                    }
+                    self.1.add_expected_error(&mut errors);
+                    stream.errs(errors)
+                }
+                Err((mut err, stream)) => {
+                    let mut errors = stream.empty_err();
+                    errors.merge_errors(&mut err);
                     self.1.add_expected_error(&mut errors);
                     stream.errs(errors)
                 }
             },
-            (result, stream) => {
+            Ok((None, stream)) => {
                 let mut errors = stream.empty_err();
-                if let Err(mut err) = result {
-                    errors.merge_errors(&mut err);
-                }
+                self.0.add_expected_error(&mut errors);
+                stream.errs(errors)
+            }
+            Err((mut err, stream)) => {
+                let mut errors = stream.empty_err();
+                errors.merge_errors(&mut err);
                 self.0.add_expected_error(&mut errors);
                 stream.errs(errors)
             }
@@ -46,32 +52,41 @@ where
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         match self.0.parse_partial(stream) {
-            (Ok(Some(r0)), stream) => match self.1.parse_partial(stream) {
-                (Ok(Some(r1)), stream) => match self.2.parse_partial(stream) {
-                    (Ok(Some(r2)), stream) => stream.ok((r0, r1, r2)),
-                    (result, stream) => {
+            Ok((Some(r0), stream)) => match self.1.parse_partial(stream) {
+                Ok((Some(r1), stream)) => match self.2.parse_partial(stream) {
+                    Ok((Some(r2), stream)) => stream.ok((r0, r1, r2)),
+                    Ok((None, stream)) => {
                         let mut errors = stream.empty_err();
-                        if let Err(mut err) = result {
-                            errors.merge_errors(&mut err);
-                        }
+                        self.2.add_expected_error(&mut errors);
+                        stream.errs(errors)
+                    }
+                    Err((mut err, stream)) => {
+                        let mut errors = stream.empty_err();
+                        errors.merge_errors(&mut err);
                         self.2.add_expected_error(&mut errors);
                         stream.errs(errors)
                     }
                 },
-                (result, stream) => {
+                Ok((None, stream)) => {
                     let mut errors = stream.empty_err();
-                    if let Err(mut err) = result {
-                        errors.merge_errors(&mut err);
-                    }
+                    self.1.add_expected_error(&mut errors);
+                    stream.errs(errors)
+                }
+                Err((mut err, stream)) => {
+                    let mut errors = stream.empty_err();
+                    errors.merge_errors(&mut err);
                     self.1.add_expected_error(&mut errors);
                     stream.errs(errors)
                 }
             },
-            (result, stream) => {
+            Ok((None, stream)) => {
                 let mut errors = stream.empty_err();
-                if let Err(mut err) = result {
-                    errors.merge_errors(&mut err);
-                }
+                self.0.add_expected_error(&mut errors);
+                stream.errs(errors)
+            }
+            Err((mut err, stream)) => {
+                let mut errors = stream.empty_err();
+                errors.merge_errors(&mut err);
                 self.0.add_expected_error(&mut errors);
                 stream.errs(errors)
             }
