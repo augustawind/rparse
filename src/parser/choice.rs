@@ -2,14 +2,16 @@ use error::ParseResult;
 use parser::Parser;
 use stream::Stream;
 
-pub struct Skip<P>(P);
+pub struct Skip<P> {
+    parser: P,
+}
 
 impl<P: Parser> Parser for Skip<P> {
     type Stream = P::Stream;
     type Output = P::Output;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        match self.0.parse(stream) {
+        match self.parser.parse(stream) {
             Ok((_, stream)) => stream.noop(),
             Err((errs, stream)) => stream.errs(errs),
         }
@@ -17,7 +19,7 @@ impl<P: Parser> Parser for Skip<P> {
 }
 
 pub fn skip<P: Parser>(parser: P) -> Skip<P> {
-    Skip(parser)
+    Skip { parser }
 }
 
 pub struct Optional<P> {
@@ -42,6 +44,31 @@ where
 
 pub fn optional<P: Parser>(parser: P) -> Optional<P> {
     Optional { parser }
+}
+
+pub struct Required<P> {
+    parser: P,
+}
+
+impl<P: Parser> Parser for Required<P> {
+    type Stream = P::Stream;
+    type Output = P::Output;
+
+    fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        match self.parser.parse_partial(stream) {
+            Ok((Some(result), stream)) => stream.ok(result),
+            Ok((None, stream)) => {
+                let mut errors = stream.empty_err();
+                self.parser.add_expected_error(&mut errors);
+                stream.errs(errors)
+            }
+            Err((errors, stream)) => stream.errs(errors),
+        }
+    }
+}
+
+pub fn required<P: Parser>(parser: P) -> Required<P> {
+    Required { parser }
 }
 
 pub struct And<L, R> {

@@ -17,7 +17,7 @@ use std::fmt::Display;
 use std::iter::FromIterator;
 use std::str;
 
-use self::choice::{and, optional, or, skip, And, Optional, Or, Skip};
+use self::choice::{and, optional, or, required, skip, And, Optional, Or, Required, Skip};
 use self::function::{
     bind, collect, expect, flatten, from_str, iter, map, wrap, Bind, Collect, Expect, Flatten,
     FromStr, Iter, Map, Wrap,
@@ -108,6 +108,13 @@ pub trait Parser {
         Self: Sized,
     {
         optional(self)
+    }
+
+    fn required(self) -> Required<Self>
+    where
+        Self: Sized,
+    {
+        required(self)
     }
 
     fn map<F, O>(self, f: F) -> Map<Self, F>
