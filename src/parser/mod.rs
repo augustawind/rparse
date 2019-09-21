@@ -35,7 +35,7 @@ pub trait Parser {
 
     fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         let mut result = self.parse_lazy(stream);
-        if let Err(ref mut errors) = result.0 {
+        if let Err(ref mut errors) = result.data {
             self.add_expected_error(errors);
         }
         result
@@ -46,12 +46,12 @@ pub trait Parser {
         Self: Sized,
     {
         let backup = stream.backup();
-        let mut result = self.parse_lazy(stream);
-        if let (Err(ref mut errors), ref mut stream) = result {
+        let (mut data, mut stream) = self.parse_lazy(stream).as_tuple();
+        if let Err(ref mut errors) = data {
             stream.restore(backup);
             self.add_expected_error(errors);
         }
-        result
+        ParseResult::new(data, stream)
     }
 
     fn expected_error(&self) -> Option<Error<Self::Stream>> {

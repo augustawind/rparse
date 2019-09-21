@@ -109,22 +109,22 @@ pub trait Stream: Sized + Clone + Debug {
     }
 
     fn result<O>(self, result: Option<O>) -> ParseResult<Self, O> {
-        (Ok(result), self)
+        ParseResult::new(Ok(result), self)
     }
 
     /// Create a successful `ParseResult` with the given output.
     fn ok<O>(self, output: O) -> ParseResult<Self, O> {
-        (Ok(Some(output)), self)
+        ParseResult::new(Ok(Some(output)), self)
     }
 
     /// Create a successful `ParseResult` with no output.
     fn noop<O>(self) -> ParseResult<Self, O> {
-        (Ok(None), self)
+        ParseResult::new(Ok(None), self)
     }
 
     /// Create a failed `ParseResult` with the given `Error`.
     fn err<O>(self, error: Error<Self>) -> ParseResult<Self, O> {
-        (
+        ParseResult::new(
             Err(Errors::from_error(self.position().clone(), error)),
             self,
         )
@@ -132,7 +132,7 @@ pub trait Stream: Sized + Clone + Debug {
 
     /// Create a failed `ParseResult with the given `Errors`.
     fn errs<O>(self, errors: Errors<Self>) -> ParseResult<Self, O> {
-        (Err(errors), self)
+        ParseResult::new(Err(errors), self)
     }
 
     fn empty_err(&self) -> Errors<Self> {

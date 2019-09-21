@@ -254,4 +254,31 @@ where
     }
 }
 
-pub type ParseResult<S, O> = (Result<Option<O>, Errors<S>>, S);
+#[derive(PartialEq, Debug)]
+pub struct ParseResult<S: Stream, O> {
+    pub data: Result<Option<O>, Errors<S>>,
+    pub stream: S,
+}
+
+impl<S: Stream, O> ParseResult<S, O> {
+    pub fn new(data: Result<Option<O>, Errors<S>>, stream: S) -> Self {
+        ParseResult { data, stream }
+    }
+
+    pub fn as_result(self) -> Result<(Option<O>, S), (Errors<S>, S)> {
+        match self {
+            ParseResult {
+                data: Ok(output),
+                stream,
+            } => Ok((output, stream)),
+            ParseResult {
+                data: Err(errors),
+                stream,
+            } => Err((errors, stream)),
+        }
+    }
+
+    pub fn as_tuple(self) -> (Result<Option<O>, Errors<S>>, S) {
+        (self.data, self.stream)
+    }
+}

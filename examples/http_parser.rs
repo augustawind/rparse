@@ -151,12 +151,12 @@ where
 
 fn main() {
     let stream = IndexedStream::from("GET http://foo.bar/I%20like%20/50 HTTP/1.1\r\n");
-    match http_request_line().parse(stream) {
-        (Ok(result), _) => {
+    match http_request_line().parse(stream).data {
+        Ok(result) => {
             println!("Parsing succeeded!");
             dbg!(result);
         }
-        (Err(err), _) => {
+        Err(err) => {
             println!("Parsing failed!");
             dbg!(err);
         }
@@ -185,7 +185,7 @@ mod test {
         });
 
         assert_eq!(
-            http_method().parse("TRACE it"),
+            http_method().parse("TRACE it").as_tuple(),
             (Ok(Some("TRACE".into())), " it")
         );
     }

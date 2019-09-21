@@ -59,9 +59,9 @@ where
     type Output = O;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        match self.parser.parse(stream) {
-            (Ok(result), remaining) => (Ok(result.map(|output| (self.f)(output))), remaining),
-            (Err(err), remaining) => (Err(err), remaining),
+        match self.parser.parse(stream).as_tuple() {
+            (Ok(result), stream) => stream.result(result.map(|output| (self.f)(output))),
+            (Err(err), stream) => stream.errs(err),
         }
     }
 }
@@ -131,9 +131,9 @@ where
     type Output = O;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        match self.parser.parse_lazy(stream) {
-            (Ok(result), remaining) => (self.f)(result, remaining),
-            (Err(err), remaining) => (Err(err), remaining),
+        match self.parser.parse_lazy(stream).as_tuple() {
+            (Ok(result), stream) => (self.f)(result, stream),
+            (Err(err), stream) => stream.errs(err),
         }
     }
 }
@@ -162,7 +162,7 @@ where
     type Output = O;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        match self.parser.parse_partial(stream) {
+        match self.parser.parse_partial(stream).as_tuple() {
             (Ok(Some(s)), stream) => {
                 let result = s
                     .from_utf8()

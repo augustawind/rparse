@@ -16,7 +16,7 @@ where
         let mut output = Vec::new();
         let mut i = 0;
         loop {
-            stream = match self.p.parse_lazy(stream) {
+            stream = match self.p.parse_lazy(stream).as_tuple() {
                 (Ok(Some(result)), stream) => {
                     output.push(result);
                     stream

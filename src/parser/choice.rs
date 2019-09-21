@@ -14,7 +14,7 @@ where
     type Output = P::Output;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        match self.parser.parse(stream) {
+        match self.parser.parse(stream).as_tuple() {
             (Ok(Some(result)), stream) => stream.ok(result),
             (_, stream) => stream.noop(),
         }
@@ -39,7 +39,7 @@ where
     type Output = O;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, O> {
-        match self.left.parse(stream) {
+        match self.left.parse(stream).as_tuple() {
             (Ok(_), stream) => self.right.parse(stream),
             (Err(err), stream) => stream.errs(err),
         }
@@ -68,11 +68,11 @@ where
     type Output = O;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        let (mut err, stream) = match self.left.parse(stream) {
+        let (mut err, stream) = match self.left.parse(stream).as_tuple() {
             (Ok(result), stream) => return stream.result(result),
             (Err(err), stream) => (err, stream),
         };
-        match self.right.parse(stream) {
+        match self.right.parse(stream).as_tuple() {
             (Ok(result), stream) => stream.result(result),
             (Err(mut err2), stream) => {
                 err.merge_errors(&mut err2);

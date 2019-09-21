@@ -20,8 +20,8 @@ where
     type Output = L::Output;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        match self.left.parse_partial(stream) {
-            (Ok(Some(mut left)), stream) => match self.right.parse_partial(stream) {
+        match self.left.parse_partial(stream).as_tuple() {
+            (Ok(Some(mut left)), stream) => match self.right.parse_partial(stream).as_tuple() {
                 (Ok(right), stream) => {
                     if let Some(r) = right {
                         left.extend(r.into_iter());
