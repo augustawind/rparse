@@ -25,14 +25,11 @@ fn http_version<S>() -> impl Parser<Stream = S, Output = String>
 where
     S: Stream,
 {
-    // an HTTP version is
-    (
-        // the text "HTTP/"
-        range("HTTP/").as_string(),
+    // an HTTP version is the text "HTTP/"
+    range("HTTP/")
         // followed by a version number
-        choice![range("1.1"), range("1"), range("2")].as_string(),
-    )
-        .map(|(httpslash, version)| format!("{}{}", httpslash, version))
+        .and(choice![range("1.1"), range("1"), range("2")])
+        .as_string()
 }
 
 fn http_method<S>() -> impl Parser<Stream = S, Output = String>
