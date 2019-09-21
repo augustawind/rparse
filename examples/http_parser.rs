@@ -12,21 +12,13 @@ fn http_request_line<S>() -> impl Parser<Stream = S, Output = (String, String, S
 where
     S: Stream,
 {
-    // parser(|stream: S| {
-    //     let (method, stream) = http_method().parse(stream)?;
-    //     let (uri, stream) = token(b' ').and(uri()).parse(stream)?;
-    //     let (version, stream) = token(b' ').and(http_version()).parse(stream)?;
-    //     let (_, stream) = crlf().parse(stream)?;
-    //     stream.ok((method.unwrap(), uri.unwrap(), version.unwrap()))
-    // })
-    (
-        // an HTTP method
-        http_method(),
-        // followed by a URI
-        token(b' ').and(uri()),
-        // followed by an HTTP version
-        token(b' ').and(http_version()).then(crlf()).collect(),
-    )
+    parser(|s: S| {
+        let (method, s) = http_method().must_parse(s)?;
+        let (uri, s) = token(b' ').and(uri()).must_parse(s)?;
+        let (version, s) = token(b' ').and(http_version()).must_parse(s)?;
+        let (_, s) = crlf().must_parse(s)?;
+        s.ok((method, uri, version))
+    })
 }
 
 fn http_version<S>() -> impl Parser<Stream = S, Output = String>
