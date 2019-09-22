@@ -145,7 +145,7 @@ pub trait Parser {
     fn bind<F, O>(self, f: F) -> Bind<Self, F>
     where
         Self: Sized,
-        F: Fn(Option<Self::Output>, Self::Stream) -> O,
+        F: Fn(Option<Self::Output>, Self::Stream) -> ParseResult<Self::Stream, O>,
     {
         bind(self, f)
     }
