@@ -66,7 +66,7 @@ pub trait Parser {
             Ok((Some(output), stream)) => Ok((output, stream)),
             Ok((None, mut stream)) => {
                 &mut stream.restore(backup);
-                let mut errors = stream.empty_err();
+                let mut errors = stream.new_errors();
                 self.add_expected_error(&mut errors);
                 Err((errors, stream))
             }

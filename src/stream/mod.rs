@@ -133,7 +133,11 @@ pub trait Stream: Sized + Clone + Debug {
         Err((errors, self))
     }
 
-    fn empty_err(&self) -> Errors<Self> {
+    fn empty_errs<O>(self) -> ParseResult<Self, O> {
+        Err((self.new_errors(), self))
+    }
+
+    fn new_errors(&self) -> Errors<Self> {
         Errors::new(self.position().clone())
     }
 }
