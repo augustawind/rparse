@@ -20,8 +20,8 @@ impl<S: Stream> Parser for Any<S> {
         }
     }
 
-    fn expected_error(&self) -> Option<Error<Self::Stream>> {
-        Some(Error::Expected("a token".into()))
+    fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
+        vec![Error::Expected("a token".into())]
     }
 }
 
@@ -53,8 +53,8 @@ where
         }
     }
 
-    fn expected_error(&self) -> Option<Error<Self::Stream>> {
-        Some(Error::expected_token(self.token))
+    fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
+        vec![Error::expected_token(self.token)]
     }
 }
 

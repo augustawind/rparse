@@ -78,14 +78,12 @@ pub trait Parser {
         }
     }
 
-    fn expected_error(&self) -> Option<Error<Self::Stream>> {
-        None
+    fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
+        Vec::new()
     }
 
     fn add_expected_error(&self, errors: &mut Errors<Self::Stream>) {
-        if let Some(error) = self.expected_error() {
-            errors.add_error(error);
-        }
+        errors.add_errors(self.expected_errors());
     }
 
     fn expect<I>(self, i: I) -> Expect<Self>

@@ -44,8 +44,8 @@ impl<S: Stream> Parser for Range<S> {
         result
     }
 
-    fn expected_error(&self) -> Option<Error<Self::Stream>> {
-        Some(Error::expected_range(self.range.clone()))
+    fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
+        vec![Error::expected_range(self.range.clone())]
     }
 }
 

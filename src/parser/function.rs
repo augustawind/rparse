@@ -29,8 +29,8 @@ impl<P: Parser> Parser for Expect<P> {
         self.parser.parse_lazy(stream)
     }
 
-    fn expected_error(&self) -> Option<Error<Self::Stream>> {
-        Some(self.error.clone())
+    fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
+        vec![self.error.clone()]
     }
 }
 

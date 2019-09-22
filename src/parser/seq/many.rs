@@ -34,8 +34,8 @@ where
         }
     }
 
-    fn expected_error(&self) -> Option<Error<Self::Stream>> {
-        self.p.expected_error()
+    fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
+        self.p.expected_errors()
     }
 }
 
