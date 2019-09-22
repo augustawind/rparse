@@ -96,7 +96,7 @@ pub trait Parser {
         expect(self, i)
     }
 
-    fn skip(self) -> Skip<Self>
+    fn skip<O>(self) -> Skip<Self, O>
     where
         Self: Sized,
     {

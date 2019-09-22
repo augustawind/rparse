@@ -1,14 +1,17 @@
+use std::marker::PhantomData;
+
 use error::ParseResult;
 use parser::Parser;
 use stream::Stream;
 
-pub struct Skip<P> {
+pub struct Skip<P, O> {
     parser: P,
+    output: PhantomData<O>,
 }
 
-impl<P: Parser> Parser for Skip<P> {
+impl<P: Parser, O> Parser for Skip<P, O> {
     type Stream = P::Stream;
-    type Output = P::Output;
+    type Output = O;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         match self.parser.parse(stream) {
@@ -18,8 +21,8 @@ impl<P: Parser> Parser for Skip<P> {
     }
 }
 
-pub fn skip<P: Parser>(parser: P) -> Skip<P> {
-    Skip { parser }
+pub fn skip<P: Parser, O>(parser: P) -> Skip<P, O> {
+    Skip { parser, output: PhantomData }
 }
 
 pub struct Optional<P> {

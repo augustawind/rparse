@@ -10,6 +10,7 @@ use std::option::Option::*;
 pub use self::position::{IndexPosition, LinePosition, NullPosition, Position};
 pub use self::state::State;
 use error::{Error, Errors, ParseResult};
+use traits::StrLike;
 
 /// SourceCode is a type alias for str `Stream` positioned by rows and columns.
 pub type SourceCode = State<&'static str, LinePosition>;
@@ -51,7 +52,7 @@ pub trait StreamItem: Copy + PartialEq + Debug + From<u8> + Into<char> {
     fn eq_ignore_ascii_case(&self, &Self) -> bool;
 }
 
-pub trait StreamRange: Stream + PartialEq + Clone + Debug {
+pub trait StreamRange: Stream + StrLike + PartialEq + Clone + Debug {
     fn empty() -> Self;
     fn len(&self) -> usize;
     fn from_str(&'static str) -> Self;
