@@ -31,7 +31,9 @@ pub trait Parser {
     type Stream: Stream;
     type Output;
 
-    fn parse_lazy(&mut self, Self::Stream) -> ParseResult<Self::Stream, Self::Output>;
+    fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        self.parse_partial(stream)
+    }
 
     fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         let mut result = self.parse_lazy(stream);

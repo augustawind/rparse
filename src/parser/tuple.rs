@@ -10,7 +10,7 @@ where
     type Stream = S;
     type Output = (P0::Output, P1::Output);
 
-    fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+    fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         match self.0.parse_partial(stream) {
             Ok((Some(r0), stream)) => match self.1.parse_partial(stream) {
                 Ok((Some(r1), stream)) => stream.ok((r0, r1)),
@@ -40,7 +40,7 @@ where
     type Stream = S;
     type Output = (P0::Output, P1::Output, P2::Output);
 
-    fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+    fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         match self.0.parse_partial(stream) {
             Ok((Some(r0), stream)) => match self.1.parse_partial(stream) {
                 Ok((Some(r1), stream)) => match self.2.parse_partial(stream) {

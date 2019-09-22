@@ -15,7 +15,7 @@ where
     type Stream = S;
     type Output = Vec<O>;
 
-    fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+    fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         match self.left.parse_partial(stream) {
             Ok((first, stream)) => match self.right.parse_partial(stream) {
                 Ok((second, stream)) => {

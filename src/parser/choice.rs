@@ -1,8 +1,6 @@
 use std::marker::PhantomData;
 
-use error::ParseResult;
-use parser::Parser;
-use stream::Stream;
+use {Error, ParseResult, Parser, Stream};
 
 pub struct Skip<P, O> {
     parser: P,
@@ -14,15 +12,22 @@ impl<P: Parser, O> Parser for Skip<P, O> {
     type Output = O;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        match self.parser.parse(stream) {
+        match self.parser.parse_lazy(stream) {
             Ok((_, stream)) => stream.noop(),
             Err((errs, stream)) => stream.errs(errs),
         }
     }
+
+    fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
+        self.parser.expected_errors()
+    }
 }
 
 pub fn skip<P: Parser, O>(parser: P) -> Skip<P, O> {
-    Skip { parser, output: PhantomData }
+    Skip {
+        parser,
+        output: PhantomData,
+    }
 }
 
 pub struct Optional<P> {
@@ -37,11 +42,15 @@ where
     type Output = P::Output;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        match self.parser.parse(stream) {
+        match self.parser.parse_lazy(stream) {
             Ok((Some(result), stream)) => stream.ok(result),
             Ok((None, stream)) => stream.noop(),
             Err((_, stream)) => stream.noop(),
         }
+    }
+
+    fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
+        self.parser.expected_errors()
     }
 }
 
@@ -58,15 +67,15 @@ impl<P: Parser> Parser for Required<P> {
     type Output = P::Output;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        match self.parser.parse_partial(stream) {
+        match self.parser.parse_lazy(stream) {
             Ok((Some(result), stream)) => stream.ok(result),
-            Ok((None, stream)) => {
-                let mut errors = stream.empty_err();
-                self.parser.add_expected_error(&mut errors);
-                stream.errs(errors)
-            }
+            Ok((None, stream)) => stream.empty_errs(),
             Err((errors, stream)) => stream.errs(errors),
         }
+    }
+
+    fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
+        self.parser.expected_errors()
     }
 }
 
@@ -87,9 +96,9 @@ where
     type Stream = S;
     type Output = O;
 
-    fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, O> {
-        match self.left.parse(stream) {
-            Ok((_, stream)) => self.right.parse(stream),
+    fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, O> {
+        match self.left.parse_partial(stream) {
+            Ok((_, stream)) => self.right.parse_partial(stream),
             Err((err, stream)) => stream.errs(err),
         }
     }
@@ -117,17 +126,21 @@ where
     type Output = O;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        let (mut err, stream) = match self.left.parse(stream) {
+        let (mut err, stream) = match self.left.parse_lazy(stream) {
             Ok((result, stream)) => return stream.result(result),
             Err((err, stream)) => (err, stream),
         };
-        match self.right.parse(stream) {
+        match self.right.parse_lazy(stream) {
             Ok((result, stream)) => stream.result(result),
             Err((mut err2, stream)) => {
                 err.merge_errors(&mut err2);
                 stream.errs(err)
             }
         }
+    }
+
+    fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
+        [self.left.expected_errors(), self.right.expected_errors()].concat()
     }
 }
 

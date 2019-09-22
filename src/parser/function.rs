@@ -59,10 +59,14 @@ where
     type Output = O;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        match self.parser.parse(stream) {
+        match self.parser.parse_lazy(stream) {
             Ok((result, stream)) => stream.result(result.map(|output| (self.f)(output))),
             Err((err, stream)) => stream.errs(err),
         }
+    }
+
+    fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
+        self.parser.expected_errors()
     }
 }
 
@@ -136,6 +140,10 @@ where
             Err((err, stream)) => stream.errs(err),
         }
     }
+
+    fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
+        self.parser.expected_errors()
+    }
 }
 
 pub fn bind<P, F, O>(p: P, f: F) -> Bind<P, F>
@@ -161,7 +169,7 @@ where
     type Stream = P::Stream;
     type Output = O;
 
-    fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+    fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         match self.parser.parse_partial(stream) {
             Ok((Some(s), stream)) => {
                 let result = s
@@ -233,7 +241,7 @@ mod test {
             .bind(|r: Option<char>, stream: &str| stream.result(r.map(|c| c.to_string())));
         test_parser!(&str => String | parser, {
             "3" => ok("3".to_string(), ""),
-            "a3" => err(vec![Error::unexpected_token('a')]),
+            "a3" => err(vec![Error::unexpected_token('a'), Expected("an ascii digit".into())]),
         });
 
         let mut parser = many1(ascii::letter())
@@ -257,7 +265,7 @@ mod test {
             "324 dogs" => ok(324 as usize, (" dogs", 3)),
         // TODO: add ability to control consumption, e.g. make this error show at beginning (0)
         // TODO: e.g.: many1(alpha_num()).bind(...).try()
-            "324dogs" => err(7, vec!["invalid digit found in string".into()]),
+            "324dogs" => err(7, vec!["invalid digit found in string".into(), Expected("an ascii letter or digit".into())]),
         });
     }
 
