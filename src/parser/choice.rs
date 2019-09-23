@@ -1,37 +1,41 @@
-use std::marker::PhantomData;
-
 use {Error, ParseResult, Parser, Stream};
 
-pub struct Skip<P, O> {
-    parser: P,
-    output: PhantomData<O>,
+pub struct Skip<P1, P2> {
+    p1: P1,
+    p2: P2,
 }
 
-impl<P: Parser, O> Parser for Skip<P, O> {
-    type Stream = P::Stream;
-    type Output = O;
+impl<S, P1, P2> Parser for Skip<P1, P2>
+where
+    S: Stream,
+    P1: Parser<Stream = S>,
+    P2: Parser<Stream = S>,
+{
+    type Stream = S;
+    type Output = P1::Output;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        let (_, stream) = self.parser.parse_lazy(stream)?;
-        stream.noop()
+        let (result, stream) = self.p1.parse_lazy(stream)?;
+        let (_, stream) = self.p2.parse_lazy(stream)?;
+        stream.result(result)
     }
 
     fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
-        self.parser.expected_errors()
+        vec![Error::expected(
+            [self.p1.expected_errors(), self.p2.expected_errors()].concat(),
+        )]
     }
 }
 
-/// Wrap `parser` to ignore its output.
+/// Parses with `self` followed by `p`. Succeeds if both parsers succeed, otherwise fails.
+/// Returns the result of `p` on success.
 ///
 /// Useful when you need a parser to consume input but you don't care about the result. Equivalent
 /// to [`parser.skip()`].
 ///
 /// [`parser.skip()`]: Parser::skip
-pub fn skip<P: Parser, O>(parser: P) -> Skip<P, O> {
-    Skip {
-        parser,
-        output: PhantomData,
-    }
+pub fn skip<P1, P2>(p1: P1, p2: P2) -> Skip<P1, P2> {
+    Skip { p1, p2 }
 }
 
 pub struct Optional<P> {

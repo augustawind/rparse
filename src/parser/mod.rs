@@ -111,14 +111,13 @@ pub trait Parser {
         expect(self, error)
     }
 
-    /// Equivalent to [`skip(self)`].
-    ///
-    /// [`skip(self)`]: skip
-    fn skip<O>(self) -> Skip<Self, O>
+    /// Parses with `self` and then `p`, but discards the result of `p` and returns the result of
+    /// `self`. Fails if any of the parsers fail.
+    fn skip<P>(self, p: P) -> Skip<Self, P>
     where
         Self: Sized,
     {
-        skip(self)
+        skip(self, p)
     }
 
     /// Equivalent to [`optional(self)`].
@@ -196,7 +195,9 @@ pub trait Parser {
         from_str(self)
     }
 
-    /// Parses with `self` and transforms the result into a [`String`].
+    /// Parses with `self` and converts the result into a [`String`].
+    ///
+    /// Can only be used if `Self::Output` is a [`StreamRange`].
     fn as_string(self) -> Map<Self, fn(Self::Output) -> String>
     where
         Self: Sized,
