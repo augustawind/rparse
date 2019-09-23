@@ -16,6 +16,20 @@ pub enum Info<S: Stream> {
     MsgOwned(String),
 }
 
+impl<S: Stream> PartialEq for Info<S> {
+    fn eq(&self, other: &Info<S>) -> bool {
+        match (self, other) {
+            (&Info::Token(ref l), &Info::Token(ref r)) => l == r,
+            (&Info::Range(ref l), &Info::Range(ref r)) => l == r,
+            (&Info::Msg(ref l), &Info::Msg(ref r)) => l == r,
+            (&Info::MsgOwned(ref l), &Info::MsgOwned(ref r)) => l == r,
+            (&Info::Msg(ref l), &Info::MsgOwned(ref r)) => l == r,
+            (&Info::MsgOwned(ref l), &Info::Msg(ref r)) => l == r,
+            _ => false,
+        }
+    }
+}
+
 impl<S: Stream> fmt::Display for Info<S> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -42,7 +56,6 @@ impl<S: Stream> From<String> for Info<S> {
 impl<S> From<char> for Info<S>
 where
     S: Stream<Item = char>,
-    S::Position: Position<S::Stream>,
 {
     fn from(c: char) -> Self {
         Info::Token(c)
@@ -52,44 +65,25 @@ where
 impl<S> From<u8> for Info<S>
 where
     S: Stream<Item = u8>,
-    S::Position: Position<S::Stream>,
 {
     fn from(b: u8) -> Self {
         Info::Token(b)
     }
 }
 
-impl<S> PartialEq for Info<S>
-where
-    S: Stream,
-    S::Position: Position<S::Stream>,
-{
-    fn eq(&self, other: &Info<S>) -> bool {
-        match (self, other) {
-            (&Info::Token(ref l), &Info::Token(ref r)) => l == r,
-            (&Info::Range(ref l), &Info::Range(ref r)) => l == r,
-            (&Info::Msg(ref l), &Info::Msg(ref r)) => l == r,
-            (&Info::MsgOwned(ref l), &Info::MsgOwned(ref r)) => l == r,
-            (&Info::Msg(ref l), &Info::MsgOwned(ref r)) => l == r,
-            (&Info::MsgOwned(ref l), &Info::Msg(ref r)) => l == r,
-            _ => false,
-        }
-    }
-}
-
 #[derive(Debug, Clone)]
 pub enum Error<S: Stream> {
+    Seq(Vec<Error<S>>),
+    Choice(Vec<Error<S>>),
+    // Optional(Box<Error<S>>),
+    // WithPos(S::Position, Box<Error<S>>),
     Unexpected(Info<S>),
     Expected(Info<S>),
     Message(Info<S>),
 }
 
 /// A parse error.
-impl<S> Error<S>
-where
-    S: Stream,
-    S::Position: Position<S::Stream>,
-{
+impl<S: Stream> Error<S> {
     pub fn unexpected_eoi() -> Self {
         Error::Unexpected("end of input".into())
     }
@@ -109,15 +103,21 @@ where
     pub fn unexpected_range(range: S::Range) -> Self {
         Error::Unexpected(Info::Range(range))
     }
+
+    fn join_errors(errors: &[Error<S>], sep: &str) -> String {
+        errors
+            .into_iter()
+            .map(|e| e.to_string())
+            .collect::<Vec<String>>()
+            .join(sep)
+    }
 }
 
-impl<S> PartialEq for Error<S>
-where
-    S: Stream,
-    S::Position: Position<S::Stream>,
-{
+impl<S: Stream> PartialEq for Error<S> {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
+            (&Error::Seq(ref l), &Error::Seq(ref r)) => l == r,
+            (&Error::Choice(ref l), &Error::Choice(ref r)) => l == r,
             (&Error::Unexpected(ref l), &Error::Unexpected(ref r)) => l == r,
             (&Error::Expected(ref l), &Error::Expected(ref r)) => l == r,
             (&Error::Message(ref l), &Error::Message(ref r)) => l == r,
@@ -126,9 +126,13 @@ where
     }
 }
 
+impl<S: Stream> Eq for Error<S> {}
+
 impl<S: Stream> fmt::Display for Error<S> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
+            Error::Seq(errors) => write!(f, "({})", Error::join_errors(errors, ", ")),
+            Error::Choice(errors) => write!(f, "({})", Error::join_errors(errors, " OR ")),
             Error::Unexpected(info) => write!(f, "unexpected {}", info),
             Error::Expected(info) => write!(f, "expected {}", info),
             Error::Message(info) => write!(f, "{}", info),
@@ -137,6 +141,12 @@ impl<S: Stream> fmt::Display for Error<S> {
 }
 
 impl<S: Stream> StdError for Error<S> {}
+
+impl<S: Stream> From<Vec<Error<S>>> for Error<S> {
+    fn from(errors: Vec<Error<S>>) -> Self {
+        Error::Seq(errors.into())
+    }
+}
 
 impl<S: Stream> From<&'static str> for Error<S> {
     fn from(s: &'static str) -> Self {
@@ -157,7 +167,7 @@ impl<S: Stream, E: StdError + Send + Sync + 'static> From<Box<E>> for Error<S> {
 }
 
 /// A sequence of one or more parse errors.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 pub struct Errors<S: Stream> {
     pub position: S::Position,
     pub errors: Vec<Error<S>>,
@@ -214,6 +224,12 @@ impl<S: Stream> Errors<S> {
     }
 }
 
+impl<S: Stream> PartialEq for Errors<S> {
+    fn eq(&self, other: &Self) -> bool {
+        self.position == other.position && self.errors == other.errors
+    }
+}
+
 impl<S: Stream> fmt::Display for Errors<S> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         writeln!(f, "{}:", self.position.fmt_msg("Parse error"))?;
@@ -223,6 +239,8 @@ impl<S: Stream> fmt::Display for Errors<S> {
         Ok(())
     }
 }
+
+impl<S: Stream> Eq for Errors<S> {}
 
 impl<S: Stream> StdError for Errors<S> {}
 

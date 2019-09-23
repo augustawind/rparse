@@ -6,7 +6,7 @@ use std::fmt::{Debug, Display};
 
 /// The Position trait defines types that keep track of the cursor position while parsing an
 /// `Stream` stream.
-pub trait Position<S: Stream>: Default + Debug + Display + Clone + Ord {
+pub trait Position<S: Stream>: Default + Debug + Display + Clone + Ord + PartialEq + Eq {
     type Value: Ord;
 
     fn value(&self) -> Self::Value;

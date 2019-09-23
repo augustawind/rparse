@@ -27,11 +27,11 @@ where
                     if i < self.min {
                         return stream.errs(errors);
                     } else {
-                         if let Some(max) = self.max {
-                             if i >= max {
+                        if let Some(max) = self.max {
+                            if i >= max {
                                 return stream.errs(errors);
-                             }
-                         }
+                            }
+                        }
                     }
                     return stream.ok(output);
                 }
@@ -50,14 +50,22 @@ pub fn many<P>(p: P) -> Many<P>
 where
     P: Parser,
 {
-    Many { p, min: 0, max: None }
+    Many {
+        p,
+        min: 0,
+        max: None,
+    }
 }
 
 pub fn many1<P>(p: P) -> Many<P>
 where
     P: Parser,
 {
-    Many { p, min: 1, max: None }
+    Many {
+        p,
+        min: 1,
+        max: None,
+    }
 }
 
 pub fn many_n<P>(p: P, min: usize) -> Many<P>
@@ -71,7 +79,11 @@ pub fn many_n_m<P>(p: P, min: usize, max: usize) -> Many<P>
 where
     P: Parser,
 {
-    Many { p, min, max: Some(max) }
+    Many {
+        p,
+        min,
+        max: Some(max),
+    }
 }
 
 #[cfg(test)]
