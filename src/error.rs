@@ -113,6 +113,13 @@ impl<S: Stream> Error<S> {
         }))
     }
 
+    pub fn expected_one_of<E>(errors: Vec<E>) -> Self
+    where
+        E: Into<Error<S>>,
+    {
+        Error::expected(Error::one_of(errors))
+    }
+
     fn unwrap_expected(self) -> Self {
         match self {
             Error::Expected(error) => *error,

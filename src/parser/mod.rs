@@ -43,15 +43,26 @@ pub trait Parser {
         result
     }
 
-    fn parse(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output>
+    fn try_parse(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output>
     where
         Self: Sized,
     {
         let backup = stream.backup();
         let mut result = self.parse_lazy(stream);
-        if let Err((ref mut errors, ref mut stream)) = result {
+        if let Err((_, ref mut stream)) = result {
             stream.restore(backup);
-            self.add_expected_error(errors);
+        }
+        result
+    }
+
+    fn parse(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output>
+    where
+        Self: Sized,
+    {
+        let backup = stream.backup();
+        let mut result = self.parse_partial(stream);
+        if let Err((_, ref mut stream)) = result {
+            stream.restore(backup);
         }
         result
     }

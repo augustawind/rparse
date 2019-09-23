@@ -184,12 +184,21 @@ fn main() {
 #[cfg(test)]
 mod test {
     use super::*;
+    use rparse::error::{Error, Info};
     use rparse::stream::IndexedStream;
-    use rparse::Error;
 
     // TODO: [u8]
     #[test]
     fn test_http_method() {
+        let expected_error = Error::expected(Error::one_of(
+            [
+                "GET", "PUT", "POST", "HEAD", "PATCH", "TRACE", "DELETE", "OPTIONS", "CONNECT",
+            ]
+            .into_iter()
+            .map(|s| Info::Range(s.as_bytes()))
+            .collect(),
+        ));
+
         test_parser!(IndexedStream<&[u8]> => String | http_method(), {
             &b"GET"[..] => ok("GET".into(), (&b""[..], 3)),
             &b"HEAD\n/"[..] => ok("HEAD".into(), (&b"\n/"[..], 4)),
@@ -198,7 +207,7 @@ mod test {
         test_parser!(IndexedStream<&[u8]> => String | http_method(), {
             &b"PUPPYDOG"[..] => err(2, vec![
                 Error::unexpected_token(b'P'),
-                Error::expected_range("PUT".as_bytes()),
+                expected_error,
             ]),
         });
 
@@ -214,12 +223,12 @@ mod test {
             "%A9" => ok("%A9".into(), ""),
             "%0f/hello" => ok("%0f".into(), "/hello"),
             "" => err(vec![Error::unexpected_eoi(), Error::expected_token('%')]),
-            "%xy" => err(vec![
-                Error::unexpected_token('x'),
-                Error::expected("a hexadecimal digit"),
-            ]),
             "%%0f" => err(vec![
                 Error::unexpected_token('%'),
+                Error::expected("a hexadecimal digit"),
+            ]),
+            "%xy" => err(vec![
+                Error::unexpected_token('x'),
                 Error::expected("a hexadecimal digit"),
             ]),
         });
