@@ -14,6 +14,7 @@ pub enum Info<S: Stream> {
     Range(S::Range),
     Msg(&'static str),
     MsgOwned(String),
+    EOI(),
 }
 
 impl<S: Stream> PartialEq for Info<S> {
@@ -25,6 +26,7 @@ impl<S: Stream> PartialEq for Info<S> {
             (&Info::MsgOwned(ref l), &Info::MsgOwned(ref r)) => l == r,
             (&Info::Msg(ref l), &Info::MsgOwned(ref r)) => l == r,
             (&Info::MsgOwned(ref l), &Info::Msg(ref r)) => l == r,
+            (&Info::EOI(), &Info::EOI()) => true,
             _ => false,
         }
     }
@@ -37,6 +39,7 @@ impl<S: Stream> fmt::Display for Info<S> {
             Info::Range(range) => write!(f, "range {:?}", range),
             Info::Msg(msg) => write!(f, "{}", msg),
             Info::MsgOwned(msg) => write!(f, "{}", msg),
+            Info::EOI() => write!(f, "end of input"),
         }
     }
 }
@@ -134,7 +137,7 @@ impl<S: Stream> Error<S> {
     }
 
     pub fn unexpected_eoi() -> Self {
-        Error::Unexpected("end of input".into())
+        Error::Unexpected(Info::EOI())
     }
 
     pub fn unexpected_token(token: S::Item) -> Self {

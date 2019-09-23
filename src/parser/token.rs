@@ -2,7 +2,7 @@
 
 use std::marker::PhantomData;
 
-use error::{Error, ParseResult};
+use error::{Error, Info, ParseResult};
 use parser::function::Expect;
 use parser::Parser;
 use stream::{Position, Stream, StreamItem};
@@ -62,6 +62,28 @@ pub fn token<S: Stream>(token: u8) -> Token<S> {
     Token {
         token: S::Item::from(token),
     }
+}
+
+pub struct EOI<S>(PhantomData<S>);
+
+impl<S: Stream> Parser for EOI<S> {
+    type Stream = S;
+    type Output = ();
+
+    fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        match stream.peek() {
+            Some(t) => stream.err(Error::unexpected_token(t)),
+            None => stream.ok(()),
+        }
+    }
+
+    fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
+        vec![Error::expected(Info::EOI())]
+    }
+}
+
+pub fn eoi<S: Stream>() -> EOI<S> {
+    EOI(PhantomData)
 }
 
 pub struct Satisfy<S: Stream, F>
