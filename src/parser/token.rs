@@ -157,6 +157,27 @@ where
     Negate { p }
 }
 
+pub struct OneOf<'a, S: Stream> {
+    items: &'a [u8],
+    _marker: PhantomData<S>,
+}
+
+impl<'a, S: Stream> Parser for OneOf<'a, S> {
+    type Stream = S;
+    type Output = S::Item;
+
+    fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        satisfy(move |item: &S::Item| self.items.into_iter().any(|&b| *item == b.into()))
+            .parse_lazy(stream)
+    }
+}
+
+pub fn one_of<'a, S: Stream>(items: &'a [u8]) -> OneOf<'a, S> {
+    OneOf {
+        items,
+        _marker: PhantomData,
+    }
+}
 
 pub struct NoneOf<'a, S: Stream> {
     items: &'a [u8],
@@ -168,13 +189,16 @@ impl<'a, S: Stream> Parser for NoneOf<'a, S> {
     type Output = S::Item;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        satisfy(move |item: &S::Item| self.items.into_iter().any(|&b| *item == b.into()))
+        satisfy(move |item: &S::Item| self.items.into_iter().all(|&b| *item != b.into()))
             .parse_lazy(stream)
     }
 }
 
 pub fn none_of<'a, S: Stream>(items: &'a [u8]) -> NoneOf<'a, S> {
-    NoneOf { items, _marker: PhantomData }
+    NoneOf {
+        items,
+        _marker: PhantomData,
+    }
 }
 
 #[cfg(test)]

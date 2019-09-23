@@ -1,8 +1,7 @@
 //! Traits and implementations representing positions in an `Stream` stream.
 
 use super::{Stream, StreamRange};
-use std::fmt;
-use std::fmt::{Debug, Display};
+use std::fmt::{self, Debug, Display};
 
 /// The Position trait defines types that keep track of the cursor position while parsing an
 /// `Stream` stream.
