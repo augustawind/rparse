@@ -62,7 +62,7 @@ macro_rules! seq {
 mod test {
     use super::*;
     use error::Error;
-    use parser::seq::many;
+    use parser::repeat::many;
     use parser::token::ascii::{hexdigit, letter};
     use parser::token::token;
     use parser::Parser;

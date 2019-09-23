@@ -9,6 +9,7 @@ mod test_utils;
 pub mod choice;
 pub mod function;
 pub mod range;
+pub mod repeat;
 pub mod seq;
 pub mod token;
 pub mod tuple;
@@ -240,8 +241,7 @@ pub trait Parser {
     }
 
     /// Parses with `self` followed by `p`, returning the results in a [`Vec`]. Succeeds if both
-    /// parsers return `Some(value)`, otherwise fails. Both parsers must have the same `Output`
-    /// type.
+    /// parsers succeed. Both parsers must have the same `Output` type.
     ///
     /// ```
     /// # use rparse::Parser;
@@ -268,7 +268,7 @@ pub trait Parser {
     ///
     /// ```
     /// # use rparse::Parser;
-    /// # use rparse::parser::seq::many;
+    /// # use rparse::parser::repeat::many;
     /// # use rparse::parser::token::ascii::*;
     /// let mut p = many(whitespace()).append(letter()).append(digit());
     /// assert_eq!(p.parse("\n\tT2!"), Ok((Some(vec!['\n', '\t', 'T', '2']), "!")));

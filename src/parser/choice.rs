@@ -206,7 +206,8 @@ macro_rules! choice {
 mod test {
     use super::*;
     use error::Error::*;
-    use parser::seq::{many, many1, then};
+    use parser::repeat::{many, many1};
+    use parser::seq::then;
     use parser::test_utils::*;
     use parser::token::{any, ascii, token};
     use parser::Parser;

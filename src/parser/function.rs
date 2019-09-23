@@ -213,7 +213,7 @@ where
 mod test {
     use super::*;
     use error::Error::*;
-    use parser::seq::many1;
+    use parser::repeat::many1;
     use parser::test_utils::*;
     use parser::token::{ascii, token};
     use stream::{IndexedStream, SourceCode};
