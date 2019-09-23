@@ -97,10 +97,8 @@ where
     type Output = O;
 
     fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, O> {
-        match self.left.parse_partial(stream) {
-            Ok((_, stream)) => self.right.parse_partial(stream),
-            Err((err, stream)) => stream.errs(err),
-        }
+        let (_, stream) = self.left.parse_partial(stream)?;
+        self.right.parse_partial(stream)
     }
 }
 
@@ -140,7 +138,9 @@ where
     }
 
     fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
-        [self.left.expected_errors(), self.right.expected_errors()].concat()
+        vec![Error::expected(Error::one_of(
+            [self.left.expected_errors(), self.right.expected_errors()].concat(),
+        ))]
     }
 }
 
@@ -158,7 +158,7 @@ macro_rules! choice {
         $head
     };
     ($head:expr, $($tail:expr),+ $(,)*) => {
-        $head.or(choice!($($tail),+))
+        $head $(.or($tail))+
     };
 }
 
@@ -267,7 +267,7 @@ mod test {
             ".a9" => ok('.', ("a9", 1)),
             "ba9." => err(0, vec![
                 Unexpected('b'.into()),
-                Error::expected(OneOf(vec![
+                Error::expected(Error::one_of(vec![
                     Info('a'.into()),
                     "an ascii digit".into(),
                     "an ascii punctuation character".into()

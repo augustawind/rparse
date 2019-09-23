@@ -164,7 +164,7 @@ fn main() {
 mod test {
     use super::*;
     use rparse::stream::IndexedStream;
-    use rparse::Error::{self, *};
+    use rparse::Error;
 
     // TODO: [u8]
     #[test]
@@ -195,7 +195,11 @@ mod test {
             "" => err(vec![Error::unexpected_eoi(), Error::expected_token('%')]),
             "%xy" => err(vec![
                 Error::unexpected_token('x'),
-                Expected("a hexadecimal digit".into()),
+                Error::expected("a hexadecimal digit"),
+            ]),
+            "%%0f" => err(vec![
+                Error::unexpected_token('%'),
+                Error::expected("a hexadecimal digit"),
             ]),
         });
     }
