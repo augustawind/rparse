@@ -211,9 +211,9 @@ mod test {
         test_parser!(IndexedStream<&str> => char | parser, {
             "abcd" => ok('b', ("cd", 2)),
             "ab" => ok('b', ("", 2)),
-            "def" => err(0, vec![Unexpected('d'.into()), Expected('a'.into())]),
-            "aab" => err(1, vec![Unexpected('a'.into()), Expected('b'.into())]),
-            "bcd" => err(0, vec![Unexpected('b'.into()), Expected('a'.into())]),
+            "def" => err(0, vec![Error::unexpected_token('d'), Error::expected_token('a')]),
+            "aab" => err(1, vec![Error::unexpected_token('a'), Error::expected_token('b')]),
+            "bcd" => err(0, vec![Error::unexpected_token('b'), Error::expected_token('a')]),
         });
 
         let mut parser = and(many1(ascii::digit()), many1(ascii::letter()));
@@ -221,11 +221,11 @@ mod test {
             "123abc456" => ok(vec!['a', 'b', 'c'], ("456", 6)),
             " 1 2 3" => err(0, vec![
                 Unexpected(' '.into()),
-                Expected("an ascii digit".into())
+                Error::expected("an ascii digit"),
             ]),
             "123 abc" => err(3, vec![
                  Unexpected(' '.into()),
-                 Expected("an ascii letter".into())
+                 Error::expected("an ascii letter"),
             ]),
         });
     }
@@ -238,8 +238,7 @@ mod test {
             "a" => ok('a', ("", 1)),
             "def" => err(0, vec![
                 Unexpected('d'.into()),
-                Expected('a'.into()),
-                Expected('b'.into()),
+                Error::expected(Error::one_of(vec![Info('a'.into()), Info('b'.into())])),
             ]),
         });
 
@@ -268,9 +267,11 @@ mod test {
             ".a9" => ok('.', ("a9", 1)),
             "ba9." => err(0, vec![
                 Unexpected('b'.into()),
-                Expected('a'.into()),
-                Expected("an ascii digit".into()),
-                Expected("an ascii punctuation character".into()),
+                Error::expected(OneOf(vec![
+                    Info('a'.into()),
+                    "an ascii digit".into(),
+                    "an ascii punctuation character".into()
+                ])),
             ]),
         });
 

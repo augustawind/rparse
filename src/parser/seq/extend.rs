@@ -91,19 +91,19 @@ mod test {
             "  xs = [2, 3]" => ok("  xs".to_string(), (" = [2, 3]", 4)),
             "" => err(0, vec![
                 Error::unexpected_eoi(),
-                Expected("an ascii letter".into()),
+                Error::expected("an ascii letter"),
             ]),
             "?" => err(0, vec![
                 Unexpected('?'.into()),
-                Expected("an ascii letter".into()),
+                Error::expected("an ascii letter"),
             ]),
             "a" => err(1, vec![
                 Error::unexpected_eoi(),
-                Expected("an ascii letter or digit".into()),
+                Error::expected("an ascii letter or digit"),
             ]),
             "a?" => err(1, vec![
                 Unexpected('?'.into()),
-                Expected("an ascii letter or digit".into()),
+                Error::expected("an ascii letter or digit"),
             ]),
         });
     }

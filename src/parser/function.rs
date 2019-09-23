@@ -6,7 +6,7 @@ use std::marker::PhantomData;
 use std::option::Option::*;
 use std::str;
 
-use error::{Error, Info};
+use error::Error;
 use traits::StrLike;
 use {ParseResult, Parser, Stream};
 
@@ -37,11 +37,11 @@ impl<P: Parser> Parser for Expect<P> {
 pub fn expect<P, I>(parser: P, expected: I) -> Expect<P>
 where
     P: Parser,
-    I: Into<Info<P::Stream>>,
+    I: Into<Error<P::Stream>>,
 {
     Expect {
         parser,
-        error: Error::Expected(expected.into()),
+        error: Error::expected(expected),
     }
 }
 
@@ -214,7 +214,7 @@ mod test {
         let mut parser = map(ascii::digit(), |c: char| c.to_string());
         test_parser!(&str => String | parser, {
             "3" => ok("3".to_string(), ""),
-            "a3" => err(vec![Unexpected('a'.into()), Expected("an ascii digit".into())]),
+            "a3" => err(vec![Unexpected('a'.into()), Error::expected("an ascii digit")]),
         });
 
         let mut parser = map(many1(ascii::letter()).collect::<String>(), |s| {
@@ -241,7 +241,7 @@ mod test {
             .bind(|r: Option<char>, stream: &str| stream.result(r.map(|c| c.to_string())));
         test_parser!(&str => String | parser, {
             "3" => ok("3".to_string(), ""),
-            "a3" => err(vec![Error::unexpected_token('a'), Expected("an ascii digit".into())]),
+            "a3" => err(vec![Error::unexpected_token('a'), Error::expected("an ascii digit")]),
         });
 
         let mut parser = many1(ascii::letter())
@@ -265,7 +265,7 @@ mod test {
             "324 dogs" => ok(324 as usize, (" dogs", 3)),
         // TODO: add ability to control consumption, e.g. make this error show at beginning (0)
         // TODO: e.g.: many1(alpha_num()).bind(...).try()
-            "324dogs" => err(7, vec!["invalid digit found in string".into(), Expected("an ascii letter or digit".into())]),
+            "324dogs" => err(7, vec!["invalid digit found in string".into(), Error::expected("an ascii letter or digit")]),
         });
     }
 
@@ -275,7 +275,7 @@ mod test {
         test_parser!(&str => u32 | parser, {
             "369" => ok(369 as u32, ""),
             "369abc" => ok(369 as u32, "abc"),
-            "abc" => err(vec![Unexpected('a'.into()), Expected("an ascii digit".into())]),
+            "abc" => err(vec![Unexpected('a'.into()), Error::expected("an ascii digit")]),
         });
 
         let mut parser = many1(choice!(token(b'-'), token(b'.'), ascii::digit()))
@@ -291,7 +291,7 @@ mod test {
         let mut parser = many1(ascii::digit()).collect::<String>().from_str::<f32>();
         test_parser!(SourceCode => f32 | parser, {
             "12e" => ok(12f32, ("e", (1, 3))),
-            "e12" => err((1, 1), vec![Unexpected('e'.into()), Expected("an ascii digit".into())]),
+            "e12" => err((1, 1), vec![Unexpected('e'.into()), Error::expected("an ascii digit")]),
         });
     }
 }

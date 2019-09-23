@@ -23,7 +23,7 @@ use self::function::{
     FromStr, Iter, Map, Wrap,
 };
 use self::seq::{append, extend, then, Append, Extend, Then};
-use error::{Error, Errors, Info, ParseResult};
+use error::{Error, Errors, ParseResult};
 use stream::{Stream, StreamRange};
 use traits::StrLike;
 
@@ -91,7 +91,7 @@ pub trait Parser {
     fn expect<I>(self, i: I) -> Expect<Self>
     where
         Self: Sized,
-        I: Into<Info<Self::Stream>>,
+        I: Into<Error<Self::Stream>>,
     {
         expect(self, i)
     }

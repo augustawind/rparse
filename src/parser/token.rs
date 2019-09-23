@@ -21,7 +21,7 @@ impl<S: Stream> Parser for Any<S> {
     }
 
     fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
-        vec![Error::Expected("a token".into())]
+        vec![Error::expected("a token")]
     }
 }
 

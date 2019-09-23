@@ -92,9 +92,9 @@ mod test {
         test_parser!(IndexedStream<&str> => String | parser, {
             "%AF" => ok("%AF".into(), ("", 3)),
             "%d8_/^/_" => ok("%d8".into(), ("_/^/_", 3)),
-            "" => err(0, vec![Error::unexpected_eoi(), Expected('%'.into())]),
-            "%0" => err(2, vec![Error::unexpected_eoi(), Expected("a hexadecimal digit".into())]),
-            "%zz" => err(1, vec![Unexpected('z'.into()), Expected("a hexadecimal digit".into())]),
+            "" => err(0, vec![Error::unexpected_eoi(), Error::expected_token('%')]),
+            "%0" => err(2, vec![Error::unexpected_eoi(), Error::expected("a hexadecimal digit")]),
+            "%zz" => err(1, vec![Unexpected('z'.into()), Error::expected("a hexadecimal digit")]),
         });
 
         let mut parser = seq![token(b'x'), token(b'y')].collect();

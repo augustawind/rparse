@@ -74,30 +74,66 @@ where
 #[derive(Debug, Clone)]
 pub enum Error<S: Stream> {
     Seq(Vec<Error<S>>),
-    Choice(Vec<Error<S>>),
+    OneOf(Vec<Error<S>>),
     // Optional(Box<Error<S>>),
     // WithPos(S::Position, Box<Error<S>>),
+    Expected(Box<Error<S>>),
     Unexpected(Info<S>),
-    Expected(Info<S>),
-    Message(Info<S>),
+    Info(Info<S>),
 }
 
 /// A parse error.
 impl<S: Stream> Error<S> {
+    pub fn one_of<E>(errors: Vec<E>) -> Self
+    where
+        E: Into<Error<S>>,
+    {
+        Error::OneOf(errors.into_iter().fold(Vec::new(), |mut errors, e| {
+            match e.into() {
+                Error::OneOf(errs) => errors.extend(errs),
+                otherwise => errors.push(otherwise),
+            };
+            errors
+        }))
+    }
+
+    pub fn expected<E>(error: E) -> Self
+    where
+        E: Into<Error<S>>,
+    {
+        Error::Expected(Box::new(match error.into() {
+            Error::Seq(err) => {
+                Error::Seq(err.into_iter().map(|err| err.unwrap_expected()).collect())
+            }
+            Error::OneOf(err) => {
+                Error::one_of(err.into_iter().map(|err| err.unwrap_expected()).collect())
+            }
+            Error::Expected(err) => err.unwrap_expected(),
+            otherwise => otherwise,
+        }))
+    }
+
+    fn unwrap_expected(self) -> Self {
+        match self {
+            Error::Expected(error) => *error,
+            otherwise => otherwise,
+        }
+    }
+
+    pub fn expected_token(token: S::Item) -> Self {
+        Error::Expected(Box::new(Error::Info(Info::Token(token))))
+    }
+
+    pub fn expected_range(range: S::Range) -> Self {
+        Error::Expected(Box::new(Error::Info(Info::Range(range))))
+    }
+
     pub fn unexpected_eoi() -> Self {
         Error::Unexpected("end of input".into())
     }
 
-    pub fn expected_token(token: S::Item) -> Self {
-        Error::Expected(Info::Token(token))
-    }
-
     pub fn unexpected_token(token: S::Item) -> Self {
         Error::Unexpected(Info::Token(token))
-    }
-
-    pub fn expected_range(range: S::Range) -> Self {
-        Error::Expected(Info::Range(range))
     }
 
     pub fn unexpected_range(range: S::Range) -> Self {
@@ -117,10 +153,10 @@ impl<S: Stream> PartialEq for Error<S> {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (&Error::Seq(ref l), &Error::Seq(ref r)) => l == r,
-            (&Error::Choice(ref l), &Error::Choice(ref r)) => l == r,
+            (&Error::OneOf(ref l), &Error::OneOf(ref r)) => l == r,
             (&Error::Unexpected(ref l), &Error::Unexpected(ref r)) => l == r,
             (&Error::Expected(ref l), &Error::Expected(ref r)) => l == r,
-            (&Error::Message(ref l), &Error::Message(ref r)) => l == r,
+            (&Error::Info(ref l), &Error::Info(ref r)) => l == r,
             _ => false,
         }
     }
@@ -132,31 +168,43 @@ impl<S: Stream> fmt::Display for Error<S> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Error::Seq(errors) => write!(f, "({})", Error::join_errors(errors, ", ")),
-            Error::Choice(errors) => write!(f, "({})", Error::join_errors(errors, " OR ")),
+            Error::OneOf(errors) => write!(f, "({})", Error::join_errors(errors, " OR ")),
             Error::Unexpected(info) => write!(f, "unexpected {}", info),
             Error::Expected(info) => write!(f, "expected {}", info),
-            Error::Message(info) => write!(f, "{}", info),
+            Error::Info(info) => write!(f, "{}", info),
         }
     }
 }
 
 impl<S: Stream> StdError for Error<S> {}
 
-impl<S: Stream> From<Vec<Error<S>>> for Error<S> {
-    fn from(errors: Vec<Error<S>>) -> Self {
-        Error::Seq(errors.into())
+impl<S: Stream> From<Info<S>> for Error<S> {
+    fn from(info: Info<S>) -> Self {
+        Error::Info(info)
+    }
+}
+
+impl<S: Stream, T: Into<Error<S>>> From<Vec<T>> for Error<S> {
+    fn from(errors: Vec<T>) -> Self {
+        Error::Seq(
+            errors
+                .into_iter()
+                .map(Into::into)
+                .collect::<Vec<Error<S>>>()
+                .into(),
+        )
     }
 }
 
 impl<S: Stream> From<&'static str> for Error<S> {
     fn from(s: &'static str) -> Self {
-        Error::Message(Info::Msg(s))
+        Error::Info(Info::Msg(s))
     }
 }
 
 impl<S: Stream> From<String> for Error<S> {
     fn from(s: String) -> Self {
-        Error::Message(Info::MsgOwned(s))
+        Error::Info(Info::MsgOwned(s))
     }
 }
 
