@@ -24,6 +24,7 @@ use self::function::{
     FromStr, Iter, Map, Wrap,
 };
 use self::seq::{append, extend, then, Append, Extend, Then};
+use self::token::{negate, Negate};
 use error::{Error, Errors, ParseResult};
 use stream::{Stream, StreamRange};
 use traits::StrLike;
@@ -110,6 +111,15 @@ pub trait Parser {
         E: Into<Error<Self::Stream>>,
     {
         expect(self, error)
+    }
+
+    /// Reverses the parse behavior of `self`. Fails if `self` succeeds, succeeds if `self` fails.
+    fn negate<S>(self) -> Negate<Self>
+    where
+        Self: Sized + Parser<Stream = S, Output = S::Item>,
+        S: Stream,
+    {
+        negate(self)
     }
 
     /// Parses with `self` and then `p`, but discards the result of `p` and returns the result of

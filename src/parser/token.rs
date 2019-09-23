@@ -123,6 +123,41 @@ where
     }
 }
 
+pub struct Negate<P: Parser> {
+    p: P,
+}
+impl<S, P> Parser for Negate<P>
+where
+    S: Stream,
+    P: Parser<Stream = S, Output = S::Item>,
+{
+    type Stream = S;
+    type Output = S::Item;
+
+    fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        let backup = stream.backup();
+        let mut stream = match self.p.parse_lazy(stream) {
+            Ok((Some(t), stream)) => return stream.err(Error::unexpected_token(t)),
+            Ok((None, stream)) => stream,
+            Err((_, stream)) => stream,
+        };
+        stream.restore(backup);
+        match stream.pop() {
+            Some(t) => stream.ok(t),
+            None => stream.err(Error::unexpected_eoi()),
+        }
+    }
+}
+
+pub fn negate<S, P>(p: P) -> Negate<P>
+where
+    S: Stream,
+    P: Parser<Stream = S, Output = S::Item>,
+{
+    Negate { p }
+}
+
+
 pub struct NoneOf<'a, S: Stream> {
     items: &'a [u8],
     _marker: PhantomData<S>,
