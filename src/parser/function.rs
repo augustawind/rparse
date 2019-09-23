@@ -15,12 +15,6 @@ pub struct Expect<P: Parser> {
     error: Error<P::Stream>,
 }
 
-impl<P: Parser> Expect<P> {
-    pub fn expected_error(&self) -> Error<P::Stream> {
-        self.error.clone()
-    }
-}
-
 impl<P: Parser> Parser for Expect<P> {
     type Stream = P::Stream;
     type Output = P::Output;
@@ -34,14 +28,17 @@ impl<P: Parser> Parser for Expect<P> {
     }
 }
 
-pub fn expect<P, I>(parser: P, expected: I) -> Expect<P>
+/// Equivalent to [`parser.expect(error)`].
+///
+/// [`parser.expect(error)`]: Parser::expect
+pub fn expect<P, I>(parser: P, error: I) -> Expect<P>
 where
     P: Parser,
     I: Into<Error<P::Stream>>,
 {
     Expect {
         parser,
-        error: Error::expected(expected),
+        error: Error::expected(error),
     }
 }
 
@@ -59,10 +56,8 @@ where
     type Output = O;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        match self.parser.parse_lazy(stream) {
-            Ok((result, stream)) => stream.result(result.map(|output| (self.f)(output))),
-            Err((err, stream)) => stream.errs(err),
-        }
+        let (result, stream) = self.parser.parse_lazy(stream)?;
+        stream.result(result.map(|output| (self.f)(output)))
     }
 
     fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
@@ -70,16 +65,22 @@ where
     }
 }
 
-pub fn map<P, F, O>(p: P, f: F) -> Map<P, F>
+/// Equivalent to [`parser.map(f)`].
+///
+/// [`parser.map(f)`]: Parser::map
+pub fn map<P, F, O>(parser: P, f: F) -> Map<P, F>
 where
     P: Parser,
     F: Fn(P::Output) -> O,
 {
-    Map { parser: p, f }
+    Map { parser, f }
 }
 
 pub type Iter<P, I> = Map<P, fn(<P as Parser>::Output) -> <I as IntoIterator>::IntoIter>;
 
+/// Equivalent to [`p.iter()`].
+///
+/// [`p.iter()`]: Parser::iter
 pub fn iter<P, I>(p: P) -> Iter<P, I>
 where
     P: Parser<Output = I>,
@@ -90,6 +91,9 @@ where
 
 pub type Collect<P, O> = Map<P, fn(<P as Parser>::Output) -> O>;
 
+/// Equivalent to [`p.collect()`].
+///
+/// [`p.collect()`]: Parser::collect
 pub fn collect<P, O>(p: P) -> Collect<P, O>
 where
     P: Parser,
@@ -101,6 +105,9 @@ where
 
 pub type Flatten<P, O> = Map<P, fn(<P as Parser>::Output) -> Vec<O>>;
 
+/// Equivalent to [`p.flatten()`].
+///
+/// [`p.flatten()`]: Parser::flatten
 pub fn flatten<P, O>(p: P) -> Flatten<P, O>
 where
     P: Parser<Output = Vec<Vec<O>>>,
@@ -110,15 +117,14 @@ where
 
 pub type Wrap<P> = Map<P, fn(<P as Parser>::Output) -> Vec<<P as Parser>::Output>>;
 
+/// Equivalent to [`p.wrap()`].
+///
+/// [`p.wrap()`]: Parser::wrap
 pub fn wrap<P>(p: P) -> Wrap<P>
 where
     P: Parser,
 {
-    p.map(|output| {
-        let mut v = Vec::new();
-        v.push(output);
-        v
-    })
+    p.map(|output| vec![output])
 }
 
 pub struct Bind<P, F> {
@@ -135,10 +141,8 @@ where
     type Output = O;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        match self.parser.parse_lazy(stream) {
-            Ok((result, stream)) => (self.f)(result, stream),
-            Err((err, stream)) => stream.errs(err),
-        }
+        let (result, stream) = self.parser.parse_partial(stream)?;
+        (self.f)(result, stream)
     }
 
     fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
@@ -146,6 +150,9 @@ where
     }
 }
 
+/// Equivalent to [`p.bind()`].
+///
+/// [`p.bind()`]: Parser::bind
 pub fn bind<P, F, O>(p: P, f: F) -> Bind<P, F>
 where
     P: Parser,
@@ -170,8 +177,8 @@ where
     type Output = O;
 
     fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        match self.parser.parse_partial(stream) {
-            Ok((Some(s), stream)) => {
+        match self.parser.parse_partial(stream)? {
+            (Some(s), stream) => {
                 let result = s
                     .from_utf8()
                     .map_err(|_| "invalid UTF-8".into())
@@ -181,12 +188,14 @@ where
                     Err(err) => stream.err(err),
                 }
             }
-            Ok((None, stream)) => stream.noop(),
-            Err((err, stream)) => stream.errs(err),
+            (None, stream) => stream.noop(),
         }
     }
 }
 
+/// Equivalent to [`p.from_str()`].
+///
+/// [`p.from_str()`]: Parser::from_str
 pub fn from_str<P, O>(parser: P) -> FromStr<P, O>
 where
     P: Parser,

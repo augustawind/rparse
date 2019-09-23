@@ -12,10 +12,8 @@ impl<P: Parser, O> Parser for Skip<P, O> {
     type Output = O;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        match self.parser.parse_lazy(stream) {
-            Ok((_, stream)) => stream.noop(),
-            Err((errs, stream)) => stream.errs(errs),
-        }
+        let (_, stream) = self.parser.parse_lazy(stream)?;
+        stream.noop()
     }
 
     fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
@@ -23,6 +21,12 @@ impl<P: Parser, O> Parser for Skip<P, O> {
     }
 }
 
+/// Wrap `parser` to ignore its output.
+///
+/// Useful when you need a parser to consume input but you don't care about the result. Equivalent
+/// to [`parser.skip()`].
+///
+/// [`parser.skip()`]: Parser::skip
 pub fn skip<P: Parser, O>(parser: P) -> Skip<P, O> {
     Skip {
         parser,
@@ -54,6 +58,10 @@ where
     }
 }
 
+/// Wrap `parser` so that if it would fail it returns `None` instead. Equivalent to
+/// [`parser.optional()`].
+///
+/// [`parser.optional()`]: Parser::optional
 pub fn optional<P: Parser>(parser: P) -> Optional<P> {
     Optional { parser }
 }
@@ -79,13 +87,18 @@ impl<P: Parser> Parser for Required<P> {
     }
 }
 
+/// Wrap `parser` so that if it would `None` it fails instead.
+///
+/// Equivalent to [`parser.required()`].
+///
+/// [`parser.required()`]: Parser::required
 pub fn required<P: Parser>(parser: P) -> Required<P> {
     Required { parser }
 }
 
 pub struct And<L, R> {
-    left: L,
-    right: R,
+    p1: L,
+    p2: R,
 }
 
 impl<S: Stream, O, L, R> Parser for And<L, R>
@@ -97,22 +110,25 @@ where
     type Output = O;
 
     fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, O> {
-        let (_, stream) = self.left.parse_partial(stream)?;
-        self.right.parse_partial(stream)
+        let (_, stream) = self.p1.parse_partial(stream)?;
+        self.p2.parse_partial(stream)
     }
 }
 
-pub fn and<S: Stream, O, L, R>(left: L, right: R) -> And<L, R>
+/// Equivalent to [`p1.and(p2)`].
+///
+/// [`p1.and(p2)`]: Parser::and
+pub fn and<S: Stream, O, L, R>(p1: L, p2: R) -> And<L, R>
 where
     L: Parser<Stream = S>,
     R: Parser<Stream = S, Output = O>,
 {
-    And { left, right }
+    And { p1, p2 }
 }
 
 pub struct Or<L, R> {
-    left: L,
-    right: R,
+    p1: L,
+    p2: R,
 }
 
 impl<S: Stream, O, L, R> Parser for Or<L, R>
@@ -124,11 +140,11 @@ where
     type Output = O;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        let (mut err, stream) = match self.left.try_parse(stream) {
+        let (mut err, stream) = match self.p1.try_parse(stream) {
             Ok((result, stream)) => return stream.result(result),
             Err((err, stream)) => (err, stream),
         };
-        match self.right.parse_lazy(stream) {
+        match self.p2.parse_lazy(stream) {
             Ok((result, stream)) => stream.result(result),
             Err((mut err2, stream)) => {
                 err.merge_errors(&mut err2);
@@ -139,26 +155,46 @@ where
 
     fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
         vec![Error::expected(Error::one_of(
-            [self.left.expected_errors(), self.right.expected_errors()].concat(),
+            [self.p1.expected_errors(), self.p2.expected_errors()].concat(),
         ))]
     }
 }
 
-pub fn or<S: Stream, O, L, R>(left: L, right: R) -> Or<L, R>
+/// Equivalent to [`p1.or(p2)`].
+///
+/// [`p1.or(p2)`]: Parser::or
+pub fn or<S: Stream, O, L, R>(p1: L, p2: R) -> Or<L, R>
 where
     L: Parser<Stream = S, Output = O>,
     R: Parser<Stream = S, Output = O>,
 {
-    Or { left, right }
+    Or { p1, p2 }
 }
 
+/// Try one or more parsers, returning from the first one that succeeds.
+///
+/// Equivalent to chaining parsers with [`or`]. For example, these two parsers are equivalent:
+///
+/// ```
+/// # #[macro_use]
+/// # extern crate rparse;
+/// # use rparse::Parser;
+/// # use rparse::parser::token::token;
+/// # fn main() {
+/// let mut p1 = choice![token(b'x'), token(b'y'), token(b'z')];
+/// let mut p2 = token(b'x').or(token(b'y').or(token(b'z')));
+/// assert_eq!(p1.parse("x123"), p2.parse("x123"));
+/// # }
+/// ```
+///
+/// [`or`]: Parser::or
 #[macro_export]
 macro_rules! choice {
     ($head:expr) => {
         $head
     };
     ($head:expr, $($tail:expr),+ $(,)*) => {
-        $head $(.or($tail))+
+        $head.or(choice!($($tail),+))
     };
 }
 

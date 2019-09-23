@@ -75,8 +75,6 @@ where
 pub enum Error<S: Stream> {
     Seq(Vec<Error<S>>),
     OneOf(Vec<Error<S>>),
-    // Optional(Box<Error<S>>),
-    // WithPos(S::Position, Box<Error<S>>),
     Expected(Box<Error<S>>),
     Unexpected(Info<S>),
     Info(Info<S>),

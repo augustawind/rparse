@@ -5,8 +5,8 @@ use parser::Parser;
 use stream::Stream;
 
 pub struct Extend<L, R> {
-    left: L,
-    right: R,
+    p1: L,
+    p2: R,
 }
 
 impl<S: Stream, O, L, R> Parser for Extend<L, R>
@@ -20,28 +20,25 @@ where
     type Output = L::Output;
 
     fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        match self.left.parse_partial(stream) {
-            Ok((Some(mut left), stream)) => match self.right.parse_partial(stream) {
-                Ok((right, stream)) => {
-                    if let Some(r) = right {
-                        left.extend(r.into_iter());
-                    }
-                    stream.ok(left)
+        match self.p1.parse_partial(stream)? {
+            (Some(mut p1), stream) => {
+                let (p2, stream) = self.p2.parse_partial(stream)?;
+                if let Some(r) = p2 {
+                    p1.extend(r.into_iter());
                 }
-                Err((err, stream)) => stream.errs(err),
-            },
-            Ok((None, stream)) => stream.noop(),
-            Err((err, stream)) => stream.errs(err),
+                stream.ok(p1)
+            }
+            (None, stream) => stream.noop(),
         }
     }
 }
 
-pub fn extend<S: Stream, O, L, R>(left: L, right: R) -> Extend<L, R>
+pub fn extend<S: Stream, O, L, R>(p1: L, p2: R) -> Extend<L, R>
 where
     L: Parser<Stream = S, Output = Vec<O>>,
     R: Parser<Stream = S, Output = Vec<O>>,
 {
-    Extend { left, right }
+    Extend { p1, p2 }
 }
 
 #[macro_export]

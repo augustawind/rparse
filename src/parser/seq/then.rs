@@ -3,8 +3,8 @@ use parser::Parser;
 use stream::Stream;
 
 pub struct Then<L, R> {
-    left: L,
-    right: R,
+    p1: L,
+    p2: R,
 }
 
 impl<S: Stream, O, L, R> Parser for Then<L, R>
@@ -16,24 +16,18 @@ where
     type Output = Vec<O>;
 
     fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        match self.left.parse_partial(stream) {
-            Ok((first, stream)) => match self.right.parse_partial(stream) {
-                Ok((second, stream)) => {
-                    stream.ok(first.into_iter().chain(second.into_iter()).collect())
-                }
-                Err((err, stream)) => stream.errs(err),
-            },
-            Err((err, stream)) => stream.errs(err),
-        }
+        let (first, stream) = self.p1.parse_partial(stream)?;
+        let (second, stream) = self.p2.parse_partial(stream)?;
+        stream.ok(first.into_iter().chain(second.into_iter()).collect())
     }
 }
 
-pub fn then<S: Stream, O, L, R>(left: L, right: R) -> Then<L, R>
+pub fn then<S: Stream, O, L, R>(p1: L, p2: R) -> Then<L, R>
 where
     L: Parser<Stream = S, Output = O>,
     R: Parser<Stream = S, Output = O>,
 {
-    Then { left, right }
+    Then { p1, p2 }
 }
 
 #[cfg(test)]

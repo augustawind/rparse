@@ -99,14 +99,21 @@ pub trait Parser {
         errors.add_errors(self.expected_errors());
     }
 
-    fn expect<I>(self, i: I) -> Expect<Self>
+    /// Wrap `self` with a custom error. If parsing fails, the parser's expected errors will be
+    /// replaced with [`Expected(error)`].
+    ///
+    /// [`Expected(error)`]: Error::Expected
+    fn expect<E>(self, error: E) -> Expect<Self>
     where
         Self: Sized,
-        I: Into<Error<Self::Stream>>,
+        E: Into<Error<Self::Stream>>,
     {
-        expect(self, i)
+        expect(self, error)
     }
 
+    /// Equivalent to [`skip(self)`].
+    ///
+    /// [`skip(self)`]: skip
     fn skip<O>(self) -> Skip<Self, O>
     where
         Self: Sized,
@@ -114,6 +121,9 @@ pub trait Parser {
         skip(self)
     }
 
+    /// Equivalent to [`optional(self)`].
+    ///
+    /// [`optional(self)`]: optional
     fn optional(self) -> Optional<Self>
     where
         Self: Sized,
@@ -121,6 +131,9 @@ pub trait Parser {
         optional(self)
     }
 
+    /// Equivalent to [`required(self)`].
+    ///
+    /// [`required(self)`]: required
     fn required(self) -> Required<Self>
     where
         Self: Sized,
@@ -128,6 +141,7 @@ pub trait Parser {
         required(self)
     }
 
+    /// Parses with `self` and if it succeeds with `Some(value)`, apply `f` to the result.
     fn map<F, O>(self, f: F) -> Map<Self, F>
     where
         Self: Sized,
@@ -136,6 +150,9 @@ pub trait Parser {
         map(self, f)
     }
 
+    /// Parses with `self` and transforms the result [into an iterator].
+    ///
+    /// [into an iterator]: IntoIterator::into_iter
     fn iter<I>(self) -> Iter<Self, I>
     where
         Self: Sized + Parser<Output = I>,
@@ -144,6 +161,9 @@ pub trait Parser {
         iter(self)
     }
 
+    /// Parses with `self` and transforms the result [into a new collection].
+    ///
+    /// [into a new collection]: std::iter::Iterator::collect
     fn collect<O>(self) -> Collect<Self, O>
     where
         Self: Sized,
@@ -153,6 +173,10 @@ pub trait Parser {
         collect(self)
     }
 
+    /// Parses with `self` and applies `f` to the result.
+    ///
+    /// Unlike [`map`], `f` returns a [`ParseResult`] and is called on _any_ successful
+    /// parse, even it returned [`None`].
     fn bind<F, O>(self, f: F) -> Bind<Self, F>
     where
         Self: Sized,
@@ -161,6 +185,7 @@ pub trait Parser {
         bind(self, f)
     }
 
+    /// Parses with `self` and transforms the result using [`str::FromStr`].
     fn from_str<O>(self) -> FromStr<Self, O>
     where
         Self: Sized,
@@ -171,6 +196,7 @@ pub trait Parser {
         from_str(self)
     }
 
+    /// Parses with `self` and transforms the result into a [`String`].
     fn as_string(self) -> Map<Self, fn(Self::Output) -> String>
     where
         Self: Sized,
@@ -179,44 +205,104 @@ pub trait Parser {
         map(self, StreamRange::to_string)
     }
 
-    fn and<P>(self, other: P) -> And<Self, P>
+    /// Parses with `self` followed by `p`. Succeeds if both parsers succeed, otherwise fails.
+    /// Returns the result of `p` on success.
+    fn and<P>(self, p: P) -> And<Self, P>
     where
         Self: Sized,
         P: Parser<Stream = Self::Stream>,
     {
-        and(self, other)
+        and(self, p)
     }
 
-    fn or<P>(self, other: P) -> Or<Self, P>
+    /// Attempts to parse with `self`. If it fails, it attempts to parse the same input with `p`.
+    /// Returns the first successful result, or fails if both parsers fail.
+    fn or<P>(self, p: P) -> Or<Self, P>
     where
         Self: Sized,
         P: Parser<Stream = Self::Stream, Output = Self::Output>,
     {
-        or(self, other)
+        or(self, p)
     }
 
-    fn then<P>(self, other: P) -> Then<Self, P>
+    /// Parses with `self` followed by `p`, returning the results in a [`Vec`]. Succeeds if both
+    /// parsers return `Some(value)`, otherwise fails. Both parsers must have the same `Output`
+    /// type.
+    ///
+    /// ```
+    /// # use rparse::Parser;
+    /// # use rparse::parser::range::range;
+    /// # use rparse::parser::token::ascii::*;
+    /// let mut p = range("Hello, ").then(range("World!"));
+    /// assert_eq!(p.parse("Hello, World!"), Ok((Some(vec!["Hello, ", "World!"]), "")));
+    /// ```
+    fn then<P>(self, p: P) -> Then<Self, P>
     where
         Self: Sized,
         P: Parser<Stream = Self::Stream, Output = Self::Output>,
     {
-        then(self, other)
+        then(self, p)
     }
 
-    fn append<P, O>(self, other: P) -> Append<Self, P>
+    /// Parses with `self` followed by `p`, returning the results in a [`Vec`]. Succeeds as long
+    /// as `self` returns `Some(value)`, otherwise fails. If `p` returns `Some(value)` it's
+    /// appended to the output of `self`, otherwise it's ignored and only `self`'s output is
+    /// returned.
+    ///
+    /// `self` must return `Vec<O>`, where `O` is `p`'s output type. This can be used for chaining
+    /// item parsers to a composite parser:
+    ///
+    /// ```
+    /// # use rparse::Parser;
+    /// # use rparse::parser::seq::many;
+    /// # use rparse::parser::token::ascii::*;
+    /// let mut p = many(whitespace()).append(letter()).append(digit());
+    /// assert_eq!(p.parse("\n\tT2!"), Ok((Some(vec!['\n', '\t', 'T', '2']), "!")));
+    /// ```
+    ///
+    /// If `self` doesn't return a `Vec`, you can use [`Parser::then`] to start the chain:
+    ///
+    /// ```
+    /// # #[macro_use] extern crate rparse;
+    /// # use rparse::Parser;
+    /// # use rparse::parser::token::ascii::*;
+    /// # use rparse::parser::token::token;
+    /// let mut p = token(b'\x27')
+    ///     .then(token(b'['))
+    ///     .append(digit())
+    ///     .append(choice![token(b'A'), token(b'B'), token(b'C'), token(b'D')]);
+    /// assert_eq!(p.parse("\x27[5B"), Ok((Some(vec!['\x27', '[', '5', 'B']), "")));
+    /// ```
+    ///
+    /// Another way to chain parsers like this is with the [`seq!`] macro. This approach
+    /// can be clearer and simpler than using the `then`/`append` method:
+    ///
+    /// ```
+    /// # #[macro_use] extern crate rparse;
+    /// # use rparse::Parser;
+    /// # use rparse::parser::range::range;
+    /// # fn main() {
+    /// let mut p = seq![
+    ///     range("HTTP"),
+    ///     range("/").skip(),
+    ///     range("1.1").or(range("2")),
+    /// ];
+    /// assert_eq!(p.parse("HTTP/2\r"), Ok((Some(vec!["HTTP", "2"]), "\r")));
+    /// # }
+    fn append<P, O>(self, p: P) -> Append<Self, P>
     where
         Self: Sized + Parser<Output = Vec<O>>,
         P: Parser<Stream = Self::Stream, Output = O>,
     {
-        append(self, other)
+        append(self, p)
     }
 
-    fn extend<P, O>(self, other: P) -> Extend<Self, P>
+    fn extend<P, O>(self, p: P) -> Extend<Self, P>
     where
         Self: Sized + Parser<Output = Vec<O>>,
         P: Parser<Stream = Self::Stream, Output = Vec<O>>,
     {
-        extend(self, other)
+        extend(self, p)
     }
 
     fn flatten<O>(self) -> Flatten<Self, O>
