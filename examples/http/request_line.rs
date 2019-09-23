@@ -1,13 +1,9 @@
-#[macro_use]
-extern crate rparse;
-
 use std::str::FromStr;
 
 use rparse::parser::parser;
 use rparse::parser::range::range;
 use rparse::parser::seq::{many, many1};
 use rparse::parser::token::{ascii, token};
-use rparse::stream::IndexedStream;
 use rparse::{Parser, Stream};
 
 enum HTTPVersion {
@@ -24,12 +20,12 @@ impl FromStr for HTTPVersion {
             "1" => Ok(Self::V1),
             "1.1" => Ok(Self::V11),
             "2" => Ok(Self::V2),
-            _ => Err(format!("could not parse HTTPVersion from '{}'", s)),
+            _ => Err(format!("invalid http version '{}'", s)),
         }
     }
 }
 
-fn http_request_line<S>() -> impl Parser<Stream = S, Output = (String, String, String)>
+pub fn request_line<S>() -> impl Parser<Stream = S, Output = (String, String, String)>
 where
     S: Stream,
 {
@@ -165,20 +161,6 @@ where
     S: Stream,
 {
     range("\r\n").as_string()
-}
-
-fn main() {
-    let stream = IndexedStream::from("GET http://foo.bar/I%20like%20/50 HTTP/1.1\r\n");
-    match http_request_line().parse(stream) {
-        Ok((result, _)) => {
-            println!("Parsing succeeded!");
-            dbg!(result);
-        }
-        Err((err, _)) => {
-            println!("Parsing failed!");
-            dbg!(err);
-        }
-    };
 }
 
 #[cfg(test)]
