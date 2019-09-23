@@ -123,6 +123,25 @@ where
     }
 }
 
+pub struct NoneOf<'a, S: Stream> {
+    items: &'a [u8],
+    _marker: PhantomData<S>,
+}
+
+impl<'a, S: Stream> Parser for NoneOf<'a, S> {
+    type Stream = S;
+    type Output = S::Item;
+
+    fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        satisfy(move |item: &S::Item| self.items.into_iter().any(|&b| *item == b.into()))
+            .parse_lazy(stream)
+    }
+}
+
+pub fn none_of<'a, S: Stream>(items: &'a [u8]) -> NoneOf<'a, S> {
+    NoneOf { items, _marker: PhantomData }
+}
+
 #[cfg(test)]
 macro_rules! def_token_parser_tests {
     ($name:ident => $p:expr, $e:expr; valid( $($t_ok:expr),+ ) error( $($t_err:expr),+ ) ) => {
