@@ -1,12 +1,33 @@
 #[macro_use]
 extern crate rparse;
 
+use std::str::FromStr;
+
 use rparse::parser::parser;
 use rparse::parser::range::range;
 use rparse::parser::seq::{many, many1};
 use rparse::parser::token::{ascii, token};
 use rparse::stream::IndexedStream;
 use rparse::{Parser, Stream};
+
+enum HTTPVersion {
+    V1,
+    V11,
+    V2,
+}
+
+impl FromStr for HTTPVersion {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "1" => Ok(Self::V1),
+            "1.1" => Ok(Self::V11),
+            "2" => Ok(Self::V2),
+            _ => Err(format!("could not parse HTTPVersion from '{}'", s)),
+        }
+    }
+}
 
 fn http_request_line<S>() -> impl Parser<Stream = S, Output = (String, String, String)>
 where
