@@ -39,6 +39,9 @@ macro_rules! impl_StreamItem {
             fn eq_ignore_ascii_case(&self, other: &$T) -> bool {
                 <$T>::eq_ignore_ascii_case(self, other)
             }
+            fn from_u8(b: u8) -> Self {
+                b.into()
+            }
         }
     };
 }
@@ -58,9 +61,6 @@ impl<'a> StreamRange for &'a str {
     }
     fn to_string(self) -> String {
         String::from(self)
-    }
-    fn item_from_byte(b: u8) -> Self::Item {
-        b.into()
     }
 }
 
@@ -115,9 +115,6 @@ impl<'a> StreamRange for &'a [u8] {
     }
     fn to_string(self) -> String {
         String::from(std::str::from_utf8(self).unwrap())
-    }
-    fn item_from_byte(b: u8) -> Self::Item {
-        b
     }
 }
 

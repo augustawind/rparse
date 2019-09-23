@@ -206,6 +206,19 @@ pub trait Parser {
         map(self, StreamRange::to_string)
     }
 
+    /// Parses with `self` and collects the result into a [`String`].
+    ///
+    /// Can only be used if `Self::Output` implements [`IntoIterator`] and its items implement
+    /// `Into<Char>`.
+    fn collect_string(self) -> Map<Self, fn(Self::Output) -> String>
+    where
+        Self: Sized,
+        Self::Output: IntoIterator,
+        <<Self as Parser>::Output as IntoIterator>::Item: Into<char>,
+    {
+        map(self, |s| s.into_iter().map(Into::into).collect())
+    }
+
     /// Parses with `self` followed by `p`. Succeeds if both parsers succeed, otherwise fails.
     /// Returns the result of `p` on success.
     fn and<P>(self, p: P) -> And<Self, P>
@@ -281,14 +294,16 @@ pub trait Parser {
     /// ```
     /// # #[macro_use] extern crate rparse;
     /// # use rparse::Parser;
-    /// # use rparse::parser::range::range;
+    /// # use rparse::parser::token::ascii::*;
+    /// # use rparse::parser::token::token;
     /// # fn main() {
     /// let mut p = seq![
-    ///     range("HTTP"),
-    ///     range("/").skip(),
-    ///     range("1.1").or(range("2")),
+    ///     token(b'\x27'),
+    ///     token(b'['),
+    ///     digit(),
+    ///     choice![token(b'A'), token(b'B'), token(b'C'), token(b'D')],
     /// ];
-    /// assert_eq!(p.parse("HTTP/2\r"), Ok((Some(vec!["HTTP", "2"]), "\r")));
+    /// assert_eq!(p.parse("\x27[5B"), Ok((Some(vec!['\x27', '[', '5', 'B']), "")));
     /// # }
     fn append<P, O>(self, p: P) -> Append<Self, P>
     where

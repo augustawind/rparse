@@ -37,6 +37,8 @@ impl<'a, T> Iterator for Tokens<'a, T> {
 }
 
 pub trait StreamItem: Copy + PartialEq + Debug + From<u8> + Into<char> {
+    fn from_u8(u8) -> Self;
+
     fn is_ascii(&self) -> bool;
     fn is_ascii_alphabetic(&self) -> bool;
     fn is_ascii_alphanumeric(&self) -> bool;
@@ -57,7 +59,6 @@ pub trait StreamRange: Stream + StrLike + PartialEq + Clone + Debug {
     fn len(&self) -> usize;
     fn from_str(&'static str) -> Self;
     fn to_string(self) -> String;
-    fn item_from_byte(u8) -> Self::Item;
 }
 
 /// The Stream trait represents data that can be consumed by a `Parser`.
