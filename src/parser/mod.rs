@@ -131,10 +131,24 @@ pub trait Parser {
         optional(self)
     }
 
+    fn opt(self) -> Optional<Self>
+    where
+        Self: Sized,
+    {
+        optional(self)
+    }
+
     /// Equivalent to [`required(self)`].
     ///
     /// [`required(self)`]: required
     fn required(self) -> Required<Self>
+    where
+        Self: Sized,
+    {
+        required(self)
+    }
+
+    fn req(self) -> Required<Self>
     where
         Self: Sized,
     {
@@ -202,6 +216,14 @@ pub trait Parser {
     ///
     /// Can only be used if `Self::Output` is a [`StreamRange`].
     fn as_string(self) -> Map<Self, fn(Self::Output) -> String>
+    where
+        Self: Sized,
+        Self::Output: StreamRange,
+    {
+        map(self, StreamRange::to_string)
+    }
+
+    fn s(self) -> Map<Self, fn(Self::Output) -> String>
     where
         Self: Sized,
         Self::Output: StreamRange,
@@ -331,6 +353,13 @@ pub trait Parser {
     }
 
     fn wrap(self) -> Wrap<Self>
+    where
+        Self: Sized,
+    {
+        wrap(self)
+    }
+
+    fn w(self) -> Wrap<Self>
     where
         Self: Sized,
     {

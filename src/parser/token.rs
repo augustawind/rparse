@@ -64,16 +64,16 @@ pub fn token<S: Stream>(token: u8) -> Token<S> {
     }
 }
 
-pub struct EOI<S>(PhantomData<S>);
+pub struct EOI<S, O>(PhantomData<(S, O)>);
 
-impl<S: Stream> Parser for EOI<S> {
+impl<S: Stream, O> Parser for EOI<S, O> {
     type Stream = S;
-    type Output = ();
+    type Output = O;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         match stream.peek() {
             Some(t) => stream.err(Error::unexpected_token(t)),
-            None => stream.ok(()),
+            None => stream.noop(),
         }
     }
 
@@ -82,7 +82,7 @@ impl<S: Stream> Parser for EOI<S> {
     }
 }
 
-pub fn eoi<S: Stream>() -> EOI<S> {
+pub fn eoi<S: Stream, O>() -> EOI<S, O> {
     EOI(PhantomData)
 }
 
