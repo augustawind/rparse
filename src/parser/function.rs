@@ -135,14 +135,17 @@ pub struct Bind<P, F> {
 impl<P, F, O> Parser for Bind<P, F>
 where
     P: Parser,
-    F: Fn(Option<P::Output>, P::Stream) -> ParseResult<P::Stream, O>,
+    F: Fn(P::Output, P::Stream) -> ParseResult<P::Stream, O>,
 {
     type Stream = P::Stream;
     type Output = O;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         let (result, stream) = self.parser.parse_partial(stream)?;
-        (self.f)(result, stream)
+        match result {
+            Some(value) => (self.f)(value, stream),
+            None => stream.noop(),
+        }
     }
 
     fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
@@ -156,7 +159,7 @@ where
 pub fn bind<P, F, O>(p: P, f: F) -> Bind<P, F>
 where
     P: Parser,
-    F: Fn(Option<P::Output>, P::Stream) -> O,
+    F: Fn(P::Output, P::Stream) -> O,
 {
     Bind { parser: p, f }
 }
@@ -246,8 +249,7 @@ mod test {
     #[test]
     fn test_bind() {
         // TODO: use realistic use cases for these tests. many of these are better suited to map()
-        let mut parser = ascii::digit()
-            .bind(|r: Option<char>, stream: &str| stream.result(r.map(|c| c.to_string())));
+        let mut parser = ascii::digit().bind(|c: char, stream: &str| stream.ok(c.to_string()));
         test_parser!(&str => String | parser, {
             "3" => ok("3".to_string(), ""),
             "a3" => err(vec![Error::unexpected_token('a'), Error::expected("an ascii digit")]),
@@ -255,21 +257,21 @@ mod test {
 
         let mut parser = many1(ascii::letter())
             .collect()
-            .bind(|r: Option<String>, stream: &str| stream.result(r.map(|s| s.to_uppercase())));
+            .bind(|s: String, stream: &str| stream.ok(s.to_uppercase()));
         assert_eq!(
             parser.parse("aBcD12e"),
             ok_result("ABCD".to_string(), "12e")
         );
 
-        let mut parser = many1(ascii::alpha_num()).collect().bind(
-            |r: Option<String>, stream: IndexedStream<&str>| match r {
-                Some(s) => match s.parse::<usize>() {
-                    Ok(n) => stream.ok(n),
-                    Err(e) => stream.err(Box::new(e).into()),
-                },
-                _ => stream.noop(),
-            },
-        );
+        let mut parser =
+            many1(ascii::alpha_num())
+                .collect()
+                .bind(
+                    |s: String, stream: IndexedStream<&str>| match s.parse::<usize>() {
+                        Ok(n) => stream.ok(n),
+                        Err(e) => stream.err(Box::new(e).into()),
+                    },
+                );
         test_parser!(IndexedStream<&str> => usize | parser, {
             "324 dogs" => ok(324 as usize, (" dogs", 3)),
         // TODO: add ability to control consumption, e.g. make this error show at beginning (0)

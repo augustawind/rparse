@@ -142,6 +142,8 @@ pub trait Parser {
     }
 
     /// Parses with `self` and if it succeeds with `Some(value)`, apply `f` to the result.
+    ///
+    /// If `f` needs to be able to fail, use [`Parser::bind`] instead.
     fn map<F, O>(self, f: F) -> Map<Self, F>
     where
         Self: Sized,
@@ -173,14 +175,14 @@ pub trait Parser {
         collect(self)
     }
 
-    /// Parses with `self` and applies `f` to the result.
+    /// Parses with `self` and if it succeeds with `Some(value)`, apply `f` to the result.
     ///
-    /// Unlike [`map`], `f` returns a [`ParseResult`] and is called on _any_ successful
-    /// parse, even it returned [`None`].
+    /// Unlike [`map`], `bind` takes a function which returns a [`ParseResult`], so it can be used
+    /// to signify failure.
     fn bind<F, O>(self, f: F) -> Bind<Self, F>
     where
         Self: Sized,
-        F: Fn(Option<Self::Output>, Self::Stream) -> ParseResult<Self::Stream, O>,
+        F: Fn(Self::Output, Self::Stream) -> ParseResult<Self::Stream, O>,
     {
         bind(self, f)
     }
