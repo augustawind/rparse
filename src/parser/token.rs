@@ -136,13 +136,15 @@ where
     type Output = S::Item;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        let backup = stream.backup();
+        let initial = stream.backup();
         let mut stream = match self.p.parse_lazy(stream) {
-            Ok((Some(t), stream)) => return stream.err(Error::unexpected_token(t)),
+            Ok((Some(t), stream)) => {
+                return stream.err_at(initial.position().clone(), Error::unexpected_token(t))
+            }
             Ok((None, stream)) => stream,
             Err((_, stream)) => stream,
         };
-        stream.restore(backup);
+        stream.restore(initial);
         match stream.pop() {
             Some(t) => stream.ok(t),
             None => stream.err(Error::unexpected_eoi()),
