@@ -14,9 +14,10 @@ impl<S: Stream> Parser for Any<S> {
     type Output = S::Item;
 
     fn parse_lazy(&mut self, mut stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        let start = stream.position().clone();
         match stream.pop() {
             Some(t) => stream.ok(t),
-            None => stream.err(Error::unexpected_eoi()),
+            None => stream.err_at(start, Error::unexpected_eoi()),
         }
     }
 
@@ -327,7 +328,6 @@ pub mod ascii {
         use parser::Parser;
         use stream::IndexedStream;
 
-        // def_token_parser_tests!(test_ascii, ascii, '5', 'û');
         def_token_parser_tests!(test_letter => letter, "an ascii letter";
             valid('z', 'Z')
             error('_', '\n', '9')
@@ -416,12 +416,16 @@ pub mod unicode {
 #[cfg(test)]
 mod test {
     use super::*;
+    use parser::test_utils::*;
     use stream::IndexedStream;
+
+    type IStr = IndexedStream<&'static str>;
 
     #[test]
     fn test_any() {
-        test_parser!(IndexedStream<&str> => char | any(), {
+        test_parser!(IStr => char | any(), {
             "hello, world." => ok('h', ("ello, world.", 1)),
+            "" => err(0, vec![Error::unexpected_eoi(), Error::expected("a token")]),
         });
     }
 
@@ -434,11 +438,58 @@ mod test {
     }
 
     #[test]
+    fn test_eoi() {
+        let mut parser = eoi();
+        test_parser!(IStr => () | parser, {
+            "" => noop(),
+            "x" => err(0, vec![Error::unexpected_token('x'), Error::expected(Info::EOI())]),
+        });
+        let mut parser = eoi::<_, u32>();
+        assert_eq!(parser.parse(""), none_result(""));
+    }
+
+    #[test]
     fn test_satisfy() {
         let mut parser = satisfy(|&c: &char| c.is_numeric());
         test_parser!(&str => char | parser, {
             "123abc" => ok('1', "23abc"),
             "abc123" => err(vec![Error::unexpected_token('a')]),
         });
+    }
+
+    mod test_negate {
+        use super::*;
+
+        #[test]
+        fn test_negate() {
+            let mut parser = negate(token(b'x'));
+            test_parser!(IStr => char | parser, {
+                "abc" => ok('a', ("bc", 1)),
+                "xyz" => err(0, vec![Error::unexpected_token('x')]),
+                "" => err(0, vec![Error::unexpected_eoi()]),
+            });
+        }
+
+        #[test]
+        fn test_negate_and() {
+            let mut parser = negate(token(b'z').and(token(b'x')));
+            test_parser!(IStr => char | parser, {
+                "zy" => ok('z', ("y", 1)),
+                "xx" => ok('x', ("x", 1)),
+                "z" => ok('z', ("", 1)),
+                "zx_" => err(0, vec![Error::unexpected_token('x')]),
+            });
+        }
+
+        #[test]
+        fn test_negate_skip() {
+            let mut parser = negate(token(b'z').skip(token(b'x')));
+            test_parser!(IStr => char | parser, {
+                "zy" => ok('z', ("y", 1)),
+                "xx" => ok('x', ("x", 1)),
+                "z" => ok('z', ("", 1)),
+                "zx_" => err(0, vec![Error::unexpected_token('z')]),
+            });
+        }
     }
 }

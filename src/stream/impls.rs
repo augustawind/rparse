@@ -1,4 +1,4 @@
-use super::{NullPosition, Stream, StreamItem, StreamRange, Tokens};
+use super::{NullPosition, RangeStream, Stream, StreamItem, Tokens};
 
 macro_rules! impl_StreamItem {
     ($T:ty) => {
@@ -49,7 +49,7 @@ macro_rules! impl_StreamItem {
 impl_StreamItem!(char);
 impl_StreamItem!(u8);
 
-impl<'a> StreamRange for &'a str {
+impl<'a> RangeStream for &'a str {
     fn empty() -> Self {
         ""
     }
@@ -103,7 +103,7 @@ impl<'a> Stream for &'a str {
     }
 }
 
-impl<'a> StreamRange for &'a [u8] {
+impl<'a> RangeStream for &'a [u8] {
     fn empty() -> Self {
         &[]
     }

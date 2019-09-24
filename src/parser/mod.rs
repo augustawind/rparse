@@ -26,7 +26,7 @@ use self::function::{
 use self::seq::{append, extend, then, Append, Extend, Then};
 use self::token::{negate, Negate};
 use error::{Error, Errors, ParseResult};
-use stream::{Stream, StreamRange};
+use stream::{RangeStream, Stream};
 use traits::StrLike;
 
 pub trait Parser {
@@ -224,21 +224,21 @@ pub trait Parser {
 
     /// Parses with `self` and converts the result into a [`String`].
     ///
-    /// Can only be used if `Self::Output` is a [`StreamRange`].
+    /// Can only be used if `Self::Output` is a [`RangeStream`].
     fn as_string(self) -> Map<Self, fn(Self::Output) -> String>
     where
         Self: Sized,
-        Self::Output: StreamRange,
+        Self::Output: RangeStream,
     {
-        map(self, StreamRange::to_string)
+        map(self, RangeStream::to_string)
     }
 
     fn s(self) -> Map<Self, fn(Self::Output) -> String>
     where
         Self: Sized,
-        Self::Output: StreamRange,
+        Self::Output: RangeStream,
     {
-        map(self, StreamRange::to_string)
+        map(self, RangeStream::to_string)
     }
 
     /// Parses with `self` and collects the result into a [`String`].

@@ -3,7 +3,7 @@
 use error::{Error, ParseResult};
 use parser::function::Map;
 use parser::Parser;
-use stream::{Position, Stream, StreamRange};
+use stream::{Position, RangeStream, Stream};
 
 pub struct Range<S: Stream> {
     range: S::Range,

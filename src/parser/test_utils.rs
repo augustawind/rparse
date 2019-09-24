@@ -2,11 +2,21 @@
 use {ParseResult, Stream};
 
 #[cfg(test)]
-pub fn ok_result<S, O>(output: O, stream: S) -> ParseResult<S, O>
+pub fn ok_result<S, O, I>(output: O, stream: I) -> ParseResult<S, O>
 where
     S: Stream,
+    I: Into<S>,
 {
-    Ok((Some(output), stream))
+    Ok((Some(output), stream.into()))
+}
+
+#[cfg(test)]
+pub fn none_result<S, O, I>(stream: I) -> ParseResult<S, O>
+where
+    S: Stream,
+    I: Into<S>,
+{
+    Ok((None, stream.into()))
 }
 
 #[macro_export]

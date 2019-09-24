@@ -54,7 +54,7 @@ pub trait StreamItem: Copy + PartialEq + Debug + From<u8> + Into<char> {
     fn eq_ignore_ascii_case(&self, &Self) -> bool;
 }
 
-pub trait StreamRange: Stream + StrLike + PartialEq + Clone + Debug {
+pub trait RangeStream: Stream + StrLike + PartialEq + Clone + Debug {
     fn empty() -> Self;
     fn len(&self) -> usize;
     fn from_str(&'static str) -> Self;
@@ -73,7 +73,7 @@ pub trait Stream: Sized + Clone + Debug {
     type Item: StreamItem;
 
     /// The type of a range of tokens.
-    type Range: StreamRange<Item = Self::Item, Range = Self::Range>;
+    type Range: RangeStream<Item = Self::Item, Range = Self::Range>;
 
     /// Returns the next token in the stream without consuming it.
     /// If there are no more tokens, returns `None`.
@@ -124,9 +124,15 @@ pub trait Stream: Sized + Clone + Debug {
         Ok((None, self))
     }
 
+    /// Create a failed [`ParseResult`] with the given `position` and `error`.
+    fn err_at<O>(self, position: Self::Position, error: Error<Self>) -> ParseResult<Self, O> {
+        Err((Errors::from_error(position, error), self))
+    }
+
     /// Create a failed `ParseResult` with the given `Error`.
     fn err<O>(self, error: Error<Self>) -> ParseResult<Self, O> {
-        Err((Errors::from_error(self.position().clone(), error), self))
+        let position = self.position().clone();
+        self.err_at(position, error)
     }
 
     /// Create a failed `ParseResult with the given `Errors`.
