@@ -156,11 +156,11 @@ where
         .append(ascii::hexdigit())
 }
 
-fn crlf<S>() -> impl Parser<Stream = S, Output = String>
+fn crlf<S>() -> impl Parser<Stream = S>
 where
     S: Stream,
 {
-    range("\r\n").as_string()
+    range("\r\n")
 }
 
 #[cfg(test)]
