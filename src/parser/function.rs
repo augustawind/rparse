@@ -292,6 +292,17 @@ mod test {
     }
 
     #[test]
+    fn test_flatten() {
+        let mut parser = flatten(many1(ascii::digit()).then(many1(ascii::letter())));
+        test_parser!(IndexedStream<&str> => Vec<char> | parser, {
+            "1a" => ok(vec!['1', 'a'], ("", 2)),
+            "0bb3" => ok(vec!['0', 'b', 'b'], ("3", 3)),
+            "" => err(0, vec![Error::eoi(), Error::expected("an ascii digit")]),
+            "3\t" => err(1, vec![Error::unexpected_token('\t'), Error::expected("an ascii letter")]),
+        });
+    }
+
+    #[test]
     fn test_from_str() {
         let mut parser = many1(ascii::digit()).collect::<String>().from_str::<u32>();
         test_parser!(&str => u32 | parser, {
