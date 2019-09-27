@@ -281,7 +281,7 @@ mod test {
             "bcd" => err(0, vec![Error::unexpected_token('b'), expected_err.clone()]),
         });
 
-        let mut parser = with(many1(ascii::digit()), many1(ascii::letter()));
+        let mut parser = with(many1::<Vec<_>, _>(ascii::digit()), many1(ascii::letter()));
         let expected_err = Error::expected(vec!["an ascii digit", "an ascii letter"]);
         test_parser!(IndexedStream<&str> => Vec<char> | parser, {
             "123abc456" => ok(vec!['a', 'b', 'c'], ("456", 6)),

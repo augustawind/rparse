@@ -88,7 +88,7 @@ where
     // a URI scheme is
     (
         // a scheme identifier
-        many1(ascii::letter()).collect_string(),
+        many1::<Vec<_>, _>(ascii::letter()).collect_string(),
         // followed by a delimiter
         range("://").as_string(),
     )

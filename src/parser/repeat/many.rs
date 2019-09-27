@@ -1,25 +1,29 @@
+use std::marker::PhantomData;
+
 use {Error, ParseResult, Parser, Stream};
 
-pub struct Many<P> {
+pub struct Many<O, P> {
     p: P,
     min: usize,
     max: Option<usize>,
+    _marker: PhantomData<O>,
 }
 
-impl<P> Parser for Many<P>
+impl<O, P> Parser for Many<O, P>
 where
     P: Parser,
+    O: Extend<P::Output> + Default,
 {
     type Stream = P::Stream;
-    type Output = Vec<P::Output>;
+    type Output = O;
 
     fn parse_lazy(&mut self, mut stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        let mut output = Vec::new();
+        let mut output = O::default();
         let mut i = 0;
         loop {
             stream = match self.p.parse_lazy(stream) {
                 Ok((Some(result), stream)) => {
-                    output.push(result);
+                    output.extend(std::iter::once(result));
                     stream
                 }
                 Ok((None, stream)) => stream,
@@ -46,43 +50,50 @@ where
     }
 }
 
-pub fn many<P>(p: P) -> Many<P>
+pub fn many<O, P>(p: P) -> Many<O, P>
 where
     P: Parser,
+    O: Extend<P::Output> + Default,
 {
     Many {
         p,
         min: 0,
         max: None,
+        _marker: PhantomData,
     }
 }
 
-pub fn many1<P>(p: P) -> Many<P>
+pub fn many1<O, P>(p: P) -> Many<O, P>
 where
     P: Parser,
+    O: Extend<P::Output> + Default,
 {
     Many {
         p,
         min: 1,
         max: None,
+        _marker: PhantomData,
     }
 }
 
-pub fn many_n<P>(p: P, min: usize) -> Many<P>
+pub fn many_n<O, P>(p: P, min: usize) -> Many<O, P>
 where
     P: Parser,
+    O: Extend<P::Output> + Default,
 {
-    Many { p, min, max: None }
+    Many { p, min, max: None, _marker: PhantomData, }
 }
 
-pub fn many_n_m<P>(p: P, min: usize, max: usize) -> Many<P>
+pub fn many_n_m<O, P>(p: P, min: usize, max: usize) -> Many<O, P>
 where
     P: Parser,
+    O: Extend<P::Output> + Default,
 {
     Many {
         p,
         min,
         max: Some(max),
+        _marker: PhantomData,
     }
 }
 
@@ -98,7 +109,7 @@ mod test {
     fn test_many() {
         assert_eq!(
             many(token(b'a')).parse("aaabcd"),
-            ok_result("aaa".chars().collect(), "bcd")
+            ok_result("aaa".to_string(), "bcd")
         );
         assert_eq!(
             many(token(b'a')).parse("aaabcd"),
@@ -106,15 +117,15 @@ mod test {
         );
         assert_eq!(
             many(token(b'b')).parse("abcd"),
-            ok_result("".chars().collect(), "abcd")
+            ok_result("".to_string(), "abcd")
         );
         assert_eq!(
             many(token(b'a')).parse("aaaa"),
-            ok_result("aaaa".chars().collect(), "")
+            ok_result("aaaa".to_string(), "")
         );
         assert_eq!(
             many(many1(token(b'a'))).parse("aaabcd"),
-            ok_result(vec!["aaa".chars().collect()], "bcd")
+            ok_result(vec!["aaa".to_string()], "bcd")
         );
         assert_eq!(
             many(many1(token(b'b'))).parse("aaabcd"),
@@ -124,7 +135,7 @@ mod test {
 
     #[test]
     fn test_many1() {
-        let mut parser = many1(token(b'a')).collect();
+        let mut parser = many1::<String, _>(token(b'a'));
         test_parser!(IndexedStream<&str> => String | parser, {
             "aaabcd" => ok("aaa".into(), ("bcd", 3)),
             "abcd" => ok("a".into(), ("bcd", 1)),
