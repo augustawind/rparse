@@ -113,9 +113,18 @@ where
     type Stream = S;
     type Output = O;
 
-    fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, O> {
-        let (_, stream) = self.p1.parse_partial(stream)?;
-        self.p2.parse_partial(stream)
+    fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, O> {
+        let (_, stream) = self.p1.parse_lazy(stream)?;
+        self.p2.parse_lazy(stream)
+    }
+
+    fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
+        let errors = [self.p1.expected_errors(), self.p2.expected_errors()].concat();
+        if errors.len() > 0 {
+            vec![Error::expected(errors)]
+        } else {
+            vec![]
+        }
     }
 }
 
@@ -205,7 +214,7 @@ macro_rules! choice {
 #[cfg(test)]
 mod test {
     use super::*;
-    use error::Error::*;
+    use error::Info;
     use parser::repeat::{many, many1};
     use parser::seq::then;
     use parser::test_utils::*;
@@ -249,24 +258,26 @@ mod test {
     #[test]
     fn test_and() {
         let mut parser = and(token(b'a'), token(b'b'));
+        let expected_err = Error::expected(vec![Info::Token('a'), Info::Token('b')]);
         test_parser!(IndexedStream<&str> => char | parser, {
             "abcd" => ok('b', ("cd", 2)),
             "ab" => ok('b', ("", 2)),
-            "def" => err(0, vec![Error::unexpected_token('d'), Error::expected_token('a')]),
-            "aab" => err(1, vec![Error::unexpected_token('a'), Error::expected_token('b')]),
-            "bcd" => err(0, vec![Error::unexpected_token('b'), Error::expected_token('a')]),
+            "def" => err(0, vec![Error::unexpected_token('d'), expected_err.clone()]),
+            "aab" => err(1, vec![Error::unexpected_token('a'), expected_err.clone()]),
+            "bcd" => err(0, vec![Error::unexpected_token('b'), expected_err.clone()]),
         });
 
         let mut parser = and(many1(ascii::digit()), many1(ascii::letter()));
+        let expected_err = Error::expected(vec!["an ascii digit", "an ascii letter"]);
         test_parser!(IndexedStream<&str> => Vec<char> | parser, {
             "123abc456" => ok(vec!['a', 'b', 'c'], ("456", 6)),
             " 1 2 3" => err(0, vec![
-                Unexpected(' '.into()),
-                Error::expected("an ascii digit"),
+                Error::unexpected_token(' '),
+                expected_err.clone(),
             ]),
             "123 abc" => err(3, vec![
-                 Unexpected(' '.into()),
-                 Error::expected("an ascii letter"),
+                Error::unexpected_token(' '),
+                expected_err.clone(),
             ]),
         });
     }
@@ -278,8 +289,8 @@ mod test {
             "bcd" => ok('b', ("cd", 1)),
             "a" => ok('a', ("", 1)),
             "def" => err(0, vec![
-                Unexpected('d'.into()),
-                Error::expected(Error::one_of(vec![Info('a'.into()), Info('b'.into())])),
+                Error::unexpected_token('d'),
+                Error::expected(Error::one_of(vec![Info::Token('a'), Info::Token('b')])),
             ]),
         });
 
@@ -307,11 +318,11 @@ mod test {
             "9.a" => ok('9', (".a", 1)),
             ".a9" => ok('.', ("a9", 1)),
             "ba9." => err(0, vec![
-                Unexpected('b'.into()),
+                Error::unexpected_token('b'),
                 Error::expected(Error::one_of(vec![
-                    Info('a'.into()),
+                    Info::Token('a'),
                     "an ascii digit".into(),
-                    "an ascii punctuation character".into()
+                    "an ascii punctuation character".into(),
                 ])),
             ]),
         });

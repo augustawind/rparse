@@ -169,13 +169,12 @@ impl<S: Stream> Parser for OneOf<S> {
     type Output = S::Item;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        satisfy(move |item: &S::Item| self.items.iter().any(|i| i == item))
-            .parse_lazy(stream)
+        satisfy(move |item: &S::Item| self.items.iter().any(|i| i == item)).parse_lazy(stream)
     }
 
     fn expected_errors(&self) -> Vec<Error<S>> {
         vec![Error::expected_one_of(
-            self.items.iter().map(|&item| Info::Token(item)).collect()
+            self.items.iter().map(|&item| Info::Token(item)).collect(),
         )]
     }
 }
@@ -195,8 +194,7 @@ impl<S: Stream> Parser for NoneOf<S> {
     type Output = S::Item;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        satisfy(move |item: &S::Item| self.items.iter().all(|i| i != item))
-            .parse_lazy(stream)
+        satisfy(move |item: &S::Item| self.items.iter().all(|i| i != item)).parse_lazy(stream)
     }
 }
 
