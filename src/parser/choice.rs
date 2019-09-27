@@ -142,17 +142,24 @@ pub struct And<L, R> {
     p2: R,
 }
 
-impl<S: Stream, O, L, R> Parser for And<L, R>
+impl<S: Stream, L, R> Parser for And<L, R>
 where
     L: Parser<Stream = S>,
-    R: Parser<Stream = S, Output = O>,
+    R: Parser<Stream = S>,
 {
     type Stream = S;
-    type Output = O;
+    type Output = (L::Output, R::Output);
 
-    fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, O> {
-        let (_, stream) = self.p1.parse_lazy(stream)?;
-        self.p2.parse_lazy(stream)
+    fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        let (left, stream) = match self.p1.parse_lazy(stream)? {
+            (Some(result), stream) => (result, stream),
+            (None, stream) => return stream.empty_errs(),
+        };
+        let (right, stream) = match self.p2.parse_lazy(stream)? {
+            (Some(result), stream) => (result, stream),
+            (None, stream) => return stream.empty_errs(),
+        };
+        stream.ok((left, right))
     }
 
     fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
@@ -293,8 +300,8 @@ mod test {
     }
 
     #[test]
-    fn test_and() {
-        let mut parser = and(token(b'a'), token(b'b'));
+    fn test_with() {
+        let mut parser = with(token(b'a'), token(b'b'));
         let expected_err = Error::expected(vec![Info::Token('a'), Info::Token('b')]);
         test_parser!(IndexedStream<&str> => char | parser, {
             "abcd" => ok('b', ("cd", 2)),
@@ -304,10 +311,37 @@ mod test {
             "bcd" => err(0, vec![Error::unexpected_token('b'), expected_err.clone()]),
         });
 
-        let mut parser = and(many1(ascii::digit()), many1(ascii::letter()));
+        let mut parser = with(many1(ascii::digit()), many1(ascii::letter()));
         let expected_err = Error::expected(vec!["an ascii digit", "an ascii letter"]);
         test_parser!(IndexedStream<&str> => Vec<char> | parser, {
             "123abc456" => ok(vec!['a', 'b', 'c'], ("456", 6)),
+            " 1 2 3" => err(0, vec![
+                Error::unexpected_token(' '),
+                expected_err.clone(),
+            ]),
+            "123 abc" => err(3, vec![
+                Error::unexpected_token(' '),
+                expected_err.clone(),
+            ]),
+        });
+    }
+
+    #[test]
+    fn test_and() {
+        let mut parser = and(token(b'a'), token(b'b'));
+        let expected_err = Error::expected(vec![Info::Token('a'), Info::Token('b')]);
+        test_parser!(IndexedStream<&str> => (char, char) | parser, {
+            "abcd" => ok(('a', 'b'), ("cd", 2)),
+            "ab" => ok(('a', 'b'), ("", 2)),
+            "def" => err(0, vec![Error::unexpected_token('d'), expected_err.clone()]),
+            "aab" => err(1, vec![Error::unexpected_token('a'), expected_err.clone()]),
+            "bcd" => err(0, vec![Error::unexpected_token('b'), expected_err.clone()]),
+        });
+
+        let mut parser = and(many1(ascii::digit()), many1(ascii::letter()));
+        let expected_err = Error::expected(vec!["an ascii digit", "an ascii letter"]);
+        test_parser!(IndexedStream<&str> => (Vec<char>, Vec<char>) | parser, {
+            "123abc456" => ok((vec!['1', '2', '3'], vec!['a', 'b', 'c']), ("456", 6)),
             " 1 2 3" => err(0, vec![
                 Error::unexpected_token(' '),
                 expected_err.clone(),

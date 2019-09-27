@@ -31,8 +31,8 @@ where
 {
     parser(|s: S| {
         let (method, s) = http_method().must_parse(s)?;
-        let (uri, s) = token(b' ').and(uri()).must_parse(s)?;
-        let (version, s) = token(b' ').and(http_version()).must_parse(s)?;
+        let (uri, s) = token(b' ').with(uri()).must_parse(s)?;
+        let (version, s) = token(b' ').with(http_version()).must_parse(s)?;
         let (_, s) = crlf().must_parse(s)?;
         s.ok((method, uri, version))
     })
@@ -45,7 +45,7 @@ where
     // an HTTP version is the text "HTTP/"
     range("HTTP/")
         // followed by a version number
-        .and(choice![range("1.1"), range("1"), range("2")])
+        .with(choice![range("1.1"), range("1"), range("2")])
         .as_string()
 }
 

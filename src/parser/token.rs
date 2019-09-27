@@ -473,8 +473,8 @@ mod test {
         }
 
         #[test]
-        fn test_negate_and() {
-            let mut parser = negate(token(b'z').and(token(b'x')));
+        fn test_negate_with() {
+            let mut parser = negate(token(b'z').with(token(b'x')));
             test_parser!(IStr => char | parser, {
                 "zy" => ok('z', ("y", 1)),
                 "xx" => ok('x', ("x", 1)),
