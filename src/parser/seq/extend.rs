@@ -67,7 +67,7 @@ mod test {
             "huh???" => ok("huh???".chars().collect(), ("", 6)),
             "oh?? cool" => ok("oh??".chars().collect(), (" cool", 4)),
             "???" => ok("???".chars().collect(), ("", 3)),
-            "" => err(0, vec![Error::unexpected_eoi(), Error::expected_token('?')]),
+            "" => err(0, vec![Error::eoi(), Error::expected_token('?')]),
             "whoops!" => err(6, vec![Error::unexpected_token('!'), Error::expected_token('?')]),
             "!?" => err(0, vec![Error::unexpected_token('!'), Error::expected_token('?')]),
         });
@@ -87,7 +87,7 @@ mod test {
             "t1t3 man" => ok("t1t3".to_string(), (" man", 4)),
             "  xs = [2, 3]" => ok("  xs".to_string(), (" = [2, 3]", 4)),
             "" => err(0, vec![
-                Error::unexpected_eoi(),
+                Error::eoi(),
                 Error::expected("an ascii letter"),
             ]),
             "?" => err(0, vec![
@@ -95,7 +95,7 @@ mod test {
                 Error::expected("an ascii letter"),
             ]),
             "a" => err(1, vec![
-                Error::unexpected_eoi(),
+                Error::eoi(),
                 Error::expected("an ascii letter or digit"),
             ]),
             "a?" => err(1, vec![

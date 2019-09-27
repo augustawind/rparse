@@ -427,7 +427,7 @@ mod test {
                 'a' | 'e' | 'i' | 'o' | 'u' => stream.ok(t),
                 _ => stream.err(Error::unexpected_token(t)),
             },
-            None => stream.err(Error::unexpected_eoi()),
+            None => stream.err(Error::eoi()),
         })
     }
 
@@ -436,7 +436,7 @@ mod test {
         test_parser!(IndexedStream<&str> => char | vowel(), {
             "a" => ok('a', ("", 1)),
             "ooh" => ok('o', ("oh", 1)),
-            "" => err(0, vec![Error::unexpected_eoi()]),
+            "" => err(0, vec![Error::eoi()]),
             "d" => err(1, vec![Error::unexpected_token('d')]),
             "du" => err(1, vec![Error::unexpected_token('d')]),
         });
@@ -447,16 +447,13 @@ mod test {
         S: Stream,
         S::Position: Position<S::Stream>,
     {
-        match stream
-            .pop()
-            .ok_or_else(|| Error::unexpected_eoi())
-            .and_then(|t| {
-                if t == b'\n'.into() {
-                    Ok(t)
-                } else {
-                    Err(Error::unexpected_token(t))
-                }
-            }) {
+        match stream.pop().ok_or_else(|| Error::eoi()).and_then(|t| {
+            if t == b'\n'.into() {
+                Ok(t)
+            } else {
+                Err(Error::unexpected_token(t))
+            }
+        }) {
             Ok(ok) => stream.ok(ok),
             Err(err) => stream.err(err),
         }
@@ -467,7 +464,7 @@ mod test {
         test_parser!(IndexedStream<&[u8]> => u8 | parser(newline), {
             "\n".as_bytes() => ok(b'\n', ("".as_bytes(), 1)),
             "\nx".as_bytes() => ok(b'\n', ("x".as_bytes(), 1)),
-            "".as_bytes() => err(0, vec![Error::unexpected_eoi()]),
+            "".as_bytes() => err(0, vec![Error::eoi()]),
             "x\n".as_bytes() => err(1, vec![Error::unexpected_token(b'x')]),
         });
     }

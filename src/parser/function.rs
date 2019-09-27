@@ -281,6 +281,17 @@ mod test {
     }
 
     #[test]
+    fn test_collect() {
+        let mut parser = collect(many1(ascii::digit()));
+        test_parser!(IndexedStream<&str> => String | parser, {
+            "123" => ok("123".to_string(), ("", 3)),
+            "123abc" => ok("123".to_string(), ("abc", 3)),
+            "" => err(0, vec![Error::eoi(), Error::expected("an ascii digit")]),
+            "abc" => err(0, vec![Error::unexpected_token('a'), Error::expected("an ascii digit")]),
+        });
+    }
+
+    #[test]
     fn test_from_str() {
         let mut parser = many1(ascii::digit()).collect::<String>().from_str::<u32>();
         test_parser!(&str => u32 | parser, {

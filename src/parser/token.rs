@@ -17,7 +17,7 @@ impl<S: Stream> Parser for Any<S> {
         let start = stream.position().clone();
         match stream.pop() {
             Some(t) => stream.ok(t),
-            None => stream.err_at(start, Error::unexpected_eoi()),
+            None => stream.err_at(start, Error::eoi()),
         }
     }
 
@@ -49,7 +49,7 @@ where
             }
             result => stream.err(match result {
                 Some(t) => Error::unexpected_token(t),
-                None => Error::unexpected_eoi(),
+                None => Error::eoi(),
             }),
         }
     }
@@ -109,7 +109,7 @@ where
                 stream.ok(*t)
             }
             Some(t) => stream.err(Error::unexpected_token(t)),
-            _ => stream.err(Error::unexpected_eoi()),
+            _ => stream.err(Error::eoi()),
         }
     }
 }
@@ -147,7 +147,7 @@ where
         stream.restore(initial);
         match stream.pop() {
             Some(t) => stream.ok(t),
-            None => stream.err(Error::unexpected_eoi()),
+            None => stream.err(Error::eoi()),
         }
     }
 }
@@ -214,7 +214,7 @@ macro_rules! def_token_parser_tests {
                 $(
                     concat!($t_ok) => ok($t_ok, ("", 1)),
                 )+
-                "" => err(0, vec![Error::unexpected_eoi(), Error::expected($e)]),
+                "" => err(0, vec![Error::eoi(), Error::expected($e)]),
                 $(
                     concat!($t_err) => err(0, vec![Error::unexpected_token($t_err), Error::expected($e)]),
                 )+
@@ -224,7 +224,7 @@ macro_rules! def_token_parser_tests {
                 $(
                     concat!($t_ok).as_bytes() => ok($t_ok as u8, ("".as_bytes(), 1)),
                 )+
-                "".as_bytes() => err(0, vec![Error::unexpected_eoi(), Error::expected($e)]),
+                "".as_bytes() => err(0, vec![Error::eoi(), Error::expected($e)]),
                 $(
                     concat!($t_err).as_bytes() => err(0, vec![Error::unexpected_token($t_err as u8), Error::expected($e)]),
                 )+
@@ -427,7 +427,7 @@ mod test {
     fn test_any() {
         test_parser!(IStr => char | any(), {
             "hello, world." => ok('h', ("ello, world.", 1)),
-            "" => err(0, vec![Error::unexpected_eoi(), Error::expected("a token")]),
+            "" => err(0, vec![Error::eoi(), Error::expected("a token")]),
         });
     }
 
@@ -468,7 +468,7 @@ mod test {
             test_parser!(IStr => char | parser, {
                 "abc" => ok('a', ("bc", 1)),
                 "xyz" => err(0, vec![Error::unexpected_token('x')]),
-                "" => err(0, vec![Error::unexpected_eoi()]),
+                "" => err(0, vec![Error::eoi()]),
             });
         }
 
@@ -502,7 +502,7 @@ mod test {
         test_parser!(IStr => char | parser, {
             "ab" => ok('a', ("b", 1)),
             "0" => ok('0', ("", 1)),
-            "" => err(0, vec![Error::unexpected_eoi(), expected_err.clone()]),
+            "" => err(0, vec![Error::eoi(), expected_err.clone()]),
             "z" => err(0, vec![Error::unexpected_token('z'), expected_err.clone()]),
         });
     }
@@ -513,7 +513,7 @@ mod test {
         test_parser!(IStr => char | parser, {
             "bc" => ok('b', ("c", 1)),
             "1" => ok('1', ("", 1)),
-            "" => err(0, vec![Error::unexpected_eoi()]),
+            "" => err(0, vec![Error::eoi()]),
             "a" => err(0, vec![Error::unexpected_token('a')]),
         });
     }

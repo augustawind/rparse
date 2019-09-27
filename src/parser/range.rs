@@ -31,11 +31,11 @@ impl<S: Stream> Parser for Range<S> {
                             start_pos.update_range(&range);
                             stream.err(Error::unexpected_token(left))
                         }
-                        None => stream.err(Error::unexpected_eoi()),
+                        None => stream.err(Error::eoi()),
                     }
                 }
             }
-            None => stream.err(Error::unexpected_eoi()),
+            None => stream.err(Error::eoi()),
         };
         if let Err((ref mut errors, _)) = result {
             errors.position = start_pos;
@@ -66,9 +66,9 @@ mod test {
         test_parser!(IndexedStream<&str> => &str | parser, {
             "def" => ok("def", ("", 3)),
             "defcon" => ok("def", ("con", 3)),
-            "" => err(0, vec![Error::unexpected_eoi(), Error::expected_range("def")]),
-            "de" => err(0, vec![Error::unexpected_eoi(), Error::expected_range("def")]),
-            "dr" => err(0, vec![Error::unexpected_eoi(), Error::expected_range("def")]),
+            "" => err(0, vec![Error::eoi(), Error::expected_range("def")]),
+            "de" => err(0, vec![Error::eoi(), Error::expected_range("def")]),
+            "dr" => err(0, vec![Error::eoi(), Error::expected_range("def")]),
             "deg" => err(2, vec![Unexpected('g'.into()), Error::expected_range("def")]),
         });
     }

@@ -136,7 +136,7 @@ impl<S: Stream> Error<S> {
         Error::Expected(Box::new(Error::Info(Info::Range(range))))
     }
 
-    pub fn unexpected_eoi() -> Self {
+    pub fn eoi() -> Self {
         Error::Unexpected(Info::EOI())
     }
 

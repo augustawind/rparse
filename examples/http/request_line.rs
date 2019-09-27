@@ -204,7 +204,7 @@ mod test {
         test_parser!(&str => String | percent_encoded().collect::<String>(), {
             "%A9" => ok("%A9".into(), ""),
             "%0f/hello" => ok("%0f".into(), "/hello"),
-            "" => err(vec![Error::unexpected_eoi(), Error::expected_token('%')]),
+            "" => err(vec![Error::eoi(), Error::expected_token('%')]),
             "%%0f" => err(vec![
                 Error::unexpected_token('%'),
                 Error::expected("a hexadecimal digit"),

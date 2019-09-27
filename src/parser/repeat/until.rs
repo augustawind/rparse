@@ -26,7 +26,7 @@ where
             };
             match stream.pop() {
                 Some(item) => output.push(item),
-                None => return stream.err(Error::unexpected_eoi()),
+                None => return stream.err(Error::eoi()),
             };
         }
     }
