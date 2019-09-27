@@ -115,16 +115,21 @@ where
     p.map(|output| output.into_iter().flatten().collect())
 }
 
-pub type Wrap<P> = Map<P, fn(<P as Parser>::Output) -> Vec<<P as Parser>::Output>>;
+pub type Wrap<O, P> = Map<P, fn(<P as Parser>::Output) -> O>;
 
 /// Equivalent to [`p.wrap()`].
 ///
 /// [`p.wrap()`]: Parser::wrap
-pub fn wrap<P>(p: P) -> Wrap<P>
+pub fn wrap<O, P>(p: P) -> Wrap<O, P>
 where
     P: Parser,
+    O: Extend<P::Output> + Default,
 {
-    p.map(|output| vec![output])
+    p.map(|output| {
+        let mut wrapped = O::default();
+        wrapped.extend(std::iter::once(output));
+        wrapped
+    })
 }
 
 pub struct Bind<P, F> {

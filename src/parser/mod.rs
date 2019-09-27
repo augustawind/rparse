@@ -357,16 +357,18 @@ pub trait Parser {
         flatten(self)
     }
 
-    fn wrap(self) -> Wrap<Self>
+    fn wrap<O>(self) -> Wrap<O, Self>
     where
         Self: Sized,
+        O: std::iter::Extend<Self::Output> + Default,
     {
         wrap(self)
     }
 
-    fn w(self) -> Wrap<Self>
+    fn w<O>(self) -> Wrap<O, Self>
     where
         Self: Sized,
+        O: std::iter::Extend<Self::Output> + Default,
     {
         wrap(self)
     }
