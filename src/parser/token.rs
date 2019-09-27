@@ -500,13 +500,23 @@ mod test {
     #[test]
     fn test_one_of() {
         let mut parser = one_of(&[b'a', b'0']);
+        let expected_err = Error::expected_one_of(vec![Info::Token('a'), Info::Token('0')]);
         test_parser!(IStr => char | parser, {
             "ab" => ok('a', ("b", 1)),
             "0" => ok('0', ("", 1)),
-            "z" => err(0, vec![
-                Error::unexpected_token('z'),
-                Error::expected_one_of(vec![Info::Token('a'), Info::Token('0')]),
-            ]),
+            "" => err(0, vec![Error::unexpected_eoi(), expected_err.clone()]),
+            "z" => err(0, vec![Error::unexpected_token('z'), expected_err.clone()]),
+        });
+    }
+
+    #[test]
+    fn test_none_of() {
+        let mut parser = none_of(&[b'a', b'0']);
+        test_parser!(IStr => char | parser, {
+            "bc" => ok('b', ("c", 1)),
+            "1" => ok('1', ("", 1)),
+            "" => err(0, vec![Error::unexpected_eoi()]),
+            "a" => err(0, vec![Error::unexpected_token('a')]),
         });
     }
 }

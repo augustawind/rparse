@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use rparse::parser::parser;
 use rparse::parser::range::range;
-use rparse::parser::seq::{many, many1};
+use rparse::parser::repeat::{many, many1};
 use rparse::parser::token::{ascii, token};
 use rparse::{Parser, Stream};
 
