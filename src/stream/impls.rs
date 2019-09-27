@@ -114,7 +114,7 @@ impl<'a> RangeStream for &'a [u8] {
         s.as_ref()
     }
     fn to_string(self) -> String {
-        String::from(std::str::from_utf8(self).unwrap())
+        String::from(unsafe { std::str::from_utf8_unchecked(self) })
     }
 }
 

@@ -145,7 +145,7 @@ pub trait Parser {
     where
         Self: Sized,
     {
-        optional(self)
+        self.optional()
     }
 
     /// Equivalent to [`required(self)`].
@@ -162,7 +162,7 @@ pub trait Parser {
     where
         Self: Sized,
     {
-        required(self)
+        self.required()
     }
 
     /// Parses with `self` and if it succeeds with `Some(value)`, apply `f` to the result.
@@ -224,7 +224,8 @@ pub trait Parser {
 
     /// Parses with `self` and converts the result into a [`String`].
     ///
-    /// Can only be used if `Self::Output` is a [`RangeStream`].
+    /// Can only be used if `Self::Output` is a [`RangeStream`], and will panic if `Self::Output`
+    /// is not valid UTF-8.
     fn as_string(self) -> Map<Self, fn(Self::Output) -> String>
     where
         Self: Sized,
@@ -238,7 +239,7 @@ pub trait Parser {
         Self: Sized,
         Self::Output: RangeStream,
     {
-        map(self, RangeStream::to_string)
+        self.as_string()
     }
 
     /// Parses with `self` and collects the result into a [`String`].
