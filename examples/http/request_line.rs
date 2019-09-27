@@ -88,7 +88,7 @@ where
     // a URI scheme is
     (
         // a scheme identifier
-        many1(ascii::letter()).map(|s| s.into_iter().map(Into::into).collect()),
+        many1(ascii::letter()).collect_string(),
         // followed by a delimiter
         range("://").as_string(),
     )
@@ -117,7 +117,7 @@ where
             many(token(b'/').wrap().or(uri_segment())).flatten(),
         ],
     ]
-    .map(|s| s.into_iter().map(Into::into).collect())
+    .collect_string()
 }
 
 fn uri_segment<S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
