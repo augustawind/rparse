@@ -160,47 +160,49 @@ where
     Negate { p }
 }
 
-pub struct OneOf<'a, S: Stream> {
-    items: &'a [u8],
-    _marker: PhantomData<S>,
+pub struct OneOf<S: Stream> {
+    items: Vec<S::Item>,
 }
 
-impl<'a, S: Stream> Parser for OneOf<'a, S> {
+impl<S: Stream> Parser for OneOf<S> {
     type Stream = S;
     type Output = S::Item;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        satisfy(move |item: &S::Item| self.items.into_iter().any(|&b| *item == b.into()))
+        satisfy(move |item: &S::Item| self.items.iter().any(|i| i == item))
             .parse_lazy(stream)
+    }
+
+    fn expected_errors(&self) -> Vec<Error<S>> {
+        vec![Error::expected_one_of(
+            self.items.iter().map(|&item| Info::Token(item)).collect()
+        )]
     }
 }
 
-pub fn one_of<'a, S: Stream>(items: &'a [u8]) -> OneOf<'a, S> {
+pub fn one_of<'a, S: Stream>(items: &'a [u8]) -> OneOf<S> {
     OneOf {
-        items,
-        _marker: PhantomData,
+        items: items.into_iter().map(|&b| b.into()).collect(),
     }
 }
 
-pub struct NoneOf<'a, S: Stream> {
-    items: &'a [u8],
-    _marker: PhantomData<S>,
+pub struct NoneOf<S: Stream> {
+    items: Vec<S::Item>,
 }
 
-impl<'a, S: Stream> Parser for NoneOf<'a, S> {
+impl<S: Stream> Parser for NoneOf<S> {
     type Stream = S;
     type Output = S::Item;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        satisfy(move |item: &S::Item| self.items.into_iter().all(|&b| *item != b.into()))
+        satisfy(move |item: &S::Item| self.items.iter().all(|i| i != item))
             .parse_lazy(stream)
     }
 }
 
-pub fn none_of<'a, S: Stream>(items: &'a [u8]) -> NoneOf<'a, S> {
+pub fn none_of<'a, S: Stream>(items: &'a [u8]) -> NoneOf<S> {
     NoneOf {
-        items,
-        _marker: PhantomData,
+        items: items.into_iter().map(|&b| b.into()).collect(),
     }
 }
 
@@ -493,5 +495,18 @@ mod test {
                 "zx_" => err(0, vec![Error::unexpected_token('z')]),
             });
         }
+    }
+
+    #[test]
+    fn test_one_of() {
+        let mut parser = one_of(&[b'a', b'0']);
+        test_parser!(IStr => char | parser, {
+            "ab" => ok('a', ("b", 1)),
+            "0" => ok('0', ("", 1)),
+            "z" => err(0, vec![
+                Error::unexpected_token('z'),
+                Error::expected_one_of(vec![Info::Token('a'), Info::Token('0')]),
+            ]),
+        });
     }
 }
