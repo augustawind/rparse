@@ -303,6 +303,16 @@ mod test {
     }
 
     #[test]
+    fn test_wrap() {
+        let mut parser = token(b'x').wrap();
+        test_parser!(IndexedStream<&str> => Vec<char> | parser, {
+            "x" => ok(vec!['x'], ("", 1)),
+            "" => err(0, vec![Error::eoi(), Error::expected(b'x')]),
+            "\t" => err(0, vec![Error::unexpected_token('\t'), Error::expected(b'x')]),
+        });
+    }
+
+    #[test]
     fn test_from_str() {
         let mut parser = many1(ascii::digit()).collect::<String>().from_str::<u32>();
         test_parser!(&str => u32 | parser, {
