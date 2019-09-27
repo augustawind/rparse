@@ -37,8 +37,6 @@ impl<'a, T> Iterator for Tokens<'a, T> {
 }
 
 pub trait StreamItem: Copy + PartialEq + Debug + From<u8> + Into<char> {
-    fn from_u8(u8) -> Self;
-
     fn is_ascii(&self) -> bool;
     fn is_ascii_alphabetic(&self) -> bool;
     fn is_ascii_alphanumeric(&self) -> bool;

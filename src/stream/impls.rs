@@ -39,9 +39,6 @@ macro_rules! impl_StreamItem {
             fn eq_ignore_ascii_case(&self, other: &$T) -> bool {
                 <$T>::eq_ignore_ascii_case(self, other)
             }
-            fn from_u8(b: u8) -> Self {
-                b.into()
-            }
         }
     };
 }
@@ -114,7 +111,7 @@ impl<'a> RangeStream for &'a [u8] {
         s.as_ref()
     }
     fn to_string(self) -> String {
-        String::from(unsafe { std::str::from_utf8_unchecked(self) })
+        self.into_iter().map(|&b| <char>::from(b)).collect()
     }
 }
 
