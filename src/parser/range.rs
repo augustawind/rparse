@@ -1,7 +1,6 @@
 //! Parsers that parse a continuous series of tokens.
 
 use error::{Error, ParseResult};
-use parser::function::Map;
 use parser::Parser;
 use stream::{Position, RangeStream, Stream};
 
