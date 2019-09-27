@@ -81,7 +81,12 @@ where
     P: Parser,
     O: Extend<P::Output> + Default,
 {
-    Many { p, min, max: None, _marker: PhantomData, }
+    Many {
+        p,
+        min,
+        max: None,
+        _marker: PhantomData,
+    }
 }
 
 pub fn many_n_m<O, P>(p: P, min: usize, max: usize) -> Many<O, P>

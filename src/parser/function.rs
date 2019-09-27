@@ -234,9 +234,7 @@ mod test {
             "a3" => err(vec![Unexpected('a'.into()), Error::expected("an ascii digit")]),
         });
 
-        let mut parser = map(many1::<String, _>(ascii::letter()), |s| {
-            s.to_uppercase()
-        });
+        let mut parser = map(many1::<String, _>(ascii::letter()), |s| s.to_uppercase());
         assert_eq!(
             parser.parse("aBcD12e"),
             ok_result("ABCD".to_string(), "12e")
@@ -267,14 +265,12 @@ mod test {
             ok_result("ABCD".to_string(), "12e")
         );
 
-        let mut parser =
-            many1::<String, _>(ascii::alpha_num())
-                .bind(
-                    |s: String, stream: IndexedStream<&str>| match s.parse::<usize>() {
-                        Ok(n) => stream.ok(n),
-                        Err(e) => stream.err(Box::new(e).into()),
-                    },
-                );
+        let mut parser = many1::<String, _>(ascii::alpha_num()).bind(
+            |s: String, stream: IndexedStream<&str>| match s.parse::<usize>() {
+                Ok(n) => stream.ok(n),
+                Err(e) => stream.err(Box::new(e).into()),
+            },
+        );
         test_parser!(IndexedStream<&str> => usize | parser, {
             "324 dogs" => ok(324 as usize, (" dogs", 3)),
         // TODO: add ability to control consumption, e.g. make this error show at beginning (0)
@@ -324,8 +320,8 @@ mod test {
             "abc" => err(vec![Unexpected('a'.into()), Error::expected("an ascii digit")]),
         });
 
-        let mut parser = many1::<String, _>(choice!(token(b'-'), token(b'.'), ascii::digit()))
-            .from_str::<f32>();
+        let mut parser =
+            many1::<String, _>(choice!(token(b'-'), token(b'.'), ascii::digit())).from_str::<f32>();
         test_parser!(&str => f32 | parser, {
             "12e" => ok(12 as f32, "e"),
             "-12e" => ok(-12 as f32, "e"),

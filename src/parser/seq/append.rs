@@ -7,13 +7,13 @@ pub struct Append<L, R> {
     p2: R,
 }
 
-impl<S: Stream, O, L, R> Parser for Append<L, R>
+impl<S: Stream, L, R> Parser for Append<L, R>
 where
-    L: Parser<Stream = S, Output = Vec<O>>,
-    R: Parser<Stream = S, Output = O>,
+    L: Parser<Stream = S, Output = Vec<R::Output>>,
+    R: Parser<Stream = S>,
 {
     type Stream = S;
-    type Output = Vec<O>;
+    type Output = L::Output;
 
     fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         match self.p1.parse_partial(stream)? {
@@ -29,10 +29,10 @@ where
     }
 }
 
-pub fn append<S: Stream, O, L, R>(p1: L, p2: R) -> Append<L, R>
+pub fn append<S: Stream, L, R>(p1: L, p2: R) -> Append<L, R>
 where
-    L: Parser<Stream = S, Output = Vec<O>>,
-    R: Parser<Stream = S, Output = O>,
+    L: Parser<Stream = S, Output = Vec<R::Output>>,
+    R: Parser<Stream = S>,
 {
     Append { p1, p2 }
 }
