@@ -277,10 +277,11 @@ pub trait Parser {
     /// let mut p = range("Hello, ").then(range("World!"));
     /// assert_eq!(p.parse("Hello, World!"), Ok((Some(vec!["Hello, ", "World!"]), "")));
     /// ```
-    fn then<P>(self, p: P) -> Then<Self, P>
+    fn then<I, P>(self, p: P) -> Then<I, Self, P>
     where
         Self: Sized,
         P: Parser<Stream = Self::Stream, Output = Self::Output>,
+        I: std::iter::FromIterator<Self::Output>,
     {
         then(self, p)
     }

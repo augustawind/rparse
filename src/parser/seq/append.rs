@@ -42,7 +42,7 @@ where
 #[macro_export]
 macro_rules! seq {
     ($init:expr, $head:expr $(,)*) => {
-        $init.then($head)
+        $init.then::<Vec<_>, _>($head)
     };
 
     ($init:expr, $head:expr, $($tail:expr),* $(,)*) => {

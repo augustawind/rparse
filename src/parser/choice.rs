@@ -336,10 +336,9 @@ mod test {
         });
 
         let mut parser = or(
-            many1(ascii::digit()),
+            many1::<String, _>(ascii::digit()),
             then(ascii::letter(), ascii::whitespace()),
-        )
-        .collect();
+        );
         test_parser!(IndexedStream<&str> => String | parser, {
             "123a bc" => ok("123".into(), ("a bc", 3)),
             "a b c" => ok("a ".into(), ("b c", 2)),
@@ -375,11 +374,10 @@ mod test {
 
         assert_eq!(choice!(ascii::letter()).parse("Z"), ok_result('Z', ""));
 
-        let mut parser = choice!(
-            many1(ascii::digit()),
+        let mut parser = choice![
+            many1::<String, _>(ascii::digit()),
             then(ascii::letter(), ascii::whitespace()),
-        )
-        .collect();
+        ];
         test_parser!(IndexedStream<&str> => String | parser, {
             "123a bc" => ok("123".to_string(), ("a bc", 3)),
             "a b c" => ok("a ".to_string(), ("b c", 2)),
