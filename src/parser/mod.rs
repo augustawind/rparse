@@ -18,7 +18,9 @@ use std::fmt::Display;
 use std::iter::FromIterator;
 use std::str;
 
-use self::choice::{and, optional, or, required, skip, And, Optional, Or, Required, Skip};
+use self::choice::{
+    and, optional, or, required, skip, with, And, Optional, Or, Required, Skip, With,
+};
 use self::function::{
     bind, collect, expect, flatten, from_str, iter, map, wrap, Bind, Collect, Expect, Flatten,
     FromStr, Iter, Map, Wrap,
@@ -129,6 +131,15 @@ pub trait Parser {
         Self: Sized,
     {
         skip(self, p)
+    }
+
+    /// Parses with `self` and then `p`, but discards the result of `self` and returns the result
+    /// of `p`. Fails if any of the parsers fail.
+    fn with<P>(self, p: P) -> With<Self, P>
+    where
+        Self: Sized,
+    {
+        with(self, p)
     }
 
     /// Equivalent to [`optional(self)`].

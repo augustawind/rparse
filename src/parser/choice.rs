@@ -27,15 +27,52 @@ where
     }
 }
 
-/// Parses with `self` followed by `p`. Succeeds if both parsers succeed, otherwise fails.
-/// Returns the result of `p` on success.
+/// Parses with `p1` followed by `p2`. Succeeds if both parsers succeed, otherwise fails.
+/// Returns the result of `p1` on success.
 ///
 /// Useful when you need a parser to consume input but you don't care about the result. Equivalent
-/// to [`parser.skip()`].
+/// to [`p1.skip(p2)`].
 ///
-/// [`parser.skip()`]: Parser::skip
+/// [`p1.skip(p2)`]: Parser::skip
 pub fn skip<P1, P2>(p1: P1, p2: P2) -> Skip<P1, P2> {
     Skip { p1, p2 }
+}
+
+pub struct With<P1, P2> {
+    p1: P1,
+    p2: P2,
+}
+
+impl<S, P1, P2> Parser for With<P1, P2>
+where
+    S: Stream,
+    P1: Parser<Stream = S>,
+    P2: Parser<Stream = S>,
+{
+    type Stream = S;
+    type Output = P2::Output;
+
+    fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        let (_, stream) = self.p1.parse_lazy(stream)?;
+        let (result, stream) = self.p2.parse_lazy(stream)?;
+        stream.result(result)
+    }
+
+    fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
+        vec![Error::expected(
+            [self.p1.expected_errors(), self.p2.expected_errors()].concat(),
+        )]
+    }
+}
+/// Parses with `p1` followed by `p2`. Succeeds if both parsers succeed, otherwise fails.
+/// Returns the result of `p2` on success.
+///
+/// Useful when you need a parser to consume input but you don't care about the result. Equivalent
+/// to [`p1.with(p2)`].
+///
+/// [`p1.with(p2)`]: Parser::with
+pub fn with<P1, P2>(p1: P1, p2: P2) -> With<P1, P2> {
+    With { p1, p2 }
 }
 
 pub struct Optional<P> {

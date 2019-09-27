@@ -55,10 +55,6 @@ pub fn range<S: Stream>(range: &'static str) -> Range<S> {
     }
 }
 
-pub fn tokens<S: Stream>(tokens: &'static str) -> Map<Range<S>, fn(S::Range) -> Vec<S::Item>> {
-    range(tokens).map(|range| range.tokens().collect())
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
