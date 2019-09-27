@@ -107,36 +107,6 @@ pub fn optional<P: Parser>(parser: P) -> Optional<P> {
     Optional { parser }
 }
 
-pub struct Required<P> {
-    parser: P,
-}
-
-impl<P: Parser> Parser for Required<P> {
-    type Stream = P::Stream;
-    type Output = P::Output;
-
-    fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        match self.parser.parse_lazy(stream) {
-            Ok((Some(result), stream)) => stream.ok(result),
-            Ok((None, stream)) => stream.empty_errs(),
-            Err((errors, stream)) => stream.errs(errors),
-        }
-    }
-
-    fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
-        self.parser.expected_errors()
-    }
-}
-
-/// Wrap `parser` so that if it would `None` it fails instead.
-///
-/// Equivalent to [`parser.required()`].
-///
-/// [`parser.required()`]: Parser::required
-pub fn required<P: Parser>(parser: P) -> Required<P> {
-    Required { parser }
-}
-
 pub struct And<L, R> {
     p1: L,
     p2: R,

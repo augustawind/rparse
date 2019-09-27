@@ -19,7 +19,7 @@ use std::iter::FromIterator;
 use std::str;
 
 use self::choice::{
-    and, optional, or, required, skip, with, And, Optional, Or, Required, Skip, With,
+    and, optional, or, skip, with, And, Optional, Or, Skip, With,
 };
 use self::function::{
     bind, collect, expect, flatten, from_str, iter, map, wrap, Bind, Collect, Expect, Flatten,
@@ -157,23 +157,6 @@ pub trait Parser {
         Self: Sized,
     {
         self.optional()
-    }
-
-    /// Equivalent to [`required(self)`].
-    ///
-    /// [`required(self)`]: required
-    fn required(self) -> Required<Self>
-    where
-        Self: Sized,
-    {
-        required(self)
-    }
-
-    fn req(self) -> Required<Self>
-    where
-        Self: Sized,
-    {
-        self.required()
     }
 
     /// Parses with `self` and if it succeeds with `Some(value)`, apply `f` to the result.
