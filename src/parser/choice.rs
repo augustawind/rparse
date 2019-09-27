@@ -290,7 +290,7 @@ mod test {
             "a" => ok('a', ("", 1)),
             "def" => err(0, vec![
                 Error::unexpected_token('d'),
-                Error::expected(Error::one_of(vec![Info::Token('a'), Info::Token('b')])),
+                Error::expected_one_of(vec![b'a', b'b']),
             ]),
         });
 
@@ -319,11 +319,11 @@ mod test {
             ".a9" => ok('.', ("a9", 1)),
             "ba9." => err(0, vec![
                 Error::unexpected_token('b'),
-                Error::expected(Error::one_of(vec![
+                Error::expected_one_of(vec![
                     Info::Token('a'),
-                    "an ascii digit".into(),
-                    "an ascii punctuation character".into(),
-                ])),
+                    Info::Msg("an ascii digit"),
+                    Info::Msg("an ascii punctuation character"),
+                ]),
             ]),
         });
 

@@ -204,6 +204,12 @@ impl<S: Stream, T: Into<Error<S>>> From<Vec<T>> for Error<S> {
     }
 }
 
+impl<S: Stream> From<u8> for Error<S> {
+    fn from(b: u8) -> Self {
+        Error::Info(Info::Token(b.into()))
+    }
+}
+
 impl<S: Stream> From<&'static str> for Error<S> {
     fn from(s: &'static str) -> Self {
         Error::Info(Info::Msg(s))
