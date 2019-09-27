@@ -333,7 +333,7 @@ pub trait Parser {
     /// ];
     /// assert_eq!(p.parse("\x27[5B"), Ok((Some(vec!['\x27', '[', '5', 'B']), "")));
     /// # }
-    fn append<P, O>(self, p: P) -> Append<Self, P>
+    fn append<O, P>(self, p: P) -> Append<Self, P>
     where
         Self: Sized + Parser<Output = Vec<O>>,
         P: Parser<Stream = Self::Stream, Output = O>,
@@ -341,7 +341,7 @@ pub trait Parser {
         append(self, p)
     }
 
-    fn extend<P, O>(self, p: P) -> Extend<Self, P>
+    fn extend<O, P>(self, p: P) -> Extend<Self, P>
     where
         Self: Sized + Parser<Output = Vec<O>>,
         P: Parser<Stream = Self::Stream, Output = Vec<O>>,
