@@ -9,14 +9,14 @@ pub struct Extend<L, R> {
     p2: R,
 }
 
-impl<S: Stream, O, L, R> Parser for Extend<L, R>
+impl<O, L, R> Parser for Extend<L, R>
 where
-    L: Parser<Stream = S>,
+    L: Parser,
     L::Output: iter::Extend<O>,
-    R: Parser<Stream = S>,
+    R: Parser<Stream = L::Stream>,
     R::Output: iter::IntoIterator<Item = O>,
 {
-    type Stream = S;
+    type Stream = L::Stream;
     type Output = L::Output;
 
     fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
