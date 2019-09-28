@@ -101,6 +101,10 @@ pub trait Parser {
         errors.add_errors(self.expected_errors());
     }
 
+    fn by_ref(&mut self) -> &mut Self {
+        self
+    }
+
     /// Wrap `self` with a custom error. If parsing fails, the parser's expected errors will be
     /// replaced with [`Expected(error)`].
     ///
@@ -370,6 +374,16 @@ pub trait Parser {
         O: std::iter::Extend<Self::Output> + Default,
     {
         wrap(self)
+    }
+}
+
+impl<P: Parser> Parser for &mut P
+{
+    type Stream = P::Stream;
+    type Output = P::Output;
+
+    fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        (**self).parse_lazy(stream)
     }
 }
 
