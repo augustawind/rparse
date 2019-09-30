@@ -25,7 +25,7 @@ pub fn atom<S: Stream>() -> impl Parser<Stream = S, Output = S::Item> {
             .collect::<Vec<S::Item>>();
         !(t.is_ascii_control() || separators.contains(t))
     })
-    .expect("a token")
+    .expect("an atom")
 }
 
 /// Parses any text surrounded with double quotes (").
@@ -94,7 +94,7 @@ mod test {
             "a" => ok('a', ("", 1)),
             "11" => ok('1', ("1", 1)),
             "_ab" => ok('_', ("ab", 1)),
-            "" => err(Error::eoi().expected("a token").at(0)),
+            "" => err(Error::eoi().expected("an atom").at(0)),
         });
 
         for c in 0u8..=32 {
@@ -102,7 +102,7 @@ mod test {
             let stream = IndexedStream::<&str>::from(input.as_ref());
             assert_eq!(
                 atom().parse(stream.clone()),
-                Err((Error::item(c as char).expected("a token").at(0), stream)),
+                Err((Error::item(c as char).expected("an atom").at(0), stream)),
                 "unexpectedly parsed '{}': should fail parsing control characters",
                 c as char,
             );
@@ -112,7 +112,7 @@ mod test {
             let stream = IndexedStream::from(&input[..]);
             assert_eq!(
                 atom().parse(stream.clone()),
-                Err((Error::item(item).expected("a token").at(0), stream)),
+                Err((Error::item(item).expected("an atom").at(0), stream)),
                 "unexpectedly parsed '{}': should fail parsing SEPARATORS",
                 item as char,
             );

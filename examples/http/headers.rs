@@ -24,9 +24,12 @@ pub fn field_name<S: Stream>() -> impl Parser<Stream = S, Output = String> {
 
 fn to_title_case(s: String) -> String {
     s.split('-')
-        .map(|part| {
+        .map(|part: &str| {
+            if part.is_empty() {
+                return String::new();
+            }
             let (first, rest) = part.split_at(1);
-            format!("{}{}", first.to_uppercase(), rest.to_lowercase())
+            first.to_ascii_uppercase() + &rest.to_ascii_lowercase()
         })
         .collect::<Vec<String>>()
         .join("-")
@@ -39,8 +42,8 @@ pub fn field_value<S: Stream>() -> impl Parser<Stream = S, Output = String> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use rparse::error::{Error, Info};
     use rparse::stream::IndexedStream;
-    use rparse::Error;
 
     macro_rules! map {
         ( $($key:expr => $value:expr),+ ) => {
@@ -69,6 +72,35 @@ mod test {
             "foo: bar" => err(Error::eoi().expected_range("\r\n").at(8)),
             "foo: bar\r" => err(Error::eoi().expected_range("\r\n").at(9)),
             "foo: bar\r \n" => err(Error::eoi().expected_range("\r\n").at(11)),
+        });
+    }
+
+    #[test]
+    fn test_field_name() {
+        let mut parser = field_name();
+        test_parser!(&str => String | parser, {
+            "foo" => ok("Foo".to_string(), ""),
+            "foo-BAR--baz" => ok("Foo-Bar--Baz".to_string(), ""),
+            "ok-15/" => ok("Ok-15".to_string(), "/"),
+            "ok-15 " => ok("Ok-15".to_string(), " "),
+            "ok-15\r\n" => ok("Ok-15".to_string(), "\r\n"),
+            "" => err(Error::eoi().expected("an atom")),
+            "/foo-bar" => err(Error::item('/').expected("an atom")),
+            "\r\n" => err(Error::item('\r').expected("an atom")),
+        });
+    }
+
+    #[test]
+    fn test_field_value() {
+        let mut parser = field_value();
+        let expected = vec![Info::Msg("a token"), Info::Range("\r\n")];
+        test_parser!(IndexedStream<&str> => String | parser, {
+            "foo\r\n" => ok("foo".to_string(), ("\r\n", 3)),
+            "  foo\t \t\r\n" => ok("foo".to_string(), ("\r\n", 8)),
+            "\tfoo-/\"bar\"\r\n" => ok("foo-/\"bar\"".to_string(), ("\r\n", 11)),
+            "" => err(Error::eoi().at(0).expected_one_of(expected.clone())),
+            "foo" => err(Error::eoi().at(3).expected_one_of(expected.clone())),
+            "foo\r" => err(Error::eoi().at(4).expected_one_of(expected.clone())),
         });
     }
 }
