@@ -45,7 +45,9 @@ pub trait Parser {
         result
     }
 
-    fn try_parse(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output>
+    /// Parses `stream` and reverts `stream` if parsing fails, so that parsing may continue
+    /// from its pre-failure state.
+    fn try_parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output>
     where
         Self: Sized,
     {

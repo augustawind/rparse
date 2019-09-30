@@ -167,7 +167,7 @@ where
     type Output = O;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        let (mut err, stream) = match self.p1.try_parse(stream) {
+        let (mut err, stream) = match self.p1.try_parse_lazy(stream) {
             Ok((result, stream)) => return stream.result(result),
             Err((err, stream)) => (err, stream),
         };
