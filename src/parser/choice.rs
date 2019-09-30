@@ -51,16 +51,13 @@ where
     type Stream = S;
     type Output = P2::Output;
 
-    fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        let (_, stream) = self.p1.parse_lazy(stream)?;
-        let (result, stream) = self.p2.parse_lazy(stream)?;
+    fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        let (_, stream) = self.p1.parse_partial(stream)?;
+        let (result, stream) = self.p2.parse_partial(stream)?;
         stream.result(result)
     }
-
-    fn expected_error(&self) -> Option<Expected<Self::Stream>> {
-        Expected::merge_seq(vec![self.p1.expected_error(), self.p2.expected_error()])
-    }
 }
+
 /// Parses with `p1` followed by `p2`. Succeeds if both parsers succeed, otherwise fails.
 /// Returns the result of `p2` on success.
 ///

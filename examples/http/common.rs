@@ -2,7 +2,6 @@ use rparse::parser::{
     item::{any, item, one_of, satisfy},
     range::range,
     repeat::{many, many1},
-    seq::between,
 };
 use rparse::stream::StreamItem;
 use rparse::{Error, Parser, Stream};
@@ -32,15 +31,27 @@ pub fn token<S: Stream>() -> impl Parser<Stream = S, Output = S::Item> {
 /// Within the block, double quotes (") must be escaped with a backslash (\). Parsing ends
 /// at the first unescaped double quote after the opening quote.
 pub fn quoted_text<S: Stream>() -> impl Parser<Stream = S, Output = String> {
-    between(
-        item(b'"'),
-        item(b'"'),
-        many(any().bind(|b: S::Item, stream: S| match b.into() {
-            '\\' => any().map(|b: S::Item| b.into()).parse_lazy(stream),
-            '"' => stream.err(Error::eoi()),
-            ch => stream.ok(ch),
-        })),
-    )
+    item(b'"').with(many(any().bind(|b: S::Item, stream: S| match b.into() {
+        '\\' => backslash_escaped().parse_lazy(stream),
+        '"' => stream.err(Error::eoi()),
+        ch => stream.ok(ch),
+    })))
+}
+
+fn backslash_escaped<S: Stream>() -> impl Parser<Stream = S, Output = char> {
+    any().bind(|b: S::Item, stream: S| {
+        let result = Some(match b.into() {
+            '\\' => '\\',
+            '\'' => '\'',
+            '"' => '"',
+            'n' => '\n',
+            'r' => '\r',
+            't' => '\t',
+            '0' => '\0',
+            _ => return stream.noop(),
+        });
+        stream.result(result)
+    })
 }
 
 /// Parses one or more linear whitespace characters.
@@ -91,6 +102,16 @@ mod test {
                 item as char,
             );
         }
+    }
+
+    #[test]
+    fn test_quoted_text() {
+        let mut parser = quoted_text();
+        test_parser!(IndexedStream<&str> => String | parser, {
+            r#""""# => ok("".to_string(), ("", 2)),
+            r#"" hey ""yo""# => ok(" hey ".to_string(), (r#""yo""#, 7)),
+            r#""({foo?\r\n})""# => ok("({foo?\r\n})".to_string(), ("", 14)),
+        });
     }
 
     #[test]
