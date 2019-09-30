@@ -95,6 +95,12 @@ impl<'a> Stream for &'a str {
         })
     }
 
+    fn as_range(&mut self) -> Self::Range {
+        let range = &self[..];
+        *self = "";
+        range
+    }
+
     fn position(&self) -> &Self::Position {
         &NullPosition(())
     }
@@ -144,6 +150,12 @@ impl<'a> Stream for &'a [u8] {
             *self = &tail;
             Some(head)
         }
+    }
+
+    fn as_range(&mut self) -> Self::Range {
+        let range = &self[..];
+        *self = &[][..];
+        range
     }
 
     fn position(&self) -> &Self::Position {

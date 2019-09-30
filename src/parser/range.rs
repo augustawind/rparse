@@ -15,32 +15,31 @@ impl<S: Stream> Parser for Range<S> {
     fn parse_lazy(&mut self, mut stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         let idx = self.range.len();
         let mut start_pos = stream.position().clone();
-        let mut result = match stream.range(idx) {
-            Some(mut range) => {
+
+        let mut range = match stream.range(idx) {
+            Some(range) => {
                 if range == self.range {
-                    stream.ok(range)
+                    return stream.ok(range);
                 } else {
-                    let located = range
-                        .tokens()
-                        .zip(self.range.tokens())
-                        .enumerate()
-                        .find(|&(_, (left, right))| left != right);
-                    match located {
-                        Some((i, (left, _))) => {
-                            let range = range.range(i).unwrap();
-                            start_pos.update_range(&range);
-                            stream.err(Error::unexpected_item(left))
-                        }
-                        None => stream.err(Error::eoi()),
-                    }
+                    range
                 }
             }
-            None => stream.err(Error::eoi()),
+            None => stream.as_range(),
         };
-        if let Err((ref mut errors, _)) = result {
-            errors.position = start_pos;
+
+        let err_idx = range
+            .tokens()
+            .zip(self.range.tokens())
+            .enumerate()
+            .find(|&(_, (left, right))| left != right);
+        match err_idx {
+            Some((i, (left, _))) => {
+                let range = range.range(i).unwrap();
+                start_pos.update_range(&range);
+                stream.err_at(start_pos, Error::unexpected_item(left))
+            }
+            None => stream.err_at(start_pos, Error::eoi()),
         }
-        result
     }
 
     fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
@@ -68,7 +67,7 @@ mod test {
             "defcon" => ok("def", ("con", 3)),
             "" => err(0, vec![Error::eoi(), Error::expected_range("def")]),
             "de" => err(0, vec![Error::eoi(), Error::expected_range("def")]),
-            "dr" => err(0, vec![Error::eoi(), Error::expected_range("def")]),
+            "dr" => err(1, vec![Error::unexpected_item('r'), Error::expected_range("def")]),
             "deg" => err(2, vec![Unexpected('g'.into()), Error::expected_range("def")]),
         });
     }

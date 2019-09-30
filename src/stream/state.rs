@@ -66,6 +66,12 @@ where
         })
     }
 
+    fn as_range(&mut self) -> Self::Range {
+        let range = self.stream.as_range();
+        self.position.update_range(&range);
+        range
+    }
+
     fn position(&self) -> &Self::Position {
         &self.position
     }
