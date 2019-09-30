@@ -1,9 +1,12 @@
 use std::str::FromStr;
 
-use rparse::parser::parser;
-use rparse::parser::range::range;
-use rparse::parser::repeat::{many, many1};
-use rparse::parser::token::{ascii, token};
+use rparse::parser::{
+    parser,
+    range::range,
+    repeat::{many, many1},
+    token::{ascii, satisfy, token},
+};
+use rparse::stream::StreamItem;
 use rparse::{Parser, Stream};
 
 enum HTTPVersion {
@@ -138,13 +141,14 @@ fn uri_token<S>() -> impl Parser<Stream = S, Output = S::Item>
 where
     S: Stream,
 {
-    choice![
-        ascii::alpha_num(),
-        token(b'-'),
-        token(b'.'),
-        token(b'_'),
-        token(b'~')
-    ]
+    satisfy(|item: &S::Item| {
+        item.is_ascii_alphanumeric()
+            || [b'-', b'_', b'.', b'!', b'~', b'*', b'\'', b'(', b')']
+                .into_iter()
+                .map(|&b| b.into())
+                .collect::<Vec<S::Item>>()
+                .contains(item)
+    })
 }
 
 fn percent_encoded<S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
