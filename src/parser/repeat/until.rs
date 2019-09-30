@@ -1,3 +1,4 @@
+use crate::error::Expected;
 use {Error, ParseResult, Parser, Stream};
 
 pub struct TakeUntil<P> {
@@ -31,8 +32,8 @@ where
         }
     }
 
-    fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
-        self.p.expected_errors()
+    fn expected_error(&self) -> Option<Expected<Self::Stream>> {
+        self.p.expected_error()
     }
 }
 

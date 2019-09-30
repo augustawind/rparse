@@ -30,9 +30,9 @@ where
                 stream
             }
             Ok((None, stream)) => stream,
-            Err((errors, stream)) => {
+            Err((error, stream)) => {
                 if i < self.min {
-                    return stream.errs(errors);
+                    return stream.err(error);
                 }
                 return stream.ok(output);
             }
@@ -46,9 +46,9 @@ where
                     stream
                 }
                 Ok((None, stream)) => stream,
-                Err((errors, stream)) => {
+                Err((error, stream)) => {
                     if i < self.min {
-                        return stream.errs(errors);
+                        return stream.err(error);
                     }
                     return stream.ok(output);
                 }
@@ -132,12 +132,9 @@ mod test {
                 vec!["foo".to_string(), "bar".to_string(), "baz".to_string()],
                 (",", 11),
             ),
-            "" => err(0, vec![Error::eoi(), Error::expected("an ascii letter")]),
-            "," => err(0, vec![Error::unexpected_item(','), Error::expected("an ascii letter")]),
-            "33a,b" => err(0, vec![
-                Error::unexpected_item('3'),
-                Error::expected("an ascii letter"),
-            ]),
+            "" => err(Error::eoi().expected("an ascii letter").at(0)),
+            "," => err(Error::item(',').expected("an ascii letter").at(0)),
+            "33a,b" => err(Error::item('3').expected("an ascii letter").at(0)),
         });
     }
 }

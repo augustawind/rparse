@@ -1,6 +1,6 @@
 //! Parsers that parse a continuous series of tokens.
 
-use error::{Error, ParseResult};
+use error::{Error, Expected, ParseResult};
 use parser::Parser;
 use stream::{Position, RangeStream, Stream};
 
@@ -36,14 +36,14 @@ impl<S: Stream> Parser for Range<S> {
             Some((i, (left, _))) => {
                 let range = range.range(i).unwrap();
                 start_pos.update_range(&range);
-                stream.err_at(start_pos, Error::unexpected_item(left))
+                stream.err_at(start_pos, Error::item(left))
             }
             None => stream.err_at(start_pos, Error::eoi()),
         }
     }
 
-    fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
-        vec![Error::expected_range(self.range.clone())]
+    fn expected_error(&self) -> Option<Expected<Self::Stream>> {
+        Some(Expected::range(self.range.clone()))
     }
 }
 
@@ -57,7 +57,6 @@ pub fn range<S: Stream>(range: &'static str) -> Range<S> {
 mod test {
     use super::*;
     use stream::IndexedStream;
-    use Error::*;
 
     #[test]
     fn test_range() {
@@ -65,10 +64,10 @@ mod test {
         test_parser!(IndexedStream<&str> => &str | parser, {
             "def" => ok("def", ("", 3)),
             "defcon" => ok("def", ("con", 3)),
-            "" => err(0, vec![Error::eoi(), Error::expected_range("def")]),
-            "de" => err(0, vec![Error::eoi(), Error::expected_range("def")]),
-            "dr" => err(1, vec![Error::unexpected_item('r'), Error::expected_range("def")]),
-            "deg" => err(2, vec![Unexpected('g'.into()), Error::expected_range("def")]),
+            "" => err(Error::eoi().expected_range("def")),
+            "de" => err(Error::eoi().expected_range("def")),
+            "dr" => err(Error::item('r').at(1).expected_range("def")),
+            "deg" => err(Error::item('g').at(2).expected_range("def")),
         });
     }
 }

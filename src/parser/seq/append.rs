@@ -67,7 +67,6 @@ mod test {
     use parser::repeat::many;
     use parser::Parser;
     use stream::IndexedStream;
-    use Error::*;
 
     #[test]
     fn test_append() {
@@ -76,10 +75,10 @@ mod test {
             "huh?" => ok("huh?".chars().collect(), ("", 4)),
             "oh? cool" => ok("oh?".chars().collect(), (" cool", 3)),
             "???" => ok("?".chars().collect(), ("??", 1)),
-            "" => err(0, vec![Error::eoi(), Error::expected_item('?')]),
-            "" => err(0, vec![Error::eoi(), Error::expected_item('?')]),
-            "whoops!" => err(6, vec![Error::unexpected_item('!'), Error::expected_item('?')]),
-            "!?" => err(0, vec![Error::unexpected_item('!'), Error::expected_item('?')]),
+            "" => err(Error::eoi().expected_item('?').at(0)),
+            "" => err(Error::eoi().expected_item('?').at(0)),
+            "whoops!" => err(Error::item('!').expected_item('?').at(6)),
+            "!?" => err(Error::item('!').expected_item('?').at(0)),
         });
     }
 
@@ -89,9 +88,9 @@ mod test {
         test_parser!(IndexedStream<&str> => String | parser, {
             "%AF" => ok("%AF".into(), ("", 3)),
             "%d8_/^/_" => ok("%d8".into(), ("_/^/_", 3)),
-            "" => err(0, vec![Error::eoi(), Error::expected_item('%')]),
-            "%0" => err(2, vec![Error::eoi(), Error::expected("a hexadecimal digit")]),
-            "%zz" => err(1, vec![Unexpected('z'.into()), Error::expected("a hexadecimal digit")]),
+            "" => err(Error::eoi().expected_item('%').at(0)),
+            "%0" => err(Error::eoi().expected("a hexadecimal digit").at(2)),
+            "%zz" => err(Error::item('z').expected("a hexadecimal digit").at(1)),
         });
 
         let mut parser = seq![item(b'x'), item(b'y')].collect();

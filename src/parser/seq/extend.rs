@@ -58,7 +58,6 @@ mod test {
     use parser::repeat::{many, many1};
     use parser::Parser;
     use stream::IndexedStream;
-    use Error::*;
 
     #[test]
     fn test_extend() {
@@ -67,9 +66,9 @@ mod test {
             "huh???" => ok("huh???".chars().collect(), ("", 6)),
             "oh?? cool" => ok("oh??".chars().collect(), (" cool", 4)),
             "???" => ok("???".chars().collect(), ("", 3)),
-            "" => err(0, vec![Error::eoi(), Error::expected_item('?')]),
-            "whoops!" => err(6, vec![Error::unexpected_item('!'), Error::expected_item('?')]),
-            "!?" => err(0, vec![Error::unexpected_item('!'), Error::expected_item('?')]),
+            "" => err(Error::eoi().expected_item('?').at(0)),
+            "whoops!" => err(Error::item('!').expected_item('?').at(6)),
+            "!?" => err(Error::item('!').expected_item('?').at(0)),
         });
     }
 
@@ -86,22 +85,10 @@ mod test {
             "x9" => ok("x9".to_string(), ("", 2)),
             "t1t3 man" => ok("t1t3".to_string(), (" man", 4)),
             "  xs = [2, 3]" => ok("  xs".to_string(), (" = [2, 3]", 4)),
-            "" => err(0, vec![
-                Error::eoi(),
-                Error::expected("an ascii letter"),
-            ]),
-            "?" => err(0, vec![
-                Unexpected('?'.into()),
-                Error::expected("an ascii letter"),
-            ]),
-            "a" => err(1, vec![
-                Error::eoi(),
-                Error::expected("an ascii letter or digit"),
-            ]),
-            "a?" => err(1, vec![
-                Unexpected('?'.into()),
-                Error::expected("an ascii letter or digit"),
-            ]),
+            "" => err(Error::eoi().expected("an ascii letter").at(0)),
+            "?" => err(Error::item('?').expected("an ascii letter").at(0)),
+            "a" => err(Error::eoi().expected("an ascii letter or digit").at(1)),
+            "a?" => err(Error::item('?').expected("an ascii letter or digit").at(1)),
         });
     }
 }

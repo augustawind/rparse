@@ -25,7 +25,7 @@ use self::function::{
 };
 use self::item::{negate, Negate};
 use self::seq::{append, extend, then, Append, Extend, Then};
-use error::{Error, Errors, ParseResult};
+use error::{Error, Expected, ParseResult};
 use stream::{RangeStream, Stream};
 use traits::StrLike;
 
@@ -90,7 +90,7 @@ pub trait Parser {
     fn must_parse(
         &mut self,
         stream: Self::Stream,
-    ) -> Result<(Self::Output, Self::Stream), (Errors<Self::Stream>, Self::Stream)>
+    ) -> Result<(Self::Output, Self::Stream), (Error<Self::Stream>, Self::Stream)>
     where
         Self: Sized,
     {
@@ -99,14 +99,14 @@ pub trait Parser {
             Ok((Some(output), stream)) => Ok((output, stream)),
             Ok((None, mut stream)) => {
                 &mut stream.restore(backup);
-                let mut errors = stream.new_errors();
-                self.add_expected_error(&mut errors);
-                Err((errors, stream))
+                let mut error = stream.new_error();
+                self.add_expected_error(&mut error);
+                Err((error, stream))
             }
-            Err((mut errors, mut stream)) => {
+            Err((mut error, mut stream)) => {
                 &mut stream.restore(backup);
-                self.add_expected_error(&mut errors);
-                Err((errors, stream))
+                self.add_expected_error(&mut error);
+                Err((error, stream))
             }
         }
     }
@@ -114,16 +114,18 @@ pub trait Parser {
     /// Returns a [`Vec`] of the expected errors that should be added if parsing fails.
     ///
     /// By default this returns an empty [`Vec`].
-    fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
-        Vec::new()
+    fn expected_error(&self) -> Option<Expected<Self::Stream>> {
+        None
     }
 
     /// Adds this parsers expected errors to `errors`.
     ///
     /// In most cases, this should be left as the default and [`Parser::expected_errors`]
     /// should be defined instead.
-    fn add_expected_error(&self, errors: &mut Errors<Self::Stream>) {
-        errors.add_errors(self.expected_errors());
+    fn add_expected_error(&self, error: &mut Error<Self::Stream>) {
+        if let Some(expected) = self.expected_error() {
+            *error = error.expected(expected);
+        }
     }
 
     /// Returns a mutable referance to this parser.
@@ -452,7 +454,7 @@ mod test {
         parser(|mut stream: S| match stream.pop() {
             Some(t) => match t {
                 'a' | 'e' | 'i' | 'o' | 'u' => stream.ok(t),
-                _ => stream.err(Error::unexpected_item(t)),
+                _ => stream.err(Error::item(t)),
             },
             None => stream.err(Error::eoi()),
         })
@@ -464,8 +466,8 @@ mod test {
             "a" => ok('a', ("", 1)),
             "ooh" => ok('o', ("oh", 1)),
             "" => err(0, vec![Error::eoi()]),
-            "d" => err(1, vec![Error::unexpected_item('d')]),
-            "du" => err(1, vec![Error::unexpected_item('d')]),
+            "d" => err(1, vec![Error::item('d')]),
+            "du" => err(1, vec![Error::item('d')]),
         });
     }
 
@@ -478,7 +480,7 @@ mod test {
             if t == b'\n'.into() {
                 Ok(t)
             } else {
-                Err(Error::unexpected_item(t))
+                Err(Error::item(t))
             }
         }) {
             Ok(ok) => stream.ok(ok),
@@ -492,7 +494,7 @@ mod test {
             "\n".as_bytes() => ok(b'\n', ("".as_bytes(), 1)),
             "\nx".as_bytes() => ok(b'\n', ("x".as_bytes(), 1)),
             "".as_bytes() => err(0, vec![Error::eoi()]),
-            "x\n".as_bytes() => err(1, vec![Error::unexpected_item(b'x')]),
+            "x\n".as_bytes() => err(1, vec![Error::item(b'x')]),
         });
     }
 }

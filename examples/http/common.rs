@@ -1,5 +1,5 @@
 use rparse::parser::{
-    item::{one_of, satisfy},
+    item::{item, one_of, satisfy},
     range::range,
     repeat::many1,
 };
