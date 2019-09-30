@@ -22,7 +22,7 @@ where
     }
 }
 
-fn between<L, R, P>(open: L, close: R, p: P) -> Between<L, R, P>
+pub fn between<L, R, P>(open: L, close: R, p: P) -> Between<L, R, P>
 where
     P: Parser,
     L: Parser<Stream = P::Stream>,

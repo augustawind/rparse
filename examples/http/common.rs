@@ -1,10 +1,11 @@
 use rparse::parser::{
-    item::{item, one_of, satisfy},
+    item::{any, item, one_of, satisfy},
     range::range,
-    repeat::many1,
+    repeat::{many, many1},
+    seq::between,
 };
 use rparse::stream::StreamItem;
-use rparse::{Parser, Stream};
+use rparse::{Error, Parser, Stream};
 
 pub static SEPARATORS: &'static [u8] = &[
     b'(', b')', b'<', b'>', b'@', b',', b';', b':', b'\\', b'"', b'/', b'[', b']', b'?', b'=',
@@ -26,10 +27,30 @@ pub fn token<S: Stream>() -> impl Parser<Stream = S, Output = S::Item> {
     .expect("a token")
 }
 
+/// Parses any text surrounded with double quotes (").
+///
+/// Within the block, double quotes (") must be escaped with a backslash (\). Parsing ends
+/// at the first unescaped double quote after the opening quote.
+pub fn quoted_text<S: Stream>() -> impl Parser<Stream = S, Output = String> {
+    between(
+        item(b'"'),
+        item(b'"'),
+        many(any().bind(|b: S::Item, stream: S| match b.into() {
+            '\\' => any().map(|b: S::Item| b.into()).parse_lazy(stream),
+            '"' => stream.err(Error::eoi()),
+            ch => stream.ok(ch),
+        })),
+    )
+}
+
+/// Parses one or more linear whitespace characters.
+///
+/// Linear whitespace is any whitespace character that doesn't start a new line.
 pub fn lws<S: Stream>() -> impl Parser<Stream = S, Output = ()> {
     many1(one_of(&[b' ', b'\t']).map(|_| ()))
 }
 
+/// Parses a carriage return/line feed sequence (\r\n).
 fn crlf<S: Stream>() -> impl Parser<Stream = S, Output = S::Range> {
     range("\r\n")
 }
