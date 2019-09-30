@@ -1,5 +1,5 @@
 use crate::error::Expected;
-use {Error, ParseResult, Parser, Stream};
+use {ParseResult, Parser, Stream};
 
 pub struct Skip<P1, P2> {
     p1: P1,
@@ -211,12 +211,13 @@ macro_rules! choice {
 #[cfg(test)]
 mod test {
     use super::*;
-    use error::Info;
-    use parser::item::{any, ascii, item};
-    use parser::repeat::{many, many1};
-    use parser::seq::then;
-    use parser::test_utils::*;
-    use parser::Parser;
+    use error::{Error, Info};
+    use parser::{
+        item::{any, ascii, item},
+        repeat::{many, many1},
+        seq::then,
+        test_utils::*,
+    };
     use stream::IndexedStream;
 
     #[test]

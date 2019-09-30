@@ -139,12 +139,12 @@ pub trait Parser {
     /// replaced with [`Expected(error)`].
     ///
     /// [`Expected(error)`]: Error::Expected
-    fn expect<E>(self, error: E) -> Expect<Self>
+    fn expect<E>(self, expected: E) -> Expect<Self>
     where
         Self: Sized,
-        E: Into<Error<Self::Stream>>,
+        E: Into<Expected<Self::Stream>>,
     {
-        expect(self, error)
+        expect(self, expected)
     }
 
     /// Reverses the parse behavior of `self`. Fails if `self` succeeds, succeeds if `self` fails.
