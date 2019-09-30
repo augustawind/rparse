@@ -38,7 +38,6 @@ where
         let (method, s) = http_method().must_parse(s)?;
         let (uri, s) = item(b' ').with(uri()).must_parse(s)?;
         let (version, s) = item(b' ').with(http_version()).must_parse(s)?;
-        let (_, s) = crlf().must_parse(s)?;
         s.ok((method, uri, version))
     }))
 }
@@ -177,6 +176,7 @@ mod test {
         test_parser!(IndexedStream<&[u8]> => String | http_method(), {
             &b"GET"[..] => ok("GET".into(), (&b""[..], 3)),
             &b"HEAD\n/"[..] => ok("HEAD".into(), (&b"\n/"[..], 4)),
+            &b"GET http://"[..] => ok("GET".into(), (&b" http://"[..], 3)),
         });
 
         test_parser!(IndexedStream<&[u8]> => String | http_method(), {

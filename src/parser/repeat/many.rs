@@ -22,7 +22,7 @@ where
         let mut output = O::default();
         let mut i = 0;
         loop {
-            stream = match self.p.parse_lazy(stream) {
+            stream = match self.p.try_parse_lazy(stream) {
                 Ok((Some(result), stream)) => {
                     output.extend(std::iter::once(result));
                     stream

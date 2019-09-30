@@ -8,17 +8,17 @@ use rparse::{Parser, Stream};
 
 use common::{atom, crlf, text};
 
-type Headers = HashMap<String, String>;
+pub type Headers = HashMap<String, String>;
 
 pub fn headers<S: Stream>() -> impl Parser<Stream = S, Output = Headers> {
     sep_by::<Headers, _, _>(header_field(), crlf()).skip(crlf())
 }
 
-pub fn header_field<S: Stream>() -> impl Parser<Stream = S, Output = (String, String)> {
+fn header_field<S: Stream>() -> impl Parser<Stream = S, Output = (String, String)> {
     (field_name(), item(b':'), field_value()).map(|(key, _, value)| (key, value))
 }
 
-pub fn field_name<S: Stream>() -> impl Parser<Stream = S, Output = String> {
+fn field_name<S: Stream>() -> impl Parser<Stream = S, Output = String> {
     many1(atom().as_char()).map(to_title_case)
 }
 
@@ -35,7 +35,7 @@ fn to_title_case(s: String) -> String {
         .join("-")
 }
 
-pub fn field_value<S: Stream>() -> impl Parser<Stream = S, Output = String> {
+fn field_value<S: Stream>() -> impl Parser<Stream = S, Output = String> {
     text().map(|s: String| s.trim().to_string())
 }
 

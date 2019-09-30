@@ -95,7 +95,7 @@ pub trait Parser {
         Self: Sized,
     {
         let backup = stream.backup();
-        match self.parse_lazy(stream) {
+        match self.parse_partial(stream) {
             Ok((Some(output), stream)) => Ok((output, stream)),
             Ok((None, mut stream)) => {
                 &mut stream.restore(backup);
