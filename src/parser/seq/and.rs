@@ -1,5 +1,4 @@
-use crate::{Stream, ParseResult, Parser, Expected};
-
+use crate::{Expected, ParseResult, Parser, Stream};
 
 pub struct And<L, R> {
     p1: L,
@@ -50,7 +49,7 @@ mod test {
         repeat::many1,
     };
     use crate::stream::IndexedStream;
-    use crate::{Error};
+    use crate::Error;
 
     #[test]
     fn test_and() {

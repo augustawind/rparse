@@ -77,7 +77,10 @@ pub fn text<S: Stream>() -> impl Parser<Stream = S, Output = String> {
         any().as_char(),
         crlf().skip(none_of(LWS)).or(crlf().skip(eoi::<(), _>())),
     )
-    .expect(Expected::OneOf(vec!["a token".into(), "a CRLF sequence".into()]))
+    .expect(Expected::OneOf(vec![
+        "a token".into(),
+        "a CRLF sequence".into(),
+    ]))
     .map(|s: String| {
         SPLIT_RE
             .split(&s)
