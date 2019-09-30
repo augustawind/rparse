@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate rparse;
 
+mod common;
 mod request_line;
 
 use rparse::stream::IndexedStream;
