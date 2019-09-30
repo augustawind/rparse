@@ -166,6 +166,7 @@ mod test {
     use error::{Error, Info};
     use parser::{
         item::{any, ascii, item},
+        range::range,
         repeat::{many, many1},
         seq::then,
         test_utils::*,
@@ -240,6 +241,18 @@ mod test {
         test_parser!(IndexedStream<&str> => String | parser, {
             "123a bc" => ok("123".into(), ("a bc", 3)),
             "a b c" => ok("a ".into(), ("b c", 2)),
+        });
+
+        let mut parser = or(or(range("feel"), range("feet")), range("fee"));
+        test_parser!(IndexedStream<&str> => &str | parser, {
+            "feel" => ok("feel", ("", 4)),
+            "feet" => ok("feet", ("", 4)),
+            "fees" => ok("fee", ("s", 3)),
+            "fern" => err(Error::item('r').at(2).expected_one_of(vec![
+                Info::Range("feel"),
+                Info::Range("feet"),
+                Info::Range("fee"),
+            ])),
         });
     }
 

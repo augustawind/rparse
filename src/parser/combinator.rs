@@ -42,6 +42,32 @@ where
     }
 }
 
+pub struct Attempt<P: Parser> {
+    p: P,
+}
+
+impl<P: Parser> Parser for Attempt<P> {
+    type Stream = P::Stream;
+    type Output = P::Output;
+
+    fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        let backup = stream.backup();
+        let mut result = self.p.parse_lazy(stream);
+        if let Err((_, ref mut stream)) = result {
+            stream.restore(backup);
+        }
+        result
+    }
+
+    fn try_parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        self.parse_lazy(stream)
+    }
+}
+
+pub fn attempt<P: Parser>(p: P) -> Attempt<P> {
+    Attempt { p }
+}
+
 pub struct Map<P, F> {
     parser: P,
     f: F,
@@ -220,11 +246,25 @@ mod test {
     use error::Error;
     use parser::{
         item::{ascii, item},
+        range::range,
         repeat::many1,
         seq::then,
         test_utils::*,
     };
     use stream::{IndexedStream, SourceCode};
+
+    #[test]
+    fn test_attempt() {
+        let mut parser = attempt(range("abcdef"));
+        let (result, stream) = parser.parse_lazy(IndexedStream::from("abcdef")).unwrap();
+        assert_eq!(result, Some("abcdef"));
+        assert_eq!(stream, ("", 6).into());
+
+        let (_, stream) = range("abcdef").parse_lazy(IndexedStream::from("abcd!!!!")).unwrap_err();
+        assert_eq!(stream, ("!!", 6).into());
+        let (_, stream) = parser.parse_lazy(IndexedStream::from("abcde!!!")).unwrap_err();
+        assert_eq!(stream, ("abcde!!!", 0).into());
+    }
 
     #[test]
     fn test_map() {
