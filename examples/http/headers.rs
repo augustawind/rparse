@@ -58,12 +58,17 @@ mod test {
     fn test_headers() {
         let mut parser = headers();
         test_parser!(IndexedStream<&str> => Headers | parser, {
+            "\r\n" => ok(HashMap::new(), ("", 2)),
             "accept: foo/bar\r\n" => ok(map!["Accept" => "foo/bar"], ("", 17)),
             "content-tYPE:   11 \r\nx:y\r\n\r\n" => ok(
                 map!["Content-Type" => "11", "X" => "y"],
                 ("\r\n", 26)
             ),
             "spacing: 1\r2\n3\r\r4\r\n" => ok(map!["Spacing" => "1\r2\n3\r\r4"], ("", 19)),
+            "" => err(Error::eoi().expected_range("\r\n").at(0)),
+            "foo: bar" => err(Error::eoi().expected_range("\r\n").at(8)),
+            "foo: bar\r" => err(Error::eoi().expected_range("\r\n").at(9)),
+            "foo: bar\r \n" => err(Error::eoi().expected_range("\r\n").at(11)),
         });
     }
 }

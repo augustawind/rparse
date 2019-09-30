@@ -15,14 +15,10 @@ where
     type Stream = S;
     type Output = P1::Output;
 
-    fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        let (result, stream) = self.p1.parse_lazy(stream)?;
-        let (_, stream) = self.p2.parse_lazy(stream)?;
+    fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        let (result, stream) = self.p1.parse_partial(stream)?;
+        let (_, stream) = self.p2.parse_partial(stream)?;
         stream.result(result)
-    }
-
-    fn expected_error(&self) -> Option<Expected<Self::Stream>> {
-        Expected::merge_seq(vec![self.p1.expected_error(), self.p2.expected_error()])
     }
 }
 
