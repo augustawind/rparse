@@ -58,3 +58,21 @@ where
         self.sep.expected_errors()
     }
 }
+
+pub fn sep_by<O, P, Sep>(p: P, sep: Sep) -> SepBy<O, P, Sep>
+where
+    P: Parser,
+    Sep: Parser<Stream = P::Stream>,
+    O: Extend<P::Output> + Default,
+{
+    SepBy { p, sep, min: 0, _marker: PhantomData }
+}
+
+pub fn sep_by1<O, P, Sep>(p: P, sep: Sep) -> SepBy<O, P, Sep>
+where
+    P: Parser,
+    Sep: Parser<Stream = P::Stream>,
+    O: Extend<P::Output> + Default,
+{
+    SepBy { p, sep, min: 1, _marker: PhantomData }
+}
