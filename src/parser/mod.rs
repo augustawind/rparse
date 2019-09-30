@@ -7,7 +7,7 @@ mod test_utils;
 
 #[macro_use]
 pub mod choice;
-pub mod function;
+pub mod combinator;
 pub mod item;
 pub mod range;
 pub mod repeat;
@@ -18,9 +18,9 @@ use std::iter::FromIterator;
 use std::str;
 
 use self::choice::{optional, or, skip, with, Optional, Or, Skip, With};
-use self::function::{
-    bind, collect, expect, flatten, from_str, map, wrap, Bind, Collect, Expect, Flatten,
-    FromStr, Map, Wrap,
+use self::combinator::{
+    bind, collect, expect, flatten, from_str, map, wrap, Bind, Collect, Expect, Flatten, FromStr,
+    Map, Wrap,
 };
 use self::item::{negate, Negate};
 use self::seq::{and, append, extend, then, And, Append, Extend, Then};
@@ -34,7 +34,7 @@ pub trait Parser {
 
     /// Parses `stream`. Doesn't revert `stream` or add expected errors if parsing fails.
     ///
-    /// At minimum, implementors must implement this function or [`Parser::parse_partial`] since
+    /// At minimum, implementors must implement this method or [`Parser::parse_partial`] since
     /// their default definitions each reference each other. Where possible, it is preferred to
     /// implement `parse_lazy` so that callers can postpone adding expected errors until parsing
     /// is complete.
@@ -44,7 +44,7 @@ pub trait Parser {
 
     /// Parses `stream` and adds expected errors if parsing fails.
     ///
-    /// At minimum, implementors must implement this function or [`Parser::parse_partial`] since
+    /// At minimum, implementors must implement this method or [`Parser::parse_partial`] since
     /// their default definitions each reference each other.
     fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         let mut result = self.parse_lazy(stream);

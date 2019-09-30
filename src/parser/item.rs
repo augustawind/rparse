@@ -3,7 +3,7 @@
 use std::marker::PhantomData;
 
 use error::{Error, Expected, Info, ParseResult};
-use parser::function::Expect;
+use parser::combinator::Expect;
 use parser::Parser;
 use stream::{Position, Stream, StreamItem};
 

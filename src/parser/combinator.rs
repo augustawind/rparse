@@ -1,4 +1,4 @@
-//! Parsers that transform the output of other Parsers with arbitrary functions.
+//! Parsers that transform other Parsers.
 
 use std::fmt::Display;
 use std::iter::FromIterator;
