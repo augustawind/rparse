@@ -90,16 +90,26 @@ where
     p.map(|output| output.into_iter().collect())
 }
 
-pub type Flatten<P, O> = Map<P, fn(<P as Parser>::Output) -> Vec<O>>;
+pub type Flatten<O, P> = Map<P, fn(<P as Parser>::Output) -> O>;
 
 /// Equivalent to [`p.flatten()`].
 ///
 /// [`p.flatten()`]: Parser::flatten
-pub fn flatten<P, O>(p: P) -> Flatten<P, O>
+pub fn flatten<O, P>(p: P) -> Flatten<O, P>
 where
-    P: Parser<Output = Vec<Vec<O>>>,
+    P: Parser,
+    P::Output: IntoIterator,
+    <P::Output as IntoIterator>::Item: IntoIterator,
+    O: std::iter::Extend<<<P::Output as IntoIterator>::Item as IntoIterator>::Item> + Default,
 {
-    p.map(|output| output.into_iter().flatten().collect())
+    p.map(|output| {
+        output
+            .into_iter()
+            .fold(O::default(), |mut acc, collection| {
+                acc.extend(collection.into_iter());
+                acc
+            })
+    })
 }
 
 pub type Wrap<O, P> = Map<P, fn(<P as Parser>::Output) -> O>;
@@ -211,6 +221,7 @@ mod test {
     use parser::{
         item::{ascii, item},
         repeat::many1,
+        seq::then,
         test_utils::*,
     };
     use stream::{IndexedStream, SourceCode};
@@ -286,7 +297,10 @@ mod test {
 
     #[test]
     fn test_flatten() {
-        let mut parser = flatten(many1(ascii::digit()).then(many1(ascii::letter())));
+        let mut parser = flatten(then::<Vec<Vec<_>>, _, _>(
+            many1(ascii::digit()),
+            many1(ascii::letter()),
+        ));
         test_parser!(IndexedStream<&str> => Vec<char> | parser, {
             "1a" => ok(vec!['1', 'a'], ("", 2)),
             "0bb3" => ok(vec!['0', 'b', 'b'], ("3", 3)),

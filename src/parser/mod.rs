@@ -381,9 +381,13 @@ pub trait Parser {
         extend(self, p)
     }
 
-    fn flatten<O>(self) -> Flatten<Self, O>
+    fn flatten<O>(self) -> Flatten<O, Self>
     where
-        Self: Sized + Parser<Output = Vec<Vec<O>>>,
+        Self: Sized + Parser,
+        Self::Output: IntoIterator,
+        <Self::Output as IntoIterator>::Item: IntoIterator,
+        O: std::iter::Extend<<<Self::Output as IntoIterator>::Item as IntoIterator>::Item>
+            + Default,
     {
         flatten(self)
     }

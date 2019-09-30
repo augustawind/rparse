@@ -111,14 +111,14 @@ where
             // followed by zero or more URI segments separated by slashes
             concat![
                 uri_segment(),
-                many(item(b'/').wrap().or(uri_segment())).flatten(),
+                many::<Vec<_>, _>(item(b'/').wrap().or(uri_segment())).flatten(),
             ]
             .optional()
         ],
         // or a URI segment followed by zero or more URI segments separated by slashes
         concat![
             uri_segment(),
-            many(item(b'/').wrap().or(uri_segment())).flatten(),
+            many::<Vec<_>, _>(item(b'/').wrap().or(uri_segment())).flatten(),
         ],
     ]
     .collect_string()
@@ -129,7 +129,7 @@ where
     S: Stream,
 {
     // a URI segment is one or more
-    many1(choice![
+    many1::<Vec<_>, _>(choice![
         // percent-encoded octets
         percent_encoded(),
         // and URI-safe character sequences
