@@ -30,7 +30,7 @@ pub fn lws<S: Stream>() -> impl Parser<Stream = S, Output = ()> {
     many1(one_of(&[b' ', b'\t']).map(|_| ()))
 }
 
-fn crlf<S: Stream>() -> impl Parser<Stream = S> {
+fn crlf<S: Stream>() -> impl Parser<Stream = S, Output = S::Range> {
     range("\r\n")
 }
 
@@ -104,6 +104,18 @@ mod test {
                 Error::unexpected_item('\r'),
                 Error::expected_one_of(vec![b' ', b'\t']),
             ]),
+        });
+    }
+
+    #[test]
+    fn test_crlf() {
+        let mut parser = crlf();
+        test_parser!(IndexedStream<&str> => &str | parser, {
+            "\r\n" => ok("\r\n", ("", 2)),
+            "\r\n\tfoo" => ok("\r\n", ("\tfoo", 2)),
+            "" => err(0, vec![Error::eoi(), Error::expected_range("\r\n")]),
+            "\r" => err(0, vec![Error::eoi(), Error::expected_range("\r\n")]),
+            "\n" => err(0, vec![Error::unexpected_item('\n'), Error::expected_range("\r\n")]),
         });
     }
 }
