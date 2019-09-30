@@ -18,13 +18,13 @@ use std::fmt::Display;
 use std::iter::FromIterator;
 use std::str;
 
-use self::choice::{and, optional, or, skip, with, And, Optional, Or, Skip, With};
+use self::choice::{optional, or, skip, with, Optional, Or, Skip, With};
 use self::function::{
     bind, collect, expect, flatten, from_str, iter, map, wrap, Bind, Collect, Expect, Flatten,
     FromStr, Iter, Map, Wrap,
 };
 use self::item::{negate, Negate};
-use self::seq::{append, extend, then, Append, Extend, Then};
+use self::seq::{and, append, extend, then, And, Append, Extend, Then};
 use error::{Error, Expected, ParseResult};
 use stream::{RangeStream, Stream};
 use traits::StrLike;
