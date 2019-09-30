@@ -90,6 +90,8 @@ mod test {
             "," => ok(vec![], (",", 0)),
             "33a,b" => ok(vec![], ("33a,b", 0)),
             "foo" => ok(vec!["foo".to_string()], ("", 3)),
+            "foo," => ok(vec!["foo".to_string()], (",", 3)),
+            "foo,,bar" => ok(vec!["foo".to_string()], (",,bar", 3)),
             "foo,bar,baz" => ok(
                 vec!["foo".to_string(), "bar".to_string(), "baz".to_string()],
                 ("", 11),
@@ -106,6 +108,8 @@ mod test {
         let mut parser = sep_by1(many_n(ascii::letter(), 2), token(b','));
         test_parser!(IndexedStream<&str> => Vec<String> | parser, {
             "foo" => ok(vec!["foo".to_string()], ("", 3)),
+            "foo," => ok(vec!["foo".to_string()], (",", 3)),
+            "foo,,bar" => ok(vec!["foo".to_string()], (",,bar", 3)),
             "foo,bar,baz" => ok(
                 vec!["foo".to_string(), "bar".to_string(), "baz".to_string()],
                 ("", 11),
