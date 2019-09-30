@@ -30,11 +30,11 @@ pub fn any<S: Stream>() -> Any<S> {
     Any(PhantomData)
 }
 
-pub struct Token<S: Stream> {
-    token: S::Item,
+pub struct Item<S: Stream> {
+    item: S::Item,
 }
 
-impl<S: Stream> Parser for Token<S>
+impl<S: Stream> Parser for Item<S>
 where
     S::Item: PartialEq,
 {
@@ -43,25 +43,25 @@ where
 
     fn parse_lazy(&mut self, mut stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         match stream.peek() {
-            Some(t) if t == self.token => {
+            Some(item) if item == self.item => {
                 stream.pop();
-                stream.ok(t)
+                stream.ok(item)
             }
             result => stream.err(match result {
-                Some(t) => Error::unexpected_token(t),
+                Some(item) => Error::unexpected_token(item),
                 None => Error::eoi(),
             }),
         }
     }
 
     fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
-        vec![Error::expected_token(self.token)]
+        vec![Error::expected_token(self.item)]
     }
 }
 
-pub fn token<S: Stream>(token: u8) -> Token<S> {
-    Token {
-        token: S::Item::from(token),
+pub fn item<S: Stream>(item: u8) -> Item<S> {
+    Item {
+        item: S::Item::from(item),
     }
 }
 
@@ -433,7 +433,7 @@ mod test {
 
     #[test]
     fn test_token() {
-        test_parser!(&str => char | token(b'c'), {
+        test_parser!(&str => char | item(b'c'), {
             "cat" => ok('c', "at"),
             "ace" => err(vec![Error::unexpected_token('a'), Error::expected_token('c')]),
         });
@@ -464,7 +464,7 @@ mod test {
 
         #[test]
         fn test_negate() {
-            let mut parser = negate(token(b'x'));
+            let mut parser = negate(item(b'x'));
             test_parser!(IStr => char | parser, {
                 "abc" => ok('a', ("bc", 1)),
                 "xyz" => err(0, vec![Error::unexpected_token('x')]),
@@ -474,7 +474,7 @@ mod test {
 
         #[test]
         fn test_negate_with() {
-            let mut parser = negate(token(b'z').with(token(b'x')));
+            let mut parser = negate(item(b'z').with(item(b'x')));
             test_parser!(IStr => char | parser, {
                 "zy" => ok('z', ("y", 1)),
                 "xx" => ok('x', ("x", 1)),
@@ -485,7 +485,7 @@ mod test {
 
         #[test]
         fn test_negate_skip() {
-            let mut parser = negate(token(b'z').skip(token(b'x')));
+            let mut parser = negate(item(b'z').skip(item(b'x')));
             test_parser!(IStr => char | parser, {
                 "zy" => ok('z', ("y", 1)),
                 "xx" => ok('x', ("x", 1)),

@@ -106,41 +106,41 @@ where
 mod test {
     use super::*;
     use error::Error;
-    use parser::item::token;
+    use parser::item::item;
     use parser::test_utils::*;
     use stream::IndexedStream;
 
     #[test]
     fn test_many() {
         assert_eq!(
-            many(token(b'a')).parse("aaabcd"),
+            many(item(b'a')).parse("aaabcd"),
             ok_result("aaa".to_string(), "bcd")
         );
         assert_eq!(
-            many(token(b'a')).parse("aaabcd"),
+            many(item(b'a')).parse("aaabcd"),
             ok_result(vec!['a', 'a', 'a'], "bcd")
         );
         assert_eq!(
-            many(token(b'b')).parse("abcd"),
+            many(item(b'b')).parse("abcd"),
             ok_result("".to_string(), "abcd")
         );
         assert_eq!(
-            many(token(b'a')).parse("aaaa"),
+            many(item(b'a')).parse("aaaa"),
             ok_result("aaaa".to_string(), "")
         );
         assert_eq!(
-            many(many1(token(b'a'))).parse("aaabcd"),
+            many(many1(item(b'a'))).parse("aaabcd"),
             ok_result(vec!["aaa".to_string()], "bcd")
         );
         assert_eq!(
-            many(many1(token(b'b'))).parse("aaabcd"),
+            many(many1(item(b'b'))).parse("aaabcd"),
             ok_result(Vec::<Vec<char>>::new(), "aaabcd")
         );
     }
 
     #[test]
     fn test_many1() {
-        let mut parser = many1::<String, _>(token(b'a'));
+        let mut parser = many1::<String, _>(item(b'a'));
         test_parser!(IndexedStream<&str> => String | parser, {
             "aaabcd" => ok("aaa".into(), ("bcd", 3)),
             "abcd" => ok("a".into(), ("bcd", 1)),

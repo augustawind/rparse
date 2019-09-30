@@ -221,7 +221,7 @@ where
 mod test {
     use super::*;
     use error::Error::*;
-    use parser::item::{ascii, token};
+    use parser::item::{ascii, item};
     use parser::repeat::many1;
     use parser::test_utils::*;
     use stream::{IndexedStream, SourceCode};
@@ -303,7 +303,7 @@ mod test {
 
     #[test]
     fn test_wrap() {
-        let mut parser = token(b'x').wrap();
+        let mut parser = item(b'x').wrap();
         test_parser!(IndexedStream<&str> => Vec<char> | parser, {
             "x" => ok(vec!['x'], ("", 1)),
             "" => err(0, vec![Error::eoi(), Error::expected(b'x')]),
@@ -321,7 +321,7 @@ mod test {
         });
 
         let mut parser =
-            many1::<String, _>(choice!(token(b'-'), token(b'.'), ascii::digit())).from_str::<f32>();
+            many1::<String, _>(choice!(item(b'-'), item(b'.'), ascii::digit())).from_str::<f32>();
         test_parser!(&str => f32 | parser, {
             "12e" => ok(12 as f32, "e"),
             "-12e" => ok(-12 as f32, "e"),

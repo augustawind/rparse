@@ -90,7 +90,7 @@ where
 mod test {
     use super::*;
     use crate::parser::{
-        item::{ascii, token},
+        item::{ascii, item},
         repeat::many_n,
     };
     use crate::stream::IndexedStream;
@@ -98,7 +98,7 @@ mod test {
 
     #[test]
     fn test_sep_by() {
-        let mut parser = sep_by(many_n(ascii::letter(), 2), token(b','));
+        let mut parser = sep_by(many_n(ascii::letter(), 2), item(b','));
         test_parser!(IndexedStream<&str> => Vec<String> | parser, {
             "" => ok(vec![], ("", 0)),
             "," => ok(vec![], (",", 0)),
@@ -119,7 +119,7 @@ mod test {
 
     #[test]
     fn test_sep_by1() {
-        let mut parser = sep_by1(many_n(ascii::letter(), 2), token(b','));
+        let mut parser = sep_by1(many_n(ascii::letter(), 2), item(b','));
         test_parser!(IndexedStream<&str> => Vec<String> | parser, {
             "foo" => ok(vec!["foo".to_string()], ("", 3)),
             "foo," => ok(vec!["foo".to_string()], (",", 3)),

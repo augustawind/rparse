@@ -54,7 +54,7 @@ mod test {
     use super::*;
     use error::Error;
     use parser::item::ascii;
-    use parser::item::token;
+    use parser::item::item;
     use parser::repeat::{many, many1};
     use parser::Parser;
     use stream::IndexedStream;
@@ -62,7 +62,7 @@ mod test {
 
     #[test]
     fn test_extend() {
-        let mut parser = extend(many(ascii::letter()), many1(token(b'?')));
+        let mut parser = extend(many(ascii::letter()), many1(item(b'?')));
         test_parser!(IndexedStream<&str> => Vec<char> | parser, {
             "huh???" => ok("huh???".chars().collect(), ("", 6)),
             "oh?? cool" => ok("oh??".chars().collect(), (" cool", 4)),

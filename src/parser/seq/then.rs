@@ -39,13 +39,13 @@ where
 
 #[cfg(test)]
 mod test {
-    use parser::item::token;
+    use parser::item::item;
     use stream::IndexedStream;
     use {Error, Parser};
 
     #[test]
     fn test_then() {
-        let mut parser = token(b'X').then(token(b'O'));
+        let mut parser = item(b'X').then(item(b'O'));
         test_parser!(IndexedStream<&str> => Vec<char> | parser, {
             "XO" => ok("XO".chars().collect(), ("", 2)),
             "XOXO" => ok("XO".chars().collect(), ("XO", 2)),

@@ -66,13 +66,13 @@ where
 mod test {
     use super::*;
     use error::Error;
-    use parser::item::{ascii, token};
+    use parser::item::{ascii, item};
     use parser::repeat::many1;
     use stream::IndexedStream;
 
     #[test]
     fn test_2_tuple() {
-        let mut parser = (token(b'a'), token(b'b'));
+        let mut parser = (item(b'a'), item(b'b'));
         test_parser!(IndexedStream<&str> => (char, char) | parser, {
             "abcd" => ok(('a', 'b'), ("cd", 2)),
             "ab" => ok(('a', 'b'), ("", 2)),
@@ -97,7 +97,7 @@ mod test {
 
     #[test]
     fn test_3_tuple() {
-        let mut parser = (token(b'a'), token(b'b'), token(b'c'));
+        let mut parser = (item(b'a'), item(b'b'), item(b'c'));
         test_parser!(IndexedStream<&str> => (char, char, char) | parser, {
             "abcd" => ok(('a', 'b', 'c'), ("d", 3)),
             "abc" => ok(('a', 'b', 'c'), ("", 3)),

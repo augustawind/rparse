@@ -63,7 +63,7 @@ mod test {
     use super::*;
     use error::Error;
     use parser::item::ascii::{hexdigit, letter};
-    use parser::item::token;
+    use parser::item::item;
     use parser::repeat::many;
     use parser::Parser;
     use stream::IndexedStream;
@@ -71,7 +71,7 @@ mod test {
 
     #[test]
     fn test_append() {
-        let mut parser = append(many(letter()), token(b'?'));
+        let mut parser = append(many(letter()), item(b'?'));
         test_parser!(IndexedStream<&str> => Vec<char> | parser, {
             "huh?" => ok("huh?".chars().collect(), ("", 4)),
             "oh? cool" => ok("oh?".chars().collect(), (" cool", 3)),
@@ -85,7 +85,7 @@ mod test {
 
     #[test]
     fn test_seq_macro() {
-        let mut parser = seq![token(b'%'), hexdigit(), hexdigit()].collect();
+        let mut parser = seq![item(b'%'), hexdigit(), hexdigit()].collect();
         test_parser!(IndexedStream<&str> => String | parser, {
             "%AF" => ok("%AF".into(), ("", 3)),
             "%d8_/^/_" => ok("%d8".into(), ("_/^/_", 3)),
@@ -94,12 +94,12 @@ mod test {
             "%zz" => err(1, vec![Unexpected('z'.into()), Error::expected("a hexadecimal digit")]),
         });
 
-        let mut parser = seq![token(b'x'), token(b'y')].collect();
+        let mut parser = seq![item(b'x'), item(b'y')].collect();
         test_parser!(IndexedStream<&str> => String | parser, {
             "xy" => ok("xy".into(), ("", 2)),
         });
 
-        let mut parser = seq![token(b'a'), token(b'b'), token(b'c'), token(b'd')].collect();
+        let mut parser = seq![item(b'a'), item(b'b'), item(b'c'), item(b'd')].collect();
         test_parser!(IndexedStream<&str> => String | parser, {
             "abcd" => ok("abcd".into(), ("", 4)),
         });

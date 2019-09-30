@@ -206,10 +206,10 @@ where
 /// # #[macro_use]
 /// # extern crate rparse;
 /// # use rparse::Parser;
-/// # use rparse::parser::item::token;
+/// # use rparse::parser::item::item;
 /// # fn main() {
-/// let mut p1 = choice![token(b'x'), token(b'y'), token(b'z')];
-/// let mut p2 = token(b'x').or(token(b'y').or(token(b'z')));
+/// let mut p1 = choice![item(b'x'), item(b'y'), item(b'z')];
+/// let mut p2 = item(b'x').or(item(b'y').or(item(b'z')));
 /// assert_eq!(p1.parse("x123"), p2.parse("x123"));
 /// # }
 /// ```
@@ -229,7 +229,7 @@ macro_rules! choice {
 mod test {
     use super::*;
     use error::Info;
-    use parser::item::{any, ascii, token};
+    use parser::item::{any, ascii, item};
     use parser::repeat::{many, many1};
     use parser::seq::then;
     use parser::test_utils::*;
@@ -238,7 +238,7 @@ mod test {
 
     #[test]
     fn test_optional() {
-        let mut parser = optional(token(b'x'));
+        let mut parser = optional(item(b'x'));
         test_parser!(&str => char | parser, {
             "" => noop(),
             "y" => noop(),
@@ -246,7 +246,7 @@ mod test {
             "xyz" => ok('x', "yz"),
         });
 
-        let mut parser = optional(token(b'x'));
+        let mut parser = optional(item(b'x'));
         test_parser!(&str => char | parser, {
             "" => noop(),
             "y" => noop(),
@@ -262,7 +262,7 @@ mod test {
         let mut parser = optional(many(any()));
         assert_eq!(parser.parse(""), ok_result(vec![], ""));
 
-        let mut parser = token(b'x').optional();
+        let mut parser = item(b'x').optional();
         test_parser!(&str => char | parser, {
             "x" => ok('x', ""),
             "y" => noop(),
@@ -271,7 +271,7 @@ mod test {
 
     #[test]
     fn test_with() {
-        let mut parser = with(token(b'a'), token(b'b'));
+        let mut parser = with(item(b'a'), item(b'b'));
         let expected_err = Error::expected(vec![Info::Token('a'), Info::Token('b')]);
         test_parser!(IndexedStream<&str> => char | parser, {
             "abcd" => ok('b', ("cd", 2)),
@@ -298,7 +298,7 @@ mod test {
 
     #[test]
     fn test_and() {
-        let mut parser = and(token(b'a'), token(b'b'));
+        let mut parser = and(item(b'a'), item(b'b'));
         let expected_err = Error::expected(vec![Info::Token('a'), Info::Token('b')]);
         test_parser!(IndexedStream<&str> => (char, char) | parser, {
             "abcd" => ok(('a', 'b'), ("cd", 2)),
@@ -325,7 +325,7 @@ mod test {
 
     #[test]
     fn test_or() {
-        let mut parser = or(token(b'a'), token(b'b'));
+        let mut parser = or(item(b'a'), item(b'b'));
         test_parser!(IndexedStream<&str> => char | parser, {
             "bcd" => ok('b', ("cd", 1)),
             "a" => ok('a', ("", 1)),
@@ -348,11 +348,11 @@ mod test {
     #[test]
     fn test_choice() {
         assert_eq!(
-            choice!(token(b'a'), token(b'b')).parse("a"),
+            choice!(item(b'a'), item(b'b')).parse("a"),
             ok_result('a', "")
         );
 
-        let mut parser = choice!(token(b'a'), ascii::digit(), ascii::punctuation());
+        let mut parser = choice!(item(b'a'), ascii::digit(), ascii::punctuation());
         test_parser!(IndexedStream<&str> => char | parser, {
             "a9." => ok('a', ("9.", 1)),
             "9.a" => ok('9', (".a", 1)),
@@ -368,7 +368,7 @@ mod test {
         });
 
         assert_eq!(
-            choice!(token(b'a'), token(b'b'), token(b'c')).parse("bcd"),
+            choice!(item(b'a'), item(b'b'), item(b'c')).parse("bcd"),
             ok_result('b', "cd"),
         );
 

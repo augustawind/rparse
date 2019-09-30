@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use rparse::parser::{
-    item::{ascii, satisfy, token as item},
+    item::{ascii, item, satisfy},
     parser,
     range::range,
     repeat::{many, many1},

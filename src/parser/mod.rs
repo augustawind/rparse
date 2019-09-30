@@ -147,7 +147,7 @@ pub trait Parser {
 
     /// Reverses the parse behavior of `self`. Fails if `self` succeeds, succeeds if `self` fails.
     ///
-    /// Only works for token parsers.
+    /// Only works for item parsers.
     fn negate<S>(self) -> Negate<Self>
     where
         Self: Sized + Parser<Stream = S, Output = S::Item>,
@@ -342,11 +342,11 @@ pub trait Parser {
     /// # #[macro_use] extern crate rparse;
     /// # use rparse::Parser;
     /// # use rparse::parser::item::ascii::*;
-    /// # use rparse::parser::item::token;
-    /// let mut p = token(b'\x27')
-    ///     .then(token(b'['))
+    /// # use rparse::parser::item::item;
+    /// let mut p = item(b'\x27')
+    ///     .then(item(b'['))
     ///     .append(digit())
-    ///     .append(choice![token(b'A'), token(b'B'), token(b'C'), token(b'D')]);
+    ///     .append(choice![item(b'A'), item(b'B'), item(b'C'), item(b'D')]);
     /// assert_eq!(p.parse("\x27[5B"), Ok((Some(vec!['\x27', '[', '5', 'B']), "")));
     /// ```
     ///
@@ -357,13 +357,13 @@ pub trait Parser {
     /// # #[macro_use] extern crate rparse;
     /// # use rparse::Parser;
     /// # use rparse::parser::item::ascii::*;
-    /// # use rparse::parser::item::token;
+    /// # use rparse::parser::item::item;
     /// # fn main() {
     /// let mut p = seq![
-    ///     token(b'\x27'),
-    ///     token(b'['),
+    ///     item(b'\x27'),
+    ///     item(b'['),
     ///     digit(),
-    ///     choice![token(b'A'), token(b'B'), token(b'C'), token(b'D')],
+    ///     choice![item(b'A'), item(b'B'), item(b'C'), item(b'D')],
     /// ];
     /// assert_eq!(p.parse("\x27[5B"), Ok((Some(vec!['\x27', '[', '5', 'B']), "")));
     /// # }
