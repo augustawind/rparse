@@ -283,6 +283,14 @@ pub trait Parser {
         map(self, |s| s.into_iter().map(Into::into).collect())
     }
 
+    fn as_char(self) -> Map<Self, fn(Self::Output) -> char>
+    where
+        Self: Sized,
+        Self::Output: Into<char>,
+    {
+        map(self, Into::<char>::into)
+    }
+
     /// Parses with `self` followed by `p`. Succeeds if both parsers succeed, otherwise fails.
     /// Returns the result of `p` on success.
     fn and<P>(self, p: P) -> And<Self, P>

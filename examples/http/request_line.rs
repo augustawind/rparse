@@ -9,6 +9,8 @@ use rparse::parser::{
 use rparse::stream::StreamItem;
 use rparse::{Parser, Stream};
 
+use common::crlf;
+
 enum HTTPVersion {
     V1,
     V11,
@@ -32,13 +34,13 @@ pub fn request_line<S>() -> impl Parser<Stream = S, Output = (String, String, St
 where
     S: Stream,
 {
-    parser(|s: S| {
+    many::<(), _>(crlf()).with(parser(|s: S| {
         let (method, s) = http_method().must_parse(s)?;
         let (uri, s) = item(b' ').with(uri()).must_parse(s)?;
         let (version, s) = item(b' ').with(http_version()).must_parse(s)?;
         let (_, s) = crlf().must_parse(s)?;
         s.ok((method, uri, version))
-    })
+    }))
 }
 
 fn http_version<S>() -> impl Parser<Stream = S, Output = String>
@@ -154,13 +156,6 @@ where
     S: Stream,
 {
     item(b'%').then(ascii::hexdigit()).append(ascii::hexdigit())
-}
-
-fn crlf<S>() -> impl Parser<Stream = S>
-where
-    S: Stream,
-{
-    range("\r\n")
 }
 
 #[cfg(test)]

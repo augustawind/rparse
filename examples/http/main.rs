@@ -2,6 +2,7 @@
 extern crate rparse;
 
 mod common;
+mod headers;
 mod request_line;
 
 use rparse::stream::IndexedStream;

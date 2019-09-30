@@ -250,10 +250,7 @@ pub mod ascii {
                 S::Position: Position<S::Stream>,
             {
                 let f: fn(&S::Item) -> bool = <S::Item as StreamItem>::$f;
-                Satisfy {
-                    f,
-                    _marker: PhantomData,
-                }.expect($expected)
+                satisfy(f).expect($expected)
             }
         };
     }

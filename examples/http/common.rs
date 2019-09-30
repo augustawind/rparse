@@ -2,7 +2,7 @@ use rparse::parser::{
     item::{any, item, one_of, satisfy},
     parser,
     range::range,
-    repeat::{many, many1},
+    repeat::{many, many1, take_until},
     seq::between,
 };
 use rparse::stream::StreamItem;
@@ -13,11 +13,11 @@ pub static SEPARATORS: &'static [u8] = &[
     b'{', b'}', b' ', b'\t',
 ];
 
-/// Parses a token.
+/// Parses an atom.
 ///
-/// Tokens are commonly used to define values between separators. In most cases, non-tokens can
+/// Atoms are commonly used to define values between separators. In most cases, non-atoms can
 /// only be used if escaped (within quotations (" ") or by a backslash (\)).
-pub fn token<S: Stream>() -> impl Parser<Stream = S, Output = S::Item> {
+pub fn atom<S: Stream>() -> impl Parser<Stream = S, Output = S::Item> {
     satisfy(|t: &S::Item| {
         let separators = SEPARATORS
             .iter()
@@ -32,7 +32,7 @@ pub fn token<S: Stream>() -> impl Parser<Stream = S, Output = S::Item> {
 ///
 /// Within the block, double quotes (") must be escaped with a backslash (\). Parsing ends
 /// at the first unescaped double quote after the opening quote.
-pub fn quoted_text<S: Stream>() -> impl Parser<Stream = S, Output = String> {
+pub fn quoted_string<S: Stream>() -> impl Parser<Stream = S, Output = String> {
     between(
         item(b'"'),
         item(b'"'),
@@ -64,6 +64,11 @@ fn backslash_escaped<S: Stream>() -> impl Parser<Stream = S, Output = char> {
     })
 }
 
+/// Parses everything until a CRLF (\r\n) is encountered.
+pub fn text<S: Stream>() -> impl Parser<Stream = S, Output = String> {
+    take_until(any().as_char(), crlf())
+}
+
 /// Parses one or more linear whitespace characters.
 ///
 /// Linear whitespace is any whitespace character that doesn't start a new line.
@@ -72,8 +77,8 @@ pub fn lws<S: Stream>() -> impl Parser<Stream = S, Output = ()> {
 }
 
 /// Parses a carriage return/line feed sequence (\r\n).
-fn crlf<S: Stream>() -> impl Parser<Stream = S, Output = S::Range> {
-    range("\r\n")
+pub fn crlf<S: Stream>() -> impl Parser<Stream = S, Output = ()> {
+    range("\r\n").map(|_| ())
 }
 
 #[cfg(test)]
@@ -83,8 +88,8 @@ mod test {
     use rparse::Error;
 
     #[test]
-    fn test_token() {
-        let mut parser = token();
+    fn test_atom() {
+        let mut parser = atom();
         test_parser!(IndexedStream<&str> => char | parser, {
             "a" => ok('a', ("", 1)),
             "11" => ok('1', ("1", 1)),
@@ -96,7 +101,7 @@ mod test {
             let input = format!("{}_foo", c as char);
             let stream = IndexedStream::<&str>::from(input.as_ref());
             assert_eq!(
-                token().parse(stream.clone()),
+                atom().parse(stream.clone()),
                 Err((Error::item(c as char).expected("a token").at(0), stream)),
                 "unexpectedly parsed '{}': should fail parsing control characters",
                 c as char,
@@ -106,7 +111,7 @@ mod test {
             let input = [item, b'\n'];
             let stream = IndexedStream::from(&input[..]);
             assert_eq!(
-                token().parse(stream.clone()),
+                atom().parse(stream.clone()),
                 Err((Error::item(item).expected("a token").at(0), stream)),
                 "unexpectedly parsed '{}': should fail parsing SEPARATORS",
                 item as char,
@@ -115,8 +120,8 @@ mod test {
     }
 
     #[test]
-    fn test_quoted_text() {
-        let mut parser = quoted_text();
+    fn test_quoted_string() {
+        let mut parser = quoted_string();
         test_parser!(IndexedStream<&str> => String | parser, {
             r#""""# => ok("".to_string(), ("", 2)),
             r#"" hey ""yo""# => ok(" hey ".to_string(), (r#""yo""#, 7)),
@@ -148,9 +153,9 @@ mod test {
     #[test]
     fn test_crlf() {
         let mut parser = crlf();
-        test_parser!(IndexedStream<&str> => &str | parser, {
-            "\r\n" => ok("\r\n", ("", 2)),
-            "\r\n\tfoo" => ok("\r\n", ("\tfoo", 2)),
+        test_parser!(IndexedStream<&str> => () | parser, {
+            "\r\n" => ok((), ("", 2)),
+            "\r\n\tfoo" => ok((), ("\tfoo", 2)),
             "" => err(Error::eoi().expected_range("\r\n").at(0)),
             "\r" => err(Error::eoi().expected_range("\r\n").at(0)),
             "\r\t" => err(Error::item('\t').expected_range("\r\n").at(1)),
