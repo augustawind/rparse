@@ -1,7 +1,9 @@
 use rparse::parser::{
     item::{any, item, one_of, satisfy},
+    parser,
     range::range,
     repeat::{many, many1},
+    seq::between,
 };
 use rparse::stream::StreamItem;
 use rparse::{Error, Parser, Stream};
@@ -31,11 +33,19 @@ pub fn token<S: Stream>() -> impl Parser<Stream = S, Output = S::Item> {
 /// Within the block, double quotes (") must be escaped with a backslash (\). Parsing ends
 /// at the first unescaped double quote after the opening quote.
 pub fn quoted_text<S: Stream>() -> impl Parser<Stream = S, Output = String> {
-    item(b'"').with(many(any().bind(|b: S::Item, stream: S| match b.into() {
-        '\\' => backslash_escaped().parse_lazy(stream),
-        '"' => stream.err(Error::eoi()),
-        ch => stream.ok(ch),
-    })))
+    between(
+        item(b'"'),
+        item(b'"'),
+        many(parser(|stream: S| {
+            any()
+                .bind(|b: S::Item, stream: S| match b.into() {
+                    '\\' => backslash_escaped().parse_lazy(stream),
+                    '"' => stream.err(Error::eoi()),
+                    ch => stream.ok(ch),
+                })
+                .parse(stream)
+        })),
+    )
 }
 
 fn backslash_escaped<S: Stream>() -> impl Parser<Stream = S, Output = char> {
@@ -111,6 +121,12 @@ mod test {
             r#""""# => ok("".to_string(), ("", 2)),
             r#"" hey ""yo""# => ok(" hey ".to_string(), (r#""yo""#, 7)),
             r#""({foo?\r\n})""# => ok("({foo?\r\n})".to_string(), ("", 14)),
+            r#""my \"name\" is \"boo\"""# => ok("my \"name\" is \"boo\"".to_string(), ("", 24)),
+            r#"""# => err(Error::eoi().expected(b'"').at(1)),
+            r#""baz"# => err(Error::eoi().expected(b'"').at(4)),
+            r#""baz\""# => err(Error::eoi().expected(b'"').at(6)),
+            r#"baz"# => err(Error::item('b').expected(b'"').at(0)),
+            r#"\"baz"# => err(Error::item('\\').expected(b'"').at(0)),
         });
     }
 
