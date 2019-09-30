@@ -416,6 +416,42 @@ impl<P: Parser> Parser for &mut P {
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         (**self).parse_lazy(stream)
     }
+
+    fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        (**self).parse_partial(stream)
+    }
+
+    fn try_parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output>
+    where
+        Self: Sized,
+    {
+        (**self).try_parse_lazy(stream)
+    }
+
+    fn parse(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output>
+    where
+        Self: Sized,
+    {
+        (**self).parse(stream)
+    }
+
+    fn must_parse(
+        &mut self,
+        stream: Self::Stream,
+    ) -> Result<(Self::Output, Self::Stream), (Error<Self::Stream>, Self::Stream)>
+    where
+        Self: Sized,
+    {
+        (**self).must_parse(stream)
+    }
+
+    fn expected_error(&self) -> Option<Expected<Self::Stream>> {
+        (**self).expected_error()
+    }
+
+    fn add_expected_error(&self, error: &mut Error<Self::Stream>) {
+        (**self).add_expected_error(error);
+    }
 }
 
 impl<'a, S: Stream, O> Parser for dyn FnMut(S) -> ParseResult<S, O> + 'a {

@@ -1,6 +1,4 @@
-use error::ParseResult;
-use parser::Parser;
-use stream::Stream;
+use crate::{ParseResult, Parser, Stream};
 
 pub struct Append<L, R> {
     p1: L,

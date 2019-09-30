@@ -4,8 +4,10 @@
 pub mod append;
 #[macro_use]
 pub mod extend;
+pub mod between;
 pub mod then;
 
 pub use self::append::*;
+pub use self::between::*;
 pub use self::extend::*;
 pub use self::then::*;
