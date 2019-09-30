@@ -53,9 +53,9 @@ macro_rules! concat {
 mod test {
     use super::*;
     use error::Error;
+    use parser::item::ascii;
+    use parser::item::token;
     use parser::repeat::{many, many1};
-    use parser::token::ascii;
-    use parser::token::token;
     use parser::Parser;
     use stream::IndexedStream;
     use Error::*;

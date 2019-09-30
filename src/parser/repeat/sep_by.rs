@@ -90,8 +90,8 @@ where
 mod test {
     use super::*;
     use crate::parser::{
+        item::{ascii, token},
         repeat::many_n,
-        token::{ascii, token},
     };
     use crate::stream::IndexedStream;
     use crate::Error;

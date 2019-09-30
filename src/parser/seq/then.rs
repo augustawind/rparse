@@ -39,7 +39,7 @@ where
 
 #[cfg(test)]
 mod test {
-    use parser::token::token;
+    use parser::item::token;
     use stream::IndexedStream;
     use {Error, Parser};
 

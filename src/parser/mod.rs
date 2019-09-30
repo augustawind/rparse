@@ -8,10 +8,10 @@ mod test_utils;
 #[macro_use]
 pub mod choice;
 pub mod function;
+pub mod item;
 pub mod range;
 pub mod repeat;
 pub mod seq;
-pub mod token;
 pub mod tuple;
 
 use std::fmt::Display;
@@ -23,8 +23,8 @@ use self::function::{
     bind, collect, expect, flatten, from_str, iter, map, wrap, Bind, Collect, Expect, Flatten,
     FromStr, Iter, Map, Wrap,
 };
+use self::item::{negate, Negate};
 use self::seq::{append, extend, then, Append, Extend, Then};
-use self::token::{negate, Negate};
 use error::{Error, Errors, ParseResult};
 use stream::{RangeStream, Stream};
 use traits::StrLike;
@@ -307,7 +307,7 @@ pub trait Parser {
     /// ```
     /// # use rparse::Parser;
     /// # use rparse::parser::range::range;
-    /// # use rparse::parser::token::ascii::*;
+    /// # use rparse::parser::item::ascii::*;
     /// let mut p = range("Hello, ").then(range("World!"));
     /// assert_eq!(p.parse("Hello, World!"), Ok((Some(vec!["Hello, ", "World!"]), "")));
     /// ```
@@ -331,7 +331,7 @@ pub trait Parser {
     /// ```
     /// # use rparse::Parser;
     /// # use rparse::parser::repeat::many;
-    /// # use rparse::parser::token::ascii::*;
+    /// # use rparse::parser::item::ascii::*;
     /// let mut p = many(whitespace()).append(letter()).append(digit());
     /// assert_eq!(p.parse("\n\tT2!"), Ok((Some(vec!['\n', '\t', 'T', '2']), "!")));
     /// ```
@@ -341,8 +341,8 @@ pub trait Parser {
     /// ```
     /// # #[macro_use] extern crate rparse;
     /// # use rparse::Parser;
-    /// # use rparse::parser::token::ascii::*;
-    /// # use rparse::parser::token::token;
+    /// # use rparse::parser::item::ascii::*;
+    /// # use rparse::parser::item::token;
     /// let mut p = token(b'\x27')
     ///     .then(token(b'['))
     ///     .append(digit())
@@ -356,8 +356,8 @@ pub trait Parser {
     /// ```
     /// # #[macro_use] extern crate rparse;
     /// # use rparse::Parser;
-    /// # use rparse::parser::token::ascii::*;
-    /// # use rparse::parser::token::token;
+    /// # use rparse::parser::item::ascii::*;
+    /// # use rparse::parser::item::token;
     /// # fn main() {
     /// let mut p = seq![
     ///     token(b'\x27'),

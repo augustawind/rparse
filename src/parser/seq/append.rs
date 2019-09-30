@@ -62,9 +62,9 @@ macro_rules! seq {
 mod test {
     use super::*;
     use error::Error;
+    use parser::item::ascii::{hexdigit, letter};
+    use parser::item::token;
     use parser::repeat::many;
-    use parser::token::ascii::{hexdigit, letter};
-    use parser::token::token;
     use parser::Parser;
     use stream::IndexedStream;
     use Error::*;

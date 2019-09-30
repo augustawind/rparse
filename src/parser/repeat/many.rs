@@ -106,8 +106,8 @@ where
 mod test {
     use super::*;
     use error::Error;
+    use parser::item::token;
     use parser::test_utils::*;
-    use parser::token::token;
     use stream::IndexedStream;
 
     #[test]

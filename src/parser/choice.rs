@@ -206,7 +206,7 @@ where
 /// # #[macro_use]
 /// # extern crate rparse;
 /// # use rparse::Parser;
-/// # use rparse::parser::token::token;
+/// # use rparse::parser::item::token;
 /// # fn main() {
 /// let mut p1 = choice![token(b'x'), token(b'y'), token(b'z')];
 /// let mut p2 = token(b'x').or(token(b'y').or(token(b'z')));
@@ -229,10 +229,10 @@ macro_rules! choice {
 mod test {
     use super::*;
     use error::Info;
+    use parser::item::{any, ascii, token};
     use parser::repeat::{many, many1};
     use parser::seq::then;
     use parser::test_utils::*;
-    use parser::token::{any, ascii, token};
     use parser::Parser;
     use stream::IndexedStream;
 

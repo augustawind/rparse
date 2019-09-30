@@ -1,10 +1,10 @@
 use std::str::FromStr;
 
 use rparse::parser::{
+    item::{ascii, satisfy, token as item},
     parser,
     range::range,
     repeat::{many, many1},
-    token::{ascii, satisfy, token},
 };
 use rparse::stream::StreamItem;
 use rparse::{Parser, Stream};
@@ -34,8 +34,8 @@ where
 {
     parser(|s: S| {
         let (method, s) = http_method().must_parse(s)?;
-        let (uri, s) = token(b' ').with(uri()).must_parse(s)?;
-        let (version, s) = token(b' ').with(http_version()).must_parse(s)?;
+        let (uri, s) = item(b' ').with(uri()).must_parse(s)?;
+        let (version, s) = item(b' ').with(http_version()).must_parse(s)?;
         let (_, s) = crlf().must_parse(s)?;
         s.ok((method, uri, version))
     })
@@ -106,18 +106,18 @@ where
     choice![
         concat![
             // a slash
-            token(b'/').wrap(),
+            item(b'/').wrap(),
             // followed by zero or more URI segments separated by slashes
             concat![
                 uri_segment(),
-                many(token(b'/').wrap().or(uri_segment())).flatten(),
+                many(item(b'/').wrap().or(uri_segment())).flatten(),
             ]
             .optional()
         ],
         // or a URI segment followed by zero or more URI segments separated by slashes
         concat![
             uri_segment(),
-            many(token(b'/').wrap().or(uri_segment())).flatten(),
+            many(item(b'/').wrap().or(uri_segment())).flatten(),
         ],
     ]
     .collect_string()
@@ -155,9 +155,7 @@ fn percent_encoded<S>() -> impl Parser<Stream = S, Output = Vec<S::Item>>
 where
     S: Stream,
 {
-    token(b'%')
-        .then(ascii::hexdigit())
-        .append(ascii::hexdigit())
+    item(b'%').then(ascii::hexdigit()).append(ascii::hexdigit())
 }
 
 fn crlf<S>() -> impl Parser<Stream = S>
