@@ -33,10 +33,20 @@ pub trait Parser {
     type Stream: Stream;
     type Output;
 
+    /// Parses `stream`. Doesn't revert `stream` or add expected errors if parsing fails.
+    ///
+    /// At minimum, implementors must implement this function or [`Parser::parse_partial`] since
+    /// their default definitions each reference each other. Where possible, it is preferred to
+    /// implement `parse_lazy` so that callers can postpone adding expected errors until parsing
+    /// is complete.
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         self.parse_partial(stream)
     }
 
+    /// Parses `stream` and adds expected errors if parsing fails.
+    ///
+    /// At minimum, implementors must implement this function or [`Parser::parse_partial`] since
+    /// their default definitions each reference each other.
     fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         let mut result = self.parse_lazy(stream);
         if let Err((ref mut errors, _)) = result {
@@ -59,6 +69,10 @@ pub trait Parser {
         result
     }
 
+    /// Parses `stream`. If parsing fails, reverts `stream` and adds expected errors.
+    ///
+    /// This is typically used to initiate parsing from the top-level parser. It is provided as the
+    /// main entrypoint into parsing.
     fn parse(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output>
     where
         Self: Sized,
@@ -71,6 +85,8 @@ pub trait Parser {
         result
     }
 
+    /// Like [`Parser::parse`], but fails if the output is [`Option::None`] and returns the output
+    /// not wrapped in an [`Option`].
     fn must_parse(
         &mut self,
         stream: Self::Stream,
@@ -95,14 +111,24 @@ pub trait Parser {
         }
     }
 
+    /// Returns a [`Vec`] of the expected errors that should be added if parsing fails.
+    ///
+    /// By default this returns an empty [`Vec`].
     fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
         Vec::new()
     }
 
+    /// Adds this parsers expected errors to `errors`.
+    ///
+    /// In most cases, this should be left as the default and [`Parser::expected_errors`]
+    /// should be defined instead.
     fn add_expected_error(&self, errors: &mut Errors<Self::Stream>) {
         errors.add_errors(self.expected_errors());
     }
 
+    /// Returns a mutable referance to this parser.
+    ///
+    /// Equivalent to `&mut p`; `by_ref` removes the need for wrapping parenthesis in some cases.
     fn by_ref(&mut self) -> &mut Self {
         self
     }
@@ -120,6 +146,8 @@ pub trait Parser {
     }
 
     /// Reverses the parse behavior of `self`. Fails if `self` succeeds, succeeds if `self` fails.
+    ///
+    /// Only works for token parsers.
     fn negate<S>(self) -> Negate<Self>
     where
         Self: Sized + Parser<Stream = S, Output = S::Item>,
