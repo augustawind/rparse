@@ -1,5 +1,8 @@
+use regex::Regex;
+
+use rparse::error::Expected;
 use rparse::parser::{
-    item::{any, item, one_of, satisfy},
+    item::{any, eoi, item, none_of, one_of, satisfy},
     parser,
     range::range,
     repeat::{many, many1, take_until},
@@ -8,6 +11,7 @@ use rparse::parser::{
 use rparse::stream::StreamItem;
 use rparse::{Error, Parser, Stream};
 
+pub static LWS: &'static [u8] = &[b' ', b'\t'];
 pub static SEPARATORS: &'static [u8] = &[
     b'(', b')', b'<', b'>', b'@', b',', b';', b':', b'\\', b'"', b'/', b'[', b']', b'?', b'=',
     b'{', b'}', b' ', b'\t',
@@ -66,14 +70,28 @@ fn backslash_escaped<S: Stream>() -> impl Parser<Stream = S, Output = char> {
 
 /// Parses everything until a CRLF (\r\n) is encountered.
 pub fn text<S: Stream>() -> impl Parser<Stream = S, Output = String> {
-    take_until(any().as_char(), crlf())
+    lazy_static! {
+        static ref SPLIT_RE: Regex = Regex::new(r"[ \t]*\r\n[ \t]+").unwrap();
+    }
+    take_until(
+        any().as_char(),
+        crlf().skip(none_of(LWS)).or(crlf().skip(eoi::<(), _>())),
+    )
+    .expect(Expected::OneOf(vec!["a token".into(), "a CRLF sequence".into()]))
+    .map(|s: String| {
+        SPLIT_RE
+            .split(&s)
+            .filter(|s| !s.is_empty())
+            .collect::<Vec<&str>>()
+            .join(" ")
+    })
 }
 
 /// Parses one or more linear whitespace characters.
 ///
 /// Linear whitespace is any whitespace character that doesn't start a new line.
 pub fn lws<S: Stream>() -> impl Parser<Stream = S, Output = ()> {
-    many1(one_of(&[b' ', b'\t']).map(|_| ()))
+    many1(one_of(LWS).map(|_| ()))
 }
 
 /// Parses a carriage return/line feed sequence (\r\n).
@@ -132,6 +150,14 @@ mod test {
             r#""baz\""# => err(Error::eoi().expected(b'"').at(6)),
             r#"baz"# => err(Error::item('b').expected(b'"').at(0)),
             r#"\"baz"# => err(Error::item('\\').expected(b'"').at(0)),
+        });
+    }
+
+    #[test]
+    fn test_text() {
+        let mut parser = text();
+        test_parser!(&str => String | parser, {
+            "foo\r\n bar\r\n\tbaz\r\nbiff" => ok("foo bar baz".to_string(), "\r\nbiff"),
         });
     }
 

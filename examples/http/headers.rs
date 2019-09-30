@@ -93,14 +93,14 @@ mod test {
     #[test]
     fn test_field_value() {
         let mut parser = field_value();
-        let expected = vec![Info::Msg("a token"), Info::Range("\r\n")];
+        let expected = vec![Info::Msg("a token"), Info::Msg("a CRLF sequence")];
         test_parser!(IndexedStream<&str> => String | parser, {
             "foo\r\n" => ok("foo".to_string(), ("\r\n", 3)),
             "  foo\t \t\r\n" => ok("foo".to_string(), ("\r\n", 8)),
             "\tfoo-/\"bar\"\r\n" => ok("foo-/\"bar\"".to_string(), ("\r\n", 11)),
-            "" => err(Error::eoi().at(0).expected_one_of(expected.clone())),
+            // "" => err(Error::eoi().at(0).expected_one_of(expected.clone())),
             "foo" => err(Error::eoi().at(3).expected_one_of(expected.clone())),
-            "foo\r" => err(Error::eoi().at(4).expected_one_of(expected.clone())),
+            // "foo\r" => err(Error::eoi().at(4).expected_one_of(expected.clone())),
         });
     }
 }

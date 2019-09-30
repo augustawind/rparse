@@ -65,9 +65,9 @@ pub fn item<S: Stream>(item: u8) -> Item<S> {
     }
 }
 
-pub struct EOI<S, O>(PhantomData<(S, O)>);
+pub struct EOI<O, S>(PhantomData<(O, S)>);
 
-impl<S: Stream, O> Parser for EOI<S, O> {
+impl<S: Stream, O> Parser for EOI<O, S> {
     type Stream = S;
     type Output = O;
 
@@ -83,7 +83,7 @@ impl<S: Stream, O> Parser for EOI<S, O> {
     }
 }
 
-pub fn eoi<S: Stream, O>() -> EOI<S, O> {
+pub fn eoi<O, S: Stream>() -> EOI<O, S> {
     EOI(PhantomData)
 }
 
@@ -446,7 +446,7 @@ mod test {
             "" => noop(),
             "x" => err(Error::item('x').expected(Info::EOI)),
         });
-        let mut parser = eoi::<_, u32>();
+        let mut parser = eoi::<u32, _>();
         assert_eq!(parser.parse(""), none_result(""));
     }
 
