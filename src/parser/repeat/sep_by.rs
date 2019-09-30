@@ -18,10 +18,10 @@ where
     type Stream = P::Stream;
     type Output = O;
 
-    fn parse_lazy(&mut self, mut stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+    fn parse_partial(&mut self, mut stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         let mut output = O::default();
         let mut i = 0;
-        stream = match self.p.parse_lazy(stream) {
+        stream = match self.p.parse_partial(stream) {
             Ok((Some(result), stream)) => {
                 output.extend(std::iter::once(result));
                 stream
@@ -37,7 +37,7 @@ where
         i += 1;
 
         loop {
-            stream = match self.sep.by_ref().with(self.p.by_ref()).parse_lazy(stream) {
+            stream = match self.sep.by_ref().with(self.p.by_ref()).parse(stream) {
                 Ok((Some(result), stream)) => {
                     output.extend(std::iter::once(result));
                     stream
@@ -52,10 +52,6 @@ where
             };
             i += 1;
         }
-    }
-
-    fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
-        self.sep.expected_errors()
     }
 }
 
@@ -75,4 +71,55 @@ where
     O: Extend<P::Output> + Default,
 {
     SepBy { p, sep, min: 1, _marker: PhantomData }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::parser::{
+        repeat::many_n,
+        token::{ascii, token},
+    };
+    use crate::stream::IndexedStream;
+
+    #[test]
+    fn test_sep_by() {
+        let mut parser = sep_by(many_n(ascii::letter(), 2), token(b','));
+        test_parser!(IndexedStream<&str> => Vec<String> | parser, {
+            "" => ok(vec![], ("", 0)),
+            "," => ok(vec![], (",", 0)),
+            "33a,b" => ok(vec![], ("33a,b", 0)),
+            "foo" => ok(vec!["foo".to_string()], ("", 3)),
+            "foo,bar,baz" => ok(
+                vec!["foo".to_string(), "bar".to_string(), "baz".to_string()],
+                ("", 11),
+            ),
+            "foo,bar,baz," => ok(
+                vec!["foo".to_string(), "bar".to_string(), "baz".to_string()],
+                (",", 11),
+            ),
+        });
+    }
+
+    #[test]
+    fn test_sep_by1() {
+        let mut parser = sep_by1(many_n(ascii::letter(), 2), token(b','));
+        test_parser!(IndexedStream<&str> => Vec<String> | parser, {
+            "foo" => ok(vec!["foo".to_string()], ("", 3)),
+            "foo,bar,baz" => ok(
+                vec!["foo".to_string(), "bar".to_string(), "baz".to_string()],
+                ("", 11),
+            ),
+            "foo,bar,baz," => ok(
+                vec!["foo".to_string(), "bar".to_string(), "baz".to_string()],
+                (",", 11),
+            ),
+            "" => err(0, vec![Error::eoi(), Error::expected("an ascii letter")]),
+            "," => err(0, vec![Error::unexpected_token(','), Error::expected("an ascii letter")]),
+            "33a,b" => err(0, vec![
+                Error::unexpected_token('3'),
+                Error::expected("an ascii letter"),
+            ]),
+        });
+    }
 }
