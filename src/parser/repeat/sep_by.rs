@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use {Error, ParseResult, Parser, Stream};
+use crate::{ParseResult, Parser, Stream};
 
 pub struct SepBy<O, P, Sep> {
     p: P,
@@ -18,21 +18,24 @@ where
     type Stream = P::Stream;
     type Output = O;
 
-    fn parse_partial(&mut self, mut stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+    fn parse_partial(
+        &mut self,
+        mut stream: Self::Stream,
+    ) -> ParseResult<Self::Stream, Self::Output> {
         let mut output = O::default();
         let mut i = 0;
         stream = match self.p.parse_partial(stream) {
             Ok((Some(result), stream)) => {
                 output.extend(std::iter::once(result));
                 stream
-            },
+            }
             Ok((None, stream)) => stream,
             Err((errors, stream)) => {
                 if i < self.min {
                     return stream.errs(errors);
                 }
                 return stream.ok(output);
-            },
+            }
         };
         i += 1;
 
@@ -41,14 +44,14 @@ where
                 Ok((Some(result), stream)) => {
                     output.extend(std::iter::once(result));
                     stream
-                },
+                }
                 Ok((None, stream)) => stream,
                 Err((errors, stream)) => {
                     if i < self.min {
                         return stream.errs(errors);
                     }
                     return stream.ok(output);
-                },
+                }
             };
             i += 1;
         }
@@ -61,7 +64,12 @@ where
     Sep: Parser<Stream = P::Stream>,
     O: Extend<P::Output> + Default,
 {
-    SepBy { p, sep, min: 0, _marker: PhantomData }
+    SepBy {
+        p,
+        sep,
+        min: 0,
+        _marker: PhantomData,
+    }
 }
 
 pub fn sep_by1<O, P, Sep>(p: P, sep: Sep) -> SepBy<O, P, Sep>
@@ -70,7 +78,12 @@ where
     Sep: Parser<Stream = P::Stream>,
     O: Extend<P::Output> + Default,
 {
-    SepBy { p, sep, min: 1, _marker: PhantomData }
+    SepBy {
+        p,
+        sep,
+        min: 1,
+        _marker: PhantomData,
+    }
 }
 
 #[cfg(test)]
@@ -81,6 +94,7 @@ mod test {
         token::{ascii, token},
     };
     use crate::stream::IndexedStream;
+    use crate::Error;
 
     #[test]
     fn test_sep_by() {

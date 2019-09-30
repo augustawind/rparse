@@ -377,8 +377,7 @@ pub trait Parser {
     }
 }
 
-impl<P: Parser> Parser for &mut P
-{
+impl<P: Parser> Parser for &mut P {
     type Stream = P::Stream;
     type Output = P::Output;
 
