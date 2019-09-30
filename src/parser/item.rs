@@ -48,14 +48,14 @@ where
                 stream.ok(item)
             }
             result => stream.err(match result {
-                Some(item) => Error::unexpected_token(item),
+                Some(item) => Error::unexpected_item(item),
                 None => Error::eoi(),
             }),
         }
     }
 
     fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
-        vec![Error::expected_token(self.item)]
+        vec![Error::expected_item(self.item)]
     }
 }
 
@@ -73,7 +73,7 @@ impl<S: Stream, O> Parser for EOI<S, O> {
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         match stream.peek() {
-            Some(t) => stream.err(Error::unexpected_token(t)),
+            Some(t) => stream.err(Error::unexpected_item(t)),
             None => stream.noop(),
         }
     }
@@ -108,7 +108,7 @@ where
                 stream.pop();
                 stream.ok(*t)
             }
-            Some(t) => stream.err(Error::unexpected_token(t)),
+            Some(t) => stream.err(Error::unexpected_item(t)),
             _ => stream.err(Error::eoi()),
         }
     }
@@ -139,7 +139,7 @@ where
         let initial = stream.backup();
         let mut stream = match self.p.parse_lazy(stream) {
             Ok((Some(t), stream)) => {
-                return stream.err_at(initial.position().clone(), Error::unexpected_token(t))
+                return stream.err_at(initial.position().clone(), Error::unexpected_item(t))
             }
             Ok((None, stream)) => stream,
             Err((_, stream)) => stream,
@@ -174,7 +174,7 @@ impl<S: Stream> Parser for OneOf<S> {
 
     fn expected_errors(&self) -> Vec<Error<S>> {
         vec![Error::expected_one_of(
-            self.items.iter().map(|&item| Info::Token(item)).collect(),
+            self.items.iter().map(|&item| Info::Item(item)).collect(),
         )]
     }
 }
@@ -216,7 +216,7 @@ macro_rules! def_token_parser_tests {
                 )+
                 "" => err(0, vec![Error::eoi(), Error::expected($e)]),
                 $(
-                    concat!($t_err) => err(0, vec![Error::unexpected_token($t_err), Error::expected($e)]),
+                    concat!($t_err) => err(0, vec![Error::unexpected_item($t_err), Error::expected($e)]),
                 )+
             });
             let mut p = $p();
@@ -226,7 +226,7 @@ macro_rules! def_token_parser_tests {
                 )+
                 "".as_bytes() => err(0, vec![Error::eoi(), Error::expected($e)]),
                 $(
-                    concat!($t_err).as_bytes() => err(0, vec![Error::unexpected_token($t_err as u8), Error::expected($e)]),
+                    concat!($t_err).as_bytes() => err(0, vec![Error::unexpected_item($t_err as u8), Error::expected($e)]),
                 )+
             });
         }
@@ -435,7 +435,7 @@ mod test {
     fn test_token() {
         test_parser!(&str => char | item(b'c'), {
             "cat" => ok('c', "at"),
-            "ace" => err(vec![Error::unexpected_token('a'), Error::expected_token('c')]),
+            "ace" => err(vec![Error::unexpected_item('a'), Error::expected_item('c')]),
         });
     }
 
@@ -444,7 +444,7 @@ mod test {
         let mut parser = eoi();
         test_parser!(IStr => () | parser, {
             "" => noop(),
-            "x" => err(0, vec![Error::unexpected_token('x'), Error::expected(Info::EOI())]),
+            "x" => err(0, vec![Error::unexpected_item('x'), Error::expected(Info::EOI())]),
         });
         let mut parser = eoi::<_, u32>();
         assert_eq!(parser.parse(""), none_result(""));
@@ -455,7 +455,7 @@ mod test {
         let mut parser = satisfy(|&c: &char| c.is_numeric());
         test_parser!(&str => char | parser, {
             "123abc" => ok('1', "23abc"),
-            "abc123" => err(vec![Error::unexpected_token('a')]),
+            "abc123" => err(vec![Error::unexpected_item('a')]),
         });
     }
 
@@ -467,7 +467,7 @@ mod test {
             let mut parser = negate(item(b'x'));
             test_parser!(IStr => char | parser, {
                 "abc" => ok('a', ("bc", 1)),
-                "xyz" => err(0, vec![Error::unexpected_token('x')]),
+                "xyz" => err(0, vec![Error::unexpected_item('x')]),
                 "" => err(0, vec![Error::eoi()]),
             });
         }
@@ -479,7 +479,7 @@ mod test {
                 "zy" => ok('z', ("y", 1)),
                 "xx" => ok('x', ("x", 1)),
                 "z" => ok('z', ("", 1)),
-                "zx_" => err(0, vec![Error::unexpected_token('x')]),
+                "zx_" => err(0, vec![Error::unexpected_item('x')]),
             });
         }
 
@@ -490,7 +490,7 @@ mod test {
                 "zy" => ok('z', ("y", 1)),
                 "xx" => ok('x', ("x", 1)),
                 "z" => ok('z', ("", 1)),
-                "zx_" => err(0, vec![Error::unexpected_token('z')]),
+                "zx_" => err(0, vec![Error::unexpected_item('z')]),
             });
         }
     }
@@ -498,12 +498,12 @@ mod test {
     #[test]
     fn test_one_of() {
         let mut parser = one_of(&[b'a', b'0']);
-        let expected_err = Error::expected_one_of(vec![Info::Token('a'), Info::Token('0')]);
+        let expected_err = Error::expected_one_of(vec![Info::Item('a'), Info::Item('0')]);
         test_parser!(IStr => char | parser, {
             "ab" => ok('a', ("b", 1)),
             "0" => ok('0', ("", 1)),
             "" => err(0, vec![Error::eoi(), expected_err.clone()]),
-            "z" => err(0, vec![Error::unexpected_token('z'), expected_err.clone()]),
+            "z" => err(0, vec![Error::unexpected_item('z'), expected_err.clone()]),
         });
     }
 
@@ -514,7 +514,7 @@ mod test {
             "bc" => ok('b', ("c", 1)),
             "1" => ok('1', ("", 1)),
             "" => err(0, vec![Error::eoi()]),
-            "a" => err(0, vec![Error::unexpected_token('a')]),
+            "a" => err(0, vec![Error::unexpected_item('a')]),
         });
     }
 }

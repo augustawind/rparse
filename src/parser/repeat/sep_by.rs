@@ -133,9 +133,9 @@ mod test {
                 (",", 11),
             ),
             "" => err(0, vec![Error::eoi(), Error::expected("an ascii letter")]),
-            "," => err(0, vec![Error::unexpected_token(','), Error::expected("an ascii letter")]),
+            "," => err(0, vec![Error::unexpected_item(','), Error::expected("an ascii letter")]),
             "33a,b" => err(0, vec![
-                Error::unexpected_token('3'),
+                Error::unexpected_item('3'),
                 Error::expected("an ascii letter"),
             ]),
         });

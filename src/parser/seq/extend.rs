@@ -67,9 +67,9 @@ mod test {
             "huh???" => ok("huh???".chars().collect(), ("", 6)),
             "oh?? cool" => ok("oh??".chars().collect(), (" cool", 4)),
             "???" => ok("???".chars().collect(), ("", 3)),
-            "" => err(0, vec![Error::eoi(), Error::expected_token('?')]),
-            "whoops!" => err(6, vec![Error::unexpected_token('!'), Error::expected_token('?')]),
-            "!?" => err(0, vec![Error::unexpected_token('!'), Error::expected_token('?')]),
+            "" => err(0, vec![Error::eoi(), Error::expected_item('?')]),
+            "whoops!" => err(6, vec![Error::unexpected_item('!'), Error::expected_item('?')]),
+            "!?" => err(0, vec![Error::unexpected_item('!'), Error::expected_item('?')]),
         });
     }
 

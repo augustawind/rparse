@@ -29,7 +29,7 @@ impl<S: Stream> Parser for Range<S> {
                         Some((i, (left, _))) => {
                             let range = range.range(i).unwrap();
                             start_pos.update_range(&range);
-                            stream.err(Error::unexpected_token(left))
+                            stream.err(Error::unexpected_item(left))
                         }
                         None => stream.err(Error::eoi()),
                     }

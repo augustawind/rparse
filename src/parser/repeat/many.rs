@@ -145,7 +145,7 @@ mod test {
             "aaabcd" => ok("aaa".into(), ("bcd", 3)),
             "abcd" => ok("a".into(), ("bcd", 1)),
             "aaaa" => ok("aaaa".into(), ("", 4)),
-            "baaa" => err(0, vec![Error::unexpected_token('b'), Error::expected_token('a')]),
+            "baaa" => err(0, vec![Error::unexpected_item('b'), Error::expected_item('a')]),
         });
     }
 }

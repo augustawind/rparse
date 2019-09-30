@@ -255,7 +255,7 @@ mod test {
         let mut parser = ascii::digit().bind(|c: char, stream: &str| stream.ok(c.to_string()));
         test_parser!(&str => String | parser, {
             "3" => ok("3".to_string(), ""),
-            "a3" => err(vec![Error::unexpected_token('a'), Error::expected("an ascii digit")]),
+            "a3" => err(vec![Error::unexpected_item('a'), Error::expected("an ascii digit")]),
         });
 
         let mut parser = many1::<String, _>(ascii::letter())
@@ -286,7 +286,7 @@ mod test {
             "123" => ok("123".to_string(), ("", 3)),
             "123abc" => ok("123".to_string(), ("abc", 3)),
             "" => err(0, vec![Error::eoi(), Error::expected("an ascii digit")]),
-            "abc" => err(0, vec![Error::unexpected_token('a'), Error::expected("an ascii digit")]),
+            "abc" => err(0, vec![Error::unexpected_item('a'), Error::expected("an ascii digit")]),
         });
     }
 
@@ -297,7 +297,7 @@ mod test {
             "1a" => ok(vec!['1', 'a'], ("", 2)),
             "0bb3" => ok(vec!['0', 'b', 'b'], ("3", 3)),
             "" => err(0, vec![Error::eoi(), Error::expected("an ascii digit")]),
-            "3\t" => err(1, vec![Error::unexpected_token('\t'), Error::expected("an ascii letter")]),
+            "3\t" => err(1, vec![Error::unexpected_item('\t'), Error::expected("an ascii letter")]),
         });
     }
 
@@ -307,7 +307,7 @@ mod test {
         test_parser!(IndexedStream<&str> => Vec<char> | parser, {
             "x" => ok(vec!['x'], ("", 1)),
             "" => err(0, vec![Error::eoi(), Error::expected(b'x')]),
-            "\t" => err(0, vec![Error::unexpected_token('\t'), Error::expected(b'x')]),
+            "\t" => err(0, vec![Error::unexpected_item('\t'), Error::expected(b'x')]),
         });
     }
 

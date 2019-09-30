@@ -76,20 +76,20 @@ mod test {
         test_parser!(IndexedStream<&str> => (char, char) | parser, {
             "abcd" => ok(('a', 'b'), ("cd", 2)),
             "ab" => ok(('a', 'b'), ("", 2)),
-            "def" => err(0, vec![Error::unexpected_token('d'), Error::expected(b'a')]),
-            "aab" => err(1, vec![Error::unexpected_token('a'), Error::expected(b'b')]),
-            "bcd" => err(0, vec![Error::unexpected_token('b'), Error::expected(b'a')]),
+            "def" => err(0, vec![Error::unexpected_item('d'), Error::expected(b'a')]),
+            "aab" => err(1, vec![Error::unexpected_item('a'), Error::expected(b'b')]),
+            "bcd" => err(0, vec![Error::unexpected_item('b'), Error::expected(b'a')]),
         });
 
         let mut parser = (many1(ascii::digit()), many1(ascii::letter()));
         test_parser!(IndexedStream<&str> => (Vec<char>, Vec<char>) | parser, {
             "123abc456" => ok((vec!['1', '2', '3'], vec!['a', 'b', 'c']), ("456", 6)),
             " 1 2 3" => err(0, vec![
-                Error::unexpected_token(' '),
+                Error::unexpected_item(' '),
                 Error::expected("an ascii digit"),
             ]),
             "123 abc" => err(3, vec![
-                Error::unexpected_token(' '),
+                Error::unexpected_item(' '),
                 Error::expected("an ascii letter"),
             ]),
         });
@@ -101,8 +101,8 @@ mod test {
         test_parser!(IndexedStream<&str> => (char, char, char) | parser, {
             "abcd" => ok(('a', 'b', 'c'), ("d", 3)),
             "abc" => ok(('a', 'b', 'c'), ("", 3)),
-            "def" => err(0, vec![Error::unexpected_token('d'), Error::expected(b'a')]),
-            "abb" => err(2, vec![Error::unexpected_token('b'), Error::expected(b'c')]),
+            "def" => err(0, vec![Error::unexpected_item('d'), Error::expected(b'a')]),
+            "abb" => err(2, vec![Error::unexpected_item('b'), Error::expected(b'c')]),
         });
 
         let mut parser = (
@@ -116,11 +116,11 @@ mod test {
                 ("456", 7)
             ),
             " 1 2 3" => err(0, vec![
-                Error::unexpected_token(' '),
+                Error::unexpected_item(' '),
                 Error::expected("an ascii digit"),
             ]),
             "123abc456" => err(6, vec![
-                Error::unexpected_token('4'),
+                Error::unexpected_item('4'),
                 Error::expected("an ascii whitespace character"),
             ]),
         });

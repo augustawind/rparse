@@ -10,7 +10,7 @@ use stream::{Position, Stream};
 /// The content of a parse error.
 #[derive(Debug, Clone)]
 pub enum Info<S: Stream> {
-    Token(S::Item),
+    Item(S::Item),
     Range(S::Range),
     Msg(&'static str),
     MsgOwned(String),
@@ -20,7 +20,7 @@ pub enum Info<S: Stream> {
 impl<S: Stream> PartialEq for Info<S> {
     fn eq(&self, other: &Info<S>) -> bool {
         match (self, other) {
-            (&Info::Token(ref l), &Info::Token(ref r)) => l == r,
+            (&Info::Item(ref l), &Info::Item(ref r)) => l == r,
             (&Info::Range(ref l), &Info::Range(ref r)) => l == r,
             (&Info::Msg(ref l), &Info::Msg(ref r)) => l == r,
             (&Info::MsgOwned(ref l), &Info::MsgOwned(ref r)) => l == r,
@@ -35,7 +35,7 @@ impl<S: Stream> PartialEq for Info<S> {
 impl<S: Stream> fmt::Display for Info<S> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Info::Token(token) => write!(f, "token {:?}", token),
+            Info::Item(item) => write!(f, "item {:?}", item),
             Info::Range(range) => write!(f, "range {:?}", range),
             Info::Msg(msg) => write!(f, "{}", msg),
             Info::MsgOwned(msg) => write!(f, "{}", msg),
@@ -61,7 +61,7 @@ where
     S: Stream<Item = char>,
 {
     fn from(c: char) -> Self {
-        Info::Token(c)
+        Info::Item(c)
     }
 }
 
@@ -70,7 +70,7 @@ where
     S: Stream<Item = u8>,
 {
     fn from(b: u8) -> Self {
-        Info::Token(b)
+        Info::Item(b)
     }
 }
 
@@ -128,8 +128,8 @@ impl<S: Stream> Error<S> {
         }
     }
 
-    pub fn expected_token(token: S::Item) -> Self {
-        Error::Expected(Box::new(Error::Info(Info::Token(token))))
+    pub fn expected_item(item: S::Item) -> Self {
+        Error::Expected(Box::new(Error::Info(Info::Item(item))))
     }
 
     pub fn expected_range(range: S::Range) -> Self {
@@ -140,8 +140,8 @@ impl<S: Stream> Error<S> {
         Error::Unexpected(Info::EOI())
     }
 
-    pub fn unexpected_token(token: S::Item) -> Self {
-        Error::Unexpected(Info::Token(token))
+    pub fn unexpected_item(item: S::Item) -> Self {
+        Error::Unexpected(Info::Item(item))
     }
 
     pub fn unexpected_range(range: S::Range) -> Self {
@@ -206,7 +206,7 @@ impl<S: Stream, T: Into<Error<S>>> From<Vec<T>> for Error<S> {
 
 impl<S: Stream> From<u8> for Error<S> {
     fn from(b: u8) -> Self {
-        Error::Info(Info::Token(b.into()))
+        Error::Info(Info::Item(b.into()))
     }
 }
 

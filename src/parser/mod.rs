@@ -452,7 +452,7 @@ mod test {
         parser(|mut stream: S| match stream.pop() {
             Some(t) => match t {
                 'a' | 'e' | 'i' | 'o' | 'u' => stream.ok(t),
-                _ => stream.err(Error::unexpected_token(t)),
+                _ => stream.err(Error::unexpected_item(t)),
             },
             None => stream.err(Error::eoi()),
         })
@@ -464,8 +464,8 @@ mod test {
             "a" => ok('a', ("", 1)),
             "ooh" => ok('o', ("oh", 1)),
             "" => err(0, vec![Error::eoi()]),
-            "d" => err(1, vec![Error::unexpected_token('d')]),
-            "du" => err(1, vec![Error::unexpected_token('d')]),
+            "d" => err(1, vec![Error::unexpected_item('d')]),
+            "du" => err(1, vec![Error::unexpected_item('d')]),
         });
     }
 
@@ -478,7 +478,7 @@ mod test {
             if t == b'\n'.into() {
                 Ok(t)
             } else {
-                Err(Error::unexpected_token(t))
+                Err(Error::unexpected_item(t))
             }
         }) {
             Ok(ok) => stream.ok(ok),
@@ -492,7 +492,7 @@ mod test {
             "\n".as_bytes() => ok(b'\n', ("".as_bytes(), 1)),
             "\nx".as_bytes() => ok(b'\n', ("x".as_bytes(), 1)),
             "".as_bytes() => err(0, vec![Error::eoi()]),
-            "x\n".as_bytes() => err(1, vec![Error::unexpected_token(b'x')]),
+            "x\n".as_bytes() => err(1, vec![Error::unexpected_item(b'x')]),
         });
     }
 }

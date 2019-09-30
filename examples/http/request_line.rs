@@ -190,7 +190,7 @@ mod test {
 
         test_parser!(IndexedStream<&[u8]> => String | http_method(), {
             &b"PUPPYDOG"[..] => err(2, vec![
-                Error::unexpected_token(b'P'),
+                Error::unexpected_item(b'P'),
                 expected_error,
             ]),
         });
@@ -206,13 +206,13 @@ mod test {
         test_parser!(&str => String | percent_encoded().collect::<String>(), {
             "%A9" => ok("%A9".into(), ""),
             "%0f/hello" => ok("%0f".into(), "/hello"),
-            "" => err(vec![Error::eoi(), Error::expected_token('%')]),
+            "" => err(vec![Error::eoi(), Error::expected_item('%')]),
             "%%0f" => err(vec![
-                Error::unexpected_token('%'),
+                Error::unexpected_item('%'),
                 Error::expected("a hexadecimal digit"),
             ]),
             "%xy" => err(vec![
-                Error::unexpected_token('x'),
+                Error::unexpected_item('x'),
                 Error::expected("a hexadecimal digit"),
             ]),
         });

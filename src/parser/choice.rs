@@ -272,13 +272,13 @@ mod test {
     #[test]
     fn test_with() {
         let mut parser = with(item(b'a'), item(b'b'));
-        let expected_err = Error::expected(vec![Info::Token('a'), Info::Token('b')]);
+        let expected_err = Error::expected(vec![Info::Item('a'), Info::Item('b')]);
         test_parser!(IndexedStream<&str> => char | parser, {
             "abcd" => ok('b', ("cd", 2)),
             "ab" => ok('b', ("", 2)),
-            "def" => err(0, vec![Error::unexpected_token('d'), expected_err.clone()]),
-            "aab" => err(1, vec![Error::unexpected_token('a'), expected_err.clone()]),
-            "bcd" => err(0, vec![Error::unexpected_token('b'), expected_err.clone()]),
+            "def" => err(0, vec![Error::unexpected_item('d'), expected_err.clone()]),
+            "aab" => err(1, vec![Error::unexpected_item('a'), expected_err.clone()]),
+            "bcd" => err(0, vec![Error::unexpected_item('b'), expected_err.clone()]),
         });
 
         let mut parser = with(many1::<Vec<_>, _>(ascii::digit()), many1(ascii::letter()));
@@ -286,11 +286,11 @@ mod test {
         test_parser!(IndexedStream<&str> => Vec<char> | parser, {
             "123abc456" => ok(vec!['a', 'b', 'c'], ("456", 6)),
             " 1 2 3" => err(0, vec![
-                Error::unexpected_token(' '),
+                Error::unexpected_item(' '),
                 expected_err.clone(),
             ]),
             "123 abc" => err(3, vec![
-                Error::unexpected_token(' '),
+                Error::unexpected_item(' '),
                 expected_err.clone(),
             ]),
         });
@@ -299,13 +299,13 @@ mod test {
     #[test]
     fn test_and() {
         let mut parser = and(item(b'a'), item(b'b'));
-        let expected_err = Error::expected(vec![Info::Token('a'), Info::Token('b')]);
+        let expected_err = Error::expected(vec![Info::Item('a'), Info::Item('b')]);
         test_parser!(IndexedStream<&str> => (char, char) | parser, {
             "abcd" => ok(('a', 'b'), ("cd", 2)),
             "ab" => ok(('a', 'b'), ("", 2)),
-            "def" => err(0, vec![Error::unexpected_token('d'), expected_err.clone()]),
-            "aab" => err(1, vec![Error::unexpected_token('a'), expected_err.clone()]),
-            "bcd" => err(0, vec![Error::unexpected_token('b'), expected_err.clone()]),
+            "def" => err(0, vec![Error::unexpected_item('d'), expected_err.clone()]),
+            "aab" => err(1, vec![Error::unexpected_item('a'), expected_err.clone()]),
+            "bcd" => err(0, vec![Error::unexpected_item('b'), expected_err.clone()]),
         });
 
         let mut parser = and(many1(ascii::digit()), many1(ascii::letter()));
@@ -313,11 +313,11 @@ mod test {
         test_parser!(IndexedStream<&str> => (Vec<char>, Vec<char>) | parser, {
             "123abc456" => ok((vec!['1', '2', '3'], vec!['a', 'b', 'c']), ("456", 6)),
             " 1 2 3" => err(0, vec![
-                Error::unexpected_token(' '),
+                Error::unexpected_item(' '),
                 expected_err.clone(),
             ]),
             "123 abc" => err(3, vec![
-                Error::unexpected_token(' '),
+                Error::unexpected_item(' '),
                 expected_err.clone(),
             ]),
         });
@@ -330,7 +330,7 @@ mod test {
             "bcd" => ok('b', ("cd", 1)),
             "a" => ok('a', ("", 1)),
             "def" => err(0, vec![
-                Error::unexpected_token('d'),
+                Error::unexpected_item('d'),
                 Error::expected_one_of(vec![b'a', b'b']),
             ]),
         });
@@ -358,9 +358,9 @@ mod test {
             "9.a" => ok('9', (".a", 1)),
             ".a9" => ok('.', ("a9", 1)),
             "ba9." => err(0, vec![
-                Error::unexpected_token('b'),
+                Error::unexpected_item('b'),
                 Error::expected_one_of(vec![
-                    Info::Token('a'),
+                    Info::Item('a'),
                     Info::Msg("an ascii digit"),
                     Info::Msg("an ascii punctuation character"),
                 ]),
