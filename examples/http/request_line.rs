@@ -145,9 +145,7 @@ where
         item.is_ascii_alphanumeric()
             || [b'-', b'_', b'.', b'!', b'~', b'*', b'\'', b'(', b')']
                 .into_iter()
-                .map(|&b| b.into())
-                .collect::<Vec<S::Item>>()
-                .contains(item)
+                .any(|&b| &S::Item::from(b) == item)
     })
 }
 
