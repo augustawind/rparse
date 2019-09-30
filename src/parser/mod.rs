@@ -19,8 +19,8 @@ use std::str;
 
 use self::choice::{optional, or, skip, with, Optional, Or, Skip, With};
 use self::function::{
-    bind, collect, expect, flatten, from_str, iter, map, wrap, Bind, Collect, Expect, Flatten,
-    FromStr, Iter, Map, Wrap,
+    bind, collect, expect, flatten, from_str, map, wrap, Bind, Collect, Expect, Flatten,
+    FromStr, Map, Wrap,
 };
 use self::item::{negate, Negate};
 use self::seq::{and, append, extend, then, And, Append, Extend, Then};
@@ -201,17 +201,6 @@ pub trait Parser {
         F: Fn(Self::Output) -> O,
     {
         map(self, f)
-    }
-
-    /// Parses with `self` and transforms the result [into an iterator].
-    ///
-    /// [into an iterator]: IntoIterator::into_iter
-    fn iter<I>(self) -> Iter<Self, I>
-    where
-        Self: Sized + Parser<Output = I>,
-        I: IntoIterator,
-    {
-        iter(self)
     }
 
     /// Parses with `self` and transforms the result [into a new collection].

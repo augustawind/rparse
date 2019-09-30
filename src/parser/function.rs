@@ -76,19 +76,6 @@ where
     Map { parser, f }
 }
 
-pub type Iter<P, I> = Map<P, fn(<P as Parser>::Output) -> <I as IntoIterator>::IntoIter>;
-
-/// Equivalent to [`p.iter()`].
-///
-/// [`p.iter()`]: Parser::iter
-pub fn iter<P, I>(p: P) -> Iter<P, I>
-where
-    P: Parser<Output = I>,
-    I: IntoIterator,
-{
-    p.map(|output| output.into_iter())
-}
-
 pub type Collect<P, O> = Map<P, fn(<P as Parser>::Output) -> O>;
 
 /// Equivalent to [`p.collect()`].
