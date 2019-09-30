@@ -1,12 +1,12 @@
 use crate::{ParseResult, Parser};
 
-pub struct Between<P, L, R> {
+pub struct Between<L, R, P> {
+    open: L,
+    close: R,
     p: P,
-    left: L,
-    right: R,
 }
 
-impl<P, L, R> Parser for Between<P, L, R>
+impl<L, R, P> Parser for Between<L, R, P>
 where
     P: Parser,
     L: Parser<Stream = P::Stream>,
@@ -16,30 +16,31 @@ where
     type Output = P::Output;
 
     fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        (self.left.by_ref(), self.p.by_ref(), self.right.by_ref())
+        (self.open.by_ref(), self.p.by_ref(), self.close.by_ref())
             .map(|(_, result, _)| result)
             .parse_partial(stream)
     }
 }
 
-fn between<P, L, R>(left: L, right: R, p: P) -> Between<P, L, R>
+fn between<L, R, P>(open: L, close: R, p: P) -> Between<L, R, P>
 where
     P: Parser,
     L: Parser<Stream = P::Stream>,
     R: Parser<Stream = P::Stream>,
 {
-    Between { p, left, right }
+    Between { open, close, p }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::Error;
     use crate::parser::{
-        item::{item, ascii},
-        repeat::many1,
+        item::{ascii, item, negate},
+        range::range,
+        repeat::{many1, take_until},
     };
     use crate::stream::IndexedStream;
+    use crate::Error;
 
     #[test]
     fn test_between() {
@@ -51,6 +52,25 @@ mod test {
             r"5>" => err(Error::item('5').expected_item('<').at(0)),
             r"<5" => err(Error::eoi().expected_item('>').at(2)),
             r"< 5>" => err(Error::item(' ').expected("an ascii letter or digit").at(1)),
+        });
+    }
+
+    #[test]
+    fn test_between_ambiguous() {
+        let mut parser = between(
+            range("'''"),
+            range("'''"),
+            take_until(negate(ascii::whitespace()), range("'''")),
+        );
+        test_parser!(IndexedStream<&str> => String | parser, {
+            "'''1-2-3'''" => ok("1-2-3".to_string(), ("", 11)),
+            "'''x'x'''" => ok("x'x".to_string(), ("", 9)),
+            "'''x''x'''" => ok("x''x".to_string(), ("", 10)),
+            "'''x'''x'''" => ok("x".to_string(), ("x'''", 7)),
+            r"'''x''''''" => ok("x".to_string(), ("'''", 7)),
+            r"''''x'''" => ok("'x".to_string(), ("", 8)),
+            r"'''''x'''" => ok("''x".to_string(), ("", 9)),
+            r"''''''x'''" => ok("".to_string(), ("x'''", 6)),
         });
     }
 }
