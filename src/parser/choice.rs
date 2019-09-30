@@ -1,4 +1,5 @@
-use {Error, ParseResult, Parser, Stream};
+use crate::error::Expected;
+use {ParseResult, Parser, Stream};
 
 pub struct Skip<P1, P2> {
     p1: P1,
@@ -20,10 +21,8 @@ where
         stream.result(result)
     }
 
-    fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
-        vec![Error::expected(
-            [self.p1.expected_errors(), self.p2.expected_errors()].concat(),
-        )]
+    fn expected_error(&self) -> Option<Expected<Self::Stream>> {
+        Expected::merge_seq(vec![self.p1.expected_error(), self.p2.expected_error()])
     }
 }
 
@@ -58,10 +57,8 @@ where
         stream.result(result)
     }
 
-    fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
-        vec![Error::expected(
-            [self.p1.expected_errors(), self.p2.expected_errors()].concat(),
-        )]
+    fn expected_error(&self) -> Option<Expected<Self::Stream>> {
+        Expected::merge_seq(vec![self.p1.expected_error(), self.p2.expected_error()])
     }
 }
 /// Parses with `p1` followed by `p2`. Succeeds if both parsers succeed, otherwise fails.
@@ -94,8 +91,8 @@ where
         }
     }
 
-    fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
-        self.parser.expected_errors()
+    fn expected_error(&self) -> Option<Expected<Self::Stream>> {
+        self.parser.expected_error()
     }
 }
 
@@ -123,22 +120,17 @@ where
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         let (left, stream) = match self.p1.parse_lazy(stream)? {
             (Some(result), stream) => (result, stream),
-            (None, stream) => return stream.empty_errs(),
+            (None, stream) => return stream.noop(),
         };
         let (right, stream) = match self.p2.parse_lazy(stream)? {
             (Some(result), stream) => (result, stream),
-            (None, stream) => return stream.empty_errs(),
+            (None, stream) => return stream.noop(),
         };
         stream.ok((left, right))
     }
 
-    fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
-        let errors = [self.p1.expected_errors(), self.p2.expected_errors()].concat();
-        if errors.len() > 0 {
-            vec![Error::expected(errors)]
-        } else {
-            vec![]
-        }
+    fn expected_error(&self) -> Option<Expected<Self::Stream>> {
+        Expected::merge_seq(vec![self.p1.expected_error(), self.p2.expected_error()])
     }
 }
 
@@ -167,23 +159,14 @@ where
     type Output = O;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        let (mut err, stream) = match self.p1.try_parse_lazy(stream) {
-            Ok((result, stream)) => return stream.result(result),
-            Err((err, stream)) => (err, stream),
-        };
-        match self.p2.parse_lazy(stream) {
+        match self.p1.try_parse_lazy(stream) {
             Ok((result, stream)) => stream.result(result),
-            Err((mut err2, stream)) => {
-                err.merge_errors(&mut err2);
-                stream.errs(err)
-            }
+            Err((_, stream)) => self.p2.parse_lazy(stream),
         }
     }
 
-    fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
-        vec![Error::expected(Error::one_of(
-            [self.p1.expected_errors(), self.p2.expected_errors()].concat(),
-        ))]
+    fn expected_error(&self) -> Option<Expected<Self::Stream>> {
+        Expected::merge_one_of(vec![self.p1.expected_error(), self.p2.expected_error()])
     }
 }
 
@@ -228,12 +211,13 @@ macro_rules! choice {
 #[cfg(test)]
 mod test {
     use super::*;
-    use error::Info;
-    use parser::item::{any, ascii, item};
-    use parser::repeat::{many, many1};
-    use parser::seq::then;
-    use parser::test_utils::*;
-    use parser::Parser;
+    use error::{Error, Info};
+    use parser::{
+        item::{any, ascii, item},
+        repeat::{many, many1},
+        seq::then,
+        test_utils::*,
+    };
     use stream::IndexedStream;
 
     #[test]
@@ -272,54 +256,40 @@ mod test {
     #[test]
     fn test_with() {
         let mut parser = with(item(b'a'), item(b'b'));
-        let expected_err = Error::expected(vec![Info::Item('a'), Info::Item('b')]);
         test_parser!(IndexedStream<&str> => char | parser, {
             "abcd" => ok('b', ("cd", 2)),
             "ab" => ok('b', ("", 2)),
-            "def" => err(0, vec![Error::unexpected_item('d'), expected_err.clone()]),
-            "aab" => err(1, vec![Error::unexpected_item('a'), expected_err.clone()]),
-            "bcd" => err(0, vec![Error::unexpected_item('b'), expected_err.clone()]),
+            "def" => err(Error::item('d').expected(vec![b'a', b'b']).at(0)),
+            "aab" => err(Error::item('a').expected(vec![b'a', b'b']).at(1)),
+            "bcd" => err(Error::item('b').expected(vec![b'a', b'b']).at(0)),
         });
 
         let mut parser = with(many1::<Vec<_>, _>(ascii::digit()), many1(ascii::letter()));
-        let expected_err = Error::expected(vec!["an ascii digit", "an ascii letter"]);
+        let into_expected = vec!["an ascii digit", "an ascii letter"];
         test_parser!(IndexedStream<&str> => Vec<char> | parser, {
             "123abc456" => ok(vec!['a', 'b', 'c'], ("456", 6)),
-            " 1 2 3" => err(0, vec![
-                Error::unexpected_item(' '),
-                expected_err.clone(),
-            ]),
-            "123 abc" => err(3, vec![
-                Error::unexpected_item(' '),
-                expected_err.clone(),
-            ]),
+            " 1 2 3" => err(Error::item(' ').expected(into_expected.clone()).at(0)),
+            "123 abc" => err(Error::item(' ').expected(into_expected.clone()).at(3)),
         });
     }
 
     #[test]
     fn test_and() {
         let mut parser = and(item(b'a'), item(b'b'));
-        let expected_err = Error::expected(vec![Info::Item('a'), Info::Item('b')]);
         test_parser!(IndexedStream<&str> => (char, char) | parser, {
             "abcd" => ok(('a', 'b'), ("cd", 2)),
             "ab" => ok(('a', 'b'), ("", 2)),
-            "def" => err(0, vec![Error::unexpected_item('d'), expected_err.clone()]),
-            "aab" => err(1, vec![Error::unexpected_item('a'), expected_err.clone()]),
-            "bcd" => err(0, vec![Error::unexpected_item('b'), expected_err.clone()]),
+            "def" => err(Error::item('d').expected(vec![b'a', b'b']).at(0)),
+            "aab" => err(Error::item('a').expected(vec![b'a', b'b']).at(1)),
+            "bcd" => err(Error::item('b').expected(vec![b'a', b'b']).at(0)),
         });
 
         let mut parser = and(many1(ascii::digit()), many1(ascii::letter()));
-        let expected_err = Error::expected(vec!["an ascii digit", "an ascii letter"]);
+        let into_expected = vec!["an ascii digit", "an ascii letter"];
         test_parser!(IndexedStream<&str> => (Vec<char>, Vec<char>) | parser, {
             "123abc456" => ok((vec!['1', '2', '3'], vec!['a', 'b', 'c']), ("456", 6)),
-            " 1 2 3" => err(0, vec![
-                Error::unexpected_item(' '),
-                expected_err.clone(),
-            ]),
-            "123 abc" => err(3, vec![
-                Error::unexpected_item(' '),
-                expected_err.clone(),
-            ]),
+            " 1 2 3" => err(Error::item(' ').expected(into_expected.clone()).at(0)),
+            "123 abc" => err(Error::item(' ').expected(into_expected.clone()).at(3)),
         });
     }
 
@@ -329,10 +299,7 @@ mod test {
         test_parser!(IndexedStream<&str> => char | parser, {
             "bcd" => ok('b', ("cd", 1)),
             "a" => ok('a', ("", 1)),
-            "def" => err(0, vec![
-                Error::unexpected_item('d'),
-                Error::expected_one_of(vec![b'a', b'b']),
-            ]),
+            "def" => err(Error::item('d').expected_one_of(vec![b'a', b'b']).at(0)),
         });
 
         let mut parser = or(
@@ -357,14 +324,15 @@ mod test {
             "a9." => ok('a', ("9.", 1)),
             "9.a" => ok('9', (".a", 1)),
             ".a9" => ok('.', ("a9", 1)),
-            "ba9." => err(0, vec![
-                Error::unexpected_item('b'),
-                Error::expected_one_of(vec![
-                    Info::Item('a'),
-                    Info::Msg("an ascii digit"),
-                    Info::Msg("an ascii punctuation character"),
-                ]),
-            ]),
+            "ba9." => err(
+                Error::item('b')
+                    .expected_one_of(vec![
+                        Info::Item('a'),
+                        Info::Msg("an ascii digit"),
+                        Info::Msg("an ascii punctuation character"),
+                    ])
+                    .at(0)
+            ),
         });
 
         assert_eq!(

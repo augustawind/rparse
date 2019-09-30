@@ -6,13 +6,13 @@ use std::marker::PhantomData;
 use std::option::Option::*;
 use std::str;
 
-use error::Error;
+use error::Expected;
 use traits::StrLike;
 use {ParseResult, Parser, Stream};
 
 pub struct Expect<P: Parser> {
     parser: P,
-    error: Error<P::Stream>,
+    expected: Expected<P::Stream>,
 }
 
 impl<P: Parser> Parser for Expect<P> {
@@ -23,22 +23,22 @@ impl<P: Parser> Parser for Expect<P> {
         self.parser.parse_lazy(stream)
     }
 
-    fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
-        vec![self.error.clone()]
+    fn expected_error(&self) -> Option<Expected<Self::Stream>> {
+        Some(self.expected.clone())
     }
 }
 
 /// Equivalent to [`parser.expect(error)`].
 ///
 /// [`parser.expect(error)`]: Parser::expect
-pub fn expect<P, I>(parser: P, error: I) -> Expect<P>
+pub fn expect<P, I>(parser: P, expected: I) -> Expect<P>
 where
     P: Parser,
-    I: Into<Error<P::Stream>>,
+    I: Into<Expected<P::Stream>>,
 {
     Expect {
         parser,
-        error: Error::expected(error),
+        expected: expected.into(),
     }
 }
 
@@ -60,8 +60,8 @@ where
         stream.result(result.map(|output| (self.f)(output)))
     }
 
-    fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
-        self.parser.expected_errors()
+    fn expected_error(&self) -> Option<Expected<Self::Stream>> {
+        self.parser.expected_error()
     }
 }
 
@@ -153,8 +153,8 @@ where
         }
     }
 
-    fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
-        self.parser.expected_errors()
+    fn expected_error(&self) -> Option<Expected<Self::Stream>> {
+        self.parser.expected_error()
     }
 }
 
@@ -220,10 +220,12 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use error::Error::*;
-    use parser::item::{ascii, item};
-    use parser::repeat::many1;
-    use parser::test_utils::*;
+    use error::Error;
+    use parser::{
+        item::{ascii, item},
+        repeat::many1,
+        test_utils::*,
+    };
     use stream::{IndexedStream, SourceCode};
 
     #[test]
@@ -231,7 +233,8 @@ mod test {
         let mut parser = map(ascii::digit(), |c: char| c.to_string());
         test_parser!(&str => String | parser, {
             "3" => ok("3".to_string(), ""),
-            "a3" => err(vec![Unexpected('a'.into()), Error::expected("an ascii digit")]),
+            "" => err(Error::eoi().expected("an ascii digit")),
+            "a3" => err(Error::item('a').expected("an ascii digit")),
         });
 
         let mut parser = map(many1::<String, _>(ascii::letter()), |s| s.to_uppercase());
@@ -255,7 +258,7 @@ mod test {
         let mut parser = ascii::digit().bind(|c: char, stream: &str| stream.ok(c.to_string()));
         test_parser!(&str => String | parser, {
             "3" => ok("3".to_string(), ""),
-            "a3" => err(vec![Error::unexpected_item('a'), Error::expected("an ascii digit")]),
+            "a3" => err(Error::item('a').expected("an ascii digit")),
         });
 
         let mut parser = many1::<String, _>(ascii::letter())
@@ -273,9 +276,13 @@ mod test {
         );
         test_parser!(IndexedStream<&str> => usize | parser, {
             "324 dogs" => ok(324 as usize, (" dogs", 3)),
-        // TODO: add ability to control consumption, e.g. make this error show at beginning (0)
-        // TODO: e.g.: many1(alpha_num()).bind(...).try()
-            "324dogs" => err(7, vec!["invalid digit found in string".into(), Error::expected("an ascii letter or digit")]),
+            // TODO: add ability to control consumption, e.g. make this error show at beginning (0)
+            // TODO: e.g.: many1(alpha_num()).bind(...).try()
+            "324dogs" => err(
+                Error::from("invalid digit found in string")
+                    .expected("an ascii letter or digit")
+                    .at(7)
+            ),
         });
     }
 
@@ -285,8 +292,8 @@ mod test {
         test_parser!(IndexedStream<&str> => String | parser, {
             "123" => ok("123".to_string(), ("", 3)),
             "123abc" => ok("123".to_string(), ("abc", 3)),
-            "" => err(0, vec![Error::eoi(), Error::expected("an ascii digit")]),
-            "abc" => err(0, vec![Error::unexpected_item('a'), Error::expected("an ascii digit")]),
+            "" => err(Error::eoi().expected("an ascii digit").at(0)),
+            "abc" => err(Error::item('a').expected("an ascii digit").at(0)),
         });
     }
 
@@ -296,8 +303,8 @@ mod test {
         test_parser!(IndexedStream<&str> => Vec<char> | parser, {
             "1a" => ok(vec!['1', 'a'], ("", 2)),
             "0bb3" => ok(vec!['0', 'b', 'b'], ("3", 3)),
-            "" => err(0, vec![Error::eoi(), Error::expected("an ascii digit")]),
-            "3\t" => err(1, vec![Error::unexpected_item('\t'), Error::expected("an ascii letter")]),
+            "" => err(Error::eoi().expected("an ascii digit").at(0)),
+            "3\t" => err(Error::item('\t').expected("an ascii letter").at(1)),
         });
     }
 
@@ -306,8 +313,8 @@ mod test {
         let mut parser = item(b'x').wrap();
         test_parser!(IndexedStream<&str> => Vec<char> | parser, {
             "x" => ok(vec!['x'], ("", 1)),
-            "" => err(0, vec![Error::eoi(), Error::expected(b'x')]),
-            "\t" => err(0, vec![Error::unexpected_item('\t'), Error::expected(b'x')]),
+            "" => err(Error::eoi().expected(b'x').at(0)),
+            "\t" => err(Error::item('\t').expected(b'x').at(0)),
         });
     }
 
@@ -317,7 +324,7 @@ mod test {
         test_parser!(&str => u32 | parser, {
             "369" => ok(369 as u32, ""),
             "369abc" => ok(369 as u32, "abc"),
-            "abc" => err(vec![Unexpected('a'.into()), Error::expected("an ascii digit")]),
+            "abc" => err(Error::item('a').expected("an ascii digit")),
         });
 
         let mut parser =
@@ -326,13 +333,13 @@ mod test {
             "12e" => ok(12 as f32, "e"),
             "-12e" => ok(-12 as f32, "e"),
             "-12.5e" => ok(-12.5 as f32, "e"),
-            "12.5.9" =>  err(vec!["invalid float literal".into()]),
+            "12.5.9" =>  err(Error::from("invalid float literal")),
         });
 
         let mut parser = many1::<String, _>(ascii::digit()).from_str::<f32>();
         test_parser!(SourceCode => f32 | parser, {
             "12e" => ok(12f32, ("e", (1, 3))),
-            "e12" => err((1, 1), vec![Unexpected('e'.into()), Error::expected("an ascii digit")]),
+            "e12" => err(Error::item('e').expected("an ascii digit").at((1, 1))),
         });
     }
 }

@@ -1,6 +1,7 @@
 use std::marker::PhantomData;
 
-use {Error, ParseResult, Parser, Stream};
+use crate::error::Expected;
+use {ParseResult, Parser, Stream};
 
 pub struct Many<O, P> {
     p: P,
@@ -27,13 +28,13 @@ where
                     stream
                 }
                 Ok((None, stream)) => stream,
-                Err((errors, stream)) => {
+                Err((error, stream)) => {
                     if i < self.min {
-                        return stream.errs(errors);
+                        return stream.err(error);
                     } else {
                         if let Some(max) = self.max {
                             if i >= max {
-                                return stream.errs(errors);
+                                return stream.err(error);
                             }
                         }
                     }
@@ -45,8 +46,8 @@ where
         }
     }
 
-    fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
-        self.p.expected_errors()
+    fn expected_error(&self) -> Option<Expected<Self::Stream>> {
+        self.p.expected_error()
     }
 }
 
@@ -145,7 +146,7 @@ mod test {
             "aaabcd" => ok("aaa".into(), ("bcd", 3)),
             "abcd" => ok("a".into(), ("bcd", 1)),
             "aaaa" => ok("aaaa".into(), ("", 4)),
-            "baaa" => err(0, vec![Error::unexpected_item('b'), Error::expected_item('a')]),
+            "baaa" => err(Error::item('b').expected_item('a').at(0)),
         });
     }
 }

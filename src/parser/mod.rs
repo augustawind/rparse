@@ -25,7 +25,7 @@ use self::function::{
 };
 use self::item::{negate, Negate};
 use self::seq::{append, extend, then, Append, Extend, Then};
-use error::{Error, Errors, ParseResult};
+use error::{Error, Expected, ParseResult};
 use stream::{RangeStream, Stream};
 use traits::StrLike;
 
@@ -90,7 +90,7 @@ pub trait Parser {
     fn must_parse(
         &mut self,
         stream: Self::Stream,
-    ) -> Result<(Self::Output, Self::Stream), (Errors<Self::Stream>, Self::Stream)>
+    ) -> Result<(Self::Output, Self::Stream), (Error<Self::Stream>, Self::Stream)>
     where
         Self: Sized,
     {
@@ -99,14 +99,14 @@ pub trait Parser {
             Ok((Some(output), stream)) => Ok((output, stream)),
             Ok((None, mut stream)) => {
                 &mut stream.restore(backup);
-                let mut errors = stream.new_errors();
-                self.add_expected_error(&mut errors);
-                Err((errors, stream))
+                let mut error = stream.new_error();
+                self.add_expected_error(&mut error);
+                Err((error, stream))
             }
-            Err((mut errors, mut stream)) => {
+            Err((mut error, mut stream)) => {
                 &mut stream.restore(backup);
-                self.add_expected_error(&mut errors);
-                Err((errors, stream))
+                self.add_expected_error(&mut error);
+                Err((error, stream))
             }
         }
     }
@@ -114,16 +114,18 @@ pub trait Parser {
     /// Returns a [`Vec`] of the expected errors that should be added if parsing fails.
     ///
     /// By default this returns an empty [`Vec`].
-    fn expected_errors(&self) -> Vec<Error<Self::Stream>> {
-        Vec::new()
+    fn expected_error(&self) -> Option<Expected<Self::Stream>> {
+        None
     }
 
     /// Adds this parsers expected errors to `errors`.
     ///
     /// In most cases, this should be left as the default and [`Parser::expected_errors`]
     /// should be defined instead.
-    fn add_expected_error(&self, errors: &mut Errors<Self::Stream>) {
-        errors.add_errors(self.expected_errors());
+    fn add_expected_error(&self, error: &mut Error<Self::Stream>) {
+        if let Some(expected) = self.expected_error() {
+            error.add_expected(expected);
+        }
     }
 
     /// Returns a mutable referance to this parser.
@@ -137,12 +139,12 @@ pub trait Parser {
     /// replaced with [`Expected(error)`].
     ///
     /// [`Expected(error)`]: Error::Expected
-    fn expect<E>(self, error: E) -> Expect<Self>
+    fn expect<E>(self, expected: E) -> Expect<Self>
     where
         Self: Sized,
-        E: Into<Error<Self::Stream>>,
+        E: Into<Expected<Self::Stream>>,
     {
-        expect(self, error)
+        expect(self, expected)
     }
 
     /// Reverses the parse behavior of `self`. Fails if `self` succeeds, succeeds if `self` fails.
@@ -449,12 +451,15 @@ mod test {
         S: Stream<Item = char>,
         S::Position: Position<S::Stream>,
     {
-        parser(|mut stream: S| match stream.pop() {
-            Some(t) => match t {
-                'a' | 'e' | 'i' | 'o' | 'u' => stream.ok(t),
-                _ => stream.err(Error::unexpected_item(t)),
-            },
-            None => stream.err(Error::eoi()),
+        parser(|mut stream: S| {
+            let start = stream.position().clone();
+            match stream.pop() {
+                Some(t) => match t {
+                    'a' | 'e' | 'i' | 'o' | 'u' => stream.ok(t),
+                    _ => stream.err_at(start, Error::item(t)),
+                },
+                None => stream.err_at(start, Error::eoi()),
+            }
         })
     }
 
@@ -463,9 +468,9 @@ mod test {
         test_parser!(IndexedStream<&str> => char | vowel(), {
             "a" => ok('a', ("", 1)),
             "ooh" => ok('o', ("oh", 1)),
-            "" => err(0, vec![Error::eoi()]),
-            "d" => err(1, vec![Error::unexpected_item('d')]),
-            "du" => err(1, vec![Error::unexpected_item('d')]),
+            "" => err(Error::eoi().at(0)),
+            "d" => err(Error::item('d').at(0)),
+            "du" => err(Error::item('d').at(0)),
         });
     }
 
@@ -478,7 +483,7 @@ mod test {
             if t == b'\n'.into() {
                 Ok(t)
             } else {
-                Err(Error::unexpected_item(t))
+                Err(Error::item(t))
             }
         }) {
             Ok(ok) => stream.ok(ok),
@@ -491,8 +496,8 @@ mod test {
         test_parser!(IndexedStream<&[u8]> => u8 | parser(newline), {
             "\n".as_bytes() => ok(b'\n', ("".as_bytes(), 1)),
             "\nx".as_bytes() => ok(b'\n', ("x".as_bytes(), 1)),
-            "".as_bytes() => err(0, vec![Error::eoi()]),
-            "x\n".as_bytes() => err(1, vec![Error::unexpected_item(b'x')]),
+            "".as_bytes() => err(Error::eoi().at(0)),
+            "x\n".as_bytes() => err(Error::item(b'x').at(1)),
         });
     }
 }

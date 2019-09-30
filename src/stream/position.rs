@@ -1,11 +1,15 @@
 //! Traits and implementations representing positions in an `Stream` stream.
 
-use super::{RangeStream, Stream};
 use std::fmt::{self, Debug, Display};
+use std::hash::Hash;
+
+use super::{RangeStream, Stream};
 
 /// The Position trait defines types that keep track of the cursor position while parsing an
 /// `Stream` stream.
-pub trait Position<S: Stream>: Default + Debug + Display + Clone + Ord + PartialEq + Eq {
+pub trait Position<S: Stream>:
+    Default + Debug + Display + Clone + Ord + PartialEq + Eq + Hash
+{
     type Value: Ord;
 
     fn value(&self) -> Self::Value;
@@ -19,7 +23,7 @@ pub trait Position<S: Stream>: Default + Debug + Display + Clone + Ord + Partial
 
 /// NullPosition is a dummy `Position` for streams that don't keep track of their current position.
 /// This is provided so that primitive types such as `&str` can implement `Stream`.
-#[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub struct NullPosition(pub ());
 
 impl Display for NullPosition {
@@ -45,7 +49,7 @@ impl<S: Stream> Position<S> for NullPosition {
 
 /// IndexPosition is a `Position` which is represented as an index.
 /// This is useful for binary data or any kind of virtual input stream.
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub struct IndexPosition(usize);
 
 impl Default for IndexPosition {
@@ -90,7 +94,7 @@ impl From<LinePosition> for IndexPosition {
 
 /// LinePosition is a `Position` which is represented as a line number and column number.
 /// This is primarily useful for parsing text files or anything that has multiple lines.
-#[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord)]
+#[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub struct LinePosition {
     pub line: u32,
     pub column: u32,

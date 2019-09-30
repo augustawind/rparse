@@ -1,5 +1,5 @@
 use rparse::parser::{
-    item::{one_of, satisfy},
+    item::{item, one_of, satisfy},
     range::range,
     repeat::many1,
 };
@@ -16,12 +16,12 @@ pub static SEPARATORS: &'static [u8] = &[
 /// Tokens are commonly used to define values between separators. In most cases, non-tokens can
 /// only be used if escaped (within quotations (" ") or by a backslash (\)).
 pub fn token<S: Stream>() -> impl Parser<Stream = S, Output = S::Item> {
-    satisfy(|item: &S::Item| {
+    satisfy(|t: &S::Item| {
         let separators = SEPARATORS
             .iter()
             .map(|&b| b.into())
             .collect::<Vec<S::Item>>();
-        !(item.is_ascii_control() || separators.contains(item))
+        !(t.is_ascii_control() || separators.contains(t))
     })
     .expect("a token")
 }
@@ -47,7 +47,7 @@ mod test {
             "a" => ok('a', ("", 1)),
             "11" => ok('1', ("1", 1)),
             "_ab" => ok('_', ("ab", 1)),
-            "" => err(0, vec![Error::eoi(), Error::expected("a token")]),
+            "" => err(Error::eoi().expected("a token").at(0)),
         });
 
         for c in 0u8..=32 {
@@ -55,17 +55,7 @@ mod test {
             let stream = IndexedStream::<&str>::from(input.as_ref());
             assert_eq!(
                 token().parse(stream.clone()),
-                Err((
-                    (
-                        0,
-                        vec![
-                            Error::unexpected_item(c as char),
-                            Error::expected("a token")
-                        ]
-                    )
-                        .into(),
-                    stream
-                )),
+                Err((Error::item(c as char).expected("a token").at(0), stream)),
                 "unexpectedly parsed '{}': should fail parsing control characters",
                 c as char,
             );
@@ -75,14 +65,7 @@ mod test {
             let stream = IndexedStream::from(&input[..]);
             assert_eq!(
                 token().parse(stream.clone()),
-                Err((
-                    (
-                        0,
-                        vec![Error::unexpected_item(item), Error::expected("a token")]
-                    )
-                        .into(),
-                    stream
-                )),
+                Err((Error::item(item).expected("a token").at(0), stream)),
                 "unexpectedly parsed '{}': should fail parsing SEPARATORS",
                 item as char,
             );
@@ -99,11 +82,8 @@ mod test {
             "\t \tfoo" => ok((), ("foo", 3)),
             " foo" => ok((), ("foo", 1)),
             " \t foo" => ok((), ("foo", 3)),
-            "" => err(0, vec![Error::eoi(), Error::expected_one_of(vec![b' ', b'\t'])]),
-            "\r\n" => err(0, vec![
-                Error::unexpected_item('\r'),
-                Error::expected_one_of(vec![b' ', b'\t']),
-            ]),
+            "" => err(Error::eoi().expected_one_of(vec![b' ', b'\t']).at(0)),
+            "\r\n" => err(Error::item('\r').expected_one_of(vec![b' ', b'\t']).at(0)),
         });
     }
 
@@ -113,9 +93,10 @@ mod test {
         test_parser!(IndexedStream<&str> => &str | parser, {
             "\r\n" => ok("\r\n", ("", 2)),
             "\r\n\tfoo" => ok("\r\n", ("\tfoo", 2)),
-            "" => err(0, vec![Error::eoi(), Error::expected_range("\r\n")]),
-            "\r" => err(0, vec![Error::eoi(), Error::expected_range("\r\n")]),
-            "\n" => err(0, vec![Error::unexpected_item('\n'), Error::expected_range("\r\n")]),
+            "" => err(Error::eoi().expected_range("\r\n").at(0)),
+            "\r" => err(Error::eoi().expected_range("\r\n").at(0)),
+            "\r\t" => err(Error::item('\t').expected_range("\r\n").at(1)),
+            "\n" => err(Error::item('\n').expected_range("\r\n").at(0)),
         });
     }
 }

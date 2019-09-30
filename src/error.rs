@@ -1,20 +1,19 @@
 //! Error and Result types that are used by parsers.
 
-use std::cmp::Ordering;
+use std::collections::HashSet;
 use std::error::Error as StdError;
 use std::fmt;
-use std::iter::FromIterator;
 
 use stream::{Position, Stream};
 
 /// The content of a parse error.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash)]
 pub enum Info<S: Stream> {
     Item(S::Item),
     Range(S::Range),
     Msg(&'static str),
     MsgOwned(String),
-    EOI(),
+    EOI,
 }
 
 impl<S: Stream> PartialEq for Info<S> {
@@ -26,11 +25,13 @@ impl<S: Stream> PartialEq for Info<S> {
             (&Info::MsgOwned(ref l), &Info::MsgOwned(ref r)) => l == r,
             (&Info::Msg(ref l), &Info::MsgOwned(ref r)) => l == r,
             (&Info::MsgOwned(ref l), &Info::Msg(ref r)) => l == r,
-            (&Info::EOI(), &Info::EOI()) => true,
+            (&Info::EOI, &Info::EOI) => true,
             _ => false,
         }
     }
 }
+
+impl<S: Stream> Eq for Info<S> {}
 
 impl<S: Stream> fmt::Display for Info<S> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -39,7 +40,7 @@ impl<S: Stream> fmt::Display for Info<S> {
             Info::Range(range) => write!(f, "range {:?}", range),
             Info::Msg(msg) => write!(f, "{}", msg),
             Info::MsgOwned(msg) => write!(f, "{}", msg),
-            Info::EOI() => write!(f, "end of input"),
+            Info::EOI => write!(f, "end of input"),
         }
     }
 }
@@ -74,81 +75,61 @@ where
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum Error<S: Stream> {
-    Seq(Vec<Error<S>>),
-    OneOf(Vec<Error<S>>),
-    Expected(Box<Error<S>>),
-    Unexpected(Info<S>),
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Expected<S: Stream> {
+    Seq(Vec<Expected<S>>),
+    OneOf(Vec<Expected<S>>),
     Info(Info<S>),
 }
 
-/// A parse error.
-impl<S: Stream> Error<S> {
-    pub fn one_of<E>(errors: Vec<E>) -> Self
+impl<S: Stream> Expected<S> {
+    pub fn merge_seq<I>(errors: I) -> Option<Self>
     where
-        E: Into<Error<S>>,
+        I: IntoIterator<Item = Option<Expected<S>>>,
     {
-        Error::OneOf(errors.into_iter().fold(Vec::new(), |mut errors, e| {
-            match e.into() {
-                Error::OneOf(errs) => errors.extend(errs),
-                otherwise => errors.push(otherwise),
+        let errors: Vec<Expected<S>> = errors.into_iter().fold(Vec::new(), |mut acc, e| {
+            match e {
+                Some(Expected::Seq(xs)) => acc.extend(xs.into_iter()),
+                Some(expected) => acc.push(expected),
+                None => (),
             };
-            errors
-        }))
-    }
-
-    pub fn expected<E>(error: E) -> Self
-    where
-        E: Into<Error<S>>,
-    {
-        Error::Expected(Box::new(match error.into() {
-            Error::Seq(err) => {
-                Error::Seq(err.into_iter().map(|err| err.unwrap_expected()).collect())
-            }
-            Error::OneOf(err) => {
-                Error::one_of(err.into_iter().map(|err| err.unwrap_expected()).collect())
-            }
-            Error::Expected(err) => err.unwrap_expected(),
-            otherwise => otherwise,
-        }))
-    }
-
-    pub fn expected_one_of<E>(errors: Vec<E>) -> Self
-    where
-        E: Into<Error<S>>,
-    {
-        Error::expected(Error::one_of(errors))
-    }
-
-    fn unwrap_expected(self) -> Self {
-        match self {
-            Error::Expected(error) => *error,
-            otherwise => otherwise,
+            acc
+        });
+        if errors.is_empty() {
+            None
+        } else {
+            Some(Expected::Seq(errors))
         }
     }
 
-    pub fn expected_item(item: S::Item) -> Self {
-        Error::Expected(Box::new(Error::Info(Info::Item(item))))
+    pub fn merge_one_of<I>(errors: I) -> Option<Self>
+    where
+        I: IntoIterator<Item = Option<Expected<S>>>,
+    {
+        let errors: Vec<Expected<S>> = errors.into_iter().fold(Vec::new(), |mut acc, e| {
+            match e {
+                Some(Expected::OneOf(xs)) => acc.extend(xs.into_iter()),
+                Some(expected) => acc.push(expected),
+                None => (),
+            };
+            acc
+        });
+        if errors.is_empty() {
+            None
+        } else {
+            Some(Expected::OneOf(errors))
+        }
     }
 
-    pub fn expected_range(range: S::Range) -> Self {
-        Error::Expected(Box::new(Error::Info(Info::Range(range))))
+    pub fn item(item: S::Item) -> Self {
+        Expected::Info(Info::Item(item))
     }
 
-    pub fn eoi() -> Self {
-        Error::Unexpected(Info::EOI())
+    pub fn range(range: S::Range) -> Self {
+        Expected::Info(Info::Range(range))
     }
 
-    pub fn unexpected_item(item: S::Item) -> Self {
-        Error::Unexpected(Info::Item(item))
-    }
-
-    pub fn unexpected_range(range: S::Range) -> Self {
-        Error::Unexpected(Info::Range(range))
-    }
-
-    fn join_errors(errors: &[Error<S>], sep: &str) -> String {
+    fn join_expected(errors: &[Expected<S>], sep: &str) -> String {
         errors
             .into_iter()
             .map(|e| e.to_string())
@@ -157,30 +138,169 @@ impl<S: Stream> Error<S> {
     }
 }
 
-impl<S: Stream> PartialEq for Error<S> {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (&Error::Seq(ref l), &Error::Seq(ref r)) => l == r,
-            (&Error::OneOf(ref l), &Error::OneOf(ref r)) => l == r,
-            (&Error::Unexpected(ref l), &Error::Unexpected(ref r)) => l == r,
-            (&Error::Expected(ref l), &Error::Expected(ref r)) => l == r,
-            (&Error::Info(ref l), &Error::Info(ref r)) => l == r,
-            _ => false,
+impl<S: Stream> fmt::Display for Expected<S> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::Seq(errors) => write!(f, "({})", Self::join_expected(errors, ", ")),
+            Self::OneOf(errors) => write!(f, "({})", Self::join_expected(errors, " OR ")),
+            Self::Info(info) => write!(f, "{}", info),
         }
     }
 }
 
-impl<S: Stream> Eq for Error<S> {}
+impl<S: Stream, T: Into<Expected<S>>> From<Vec<T>> for Expected<S> {
+    fn from(errors: Vec<T>) -> Self {
+        Expected::Seq(
+            errors
+                .into_iter()
+                .map(|e| e.into())
+                .collect::<Vec<Expected<S>>>(),
+        )
+    }
+}
+
+impl<S: Stream, T: Into<Expected<S>>> From<HashSet<T>> for Expected<S> {
+    fn from(errors: HashSet<T>) -> Self {
+        Expected::OneOf(
+            errors
+                .into_iter()
+                .map(|e| e.into())
+                .collect::<Vec<Expected<S>>>(),
+        )
+    }
+}
+
+impl<S: Stream> From<Info<S>> for Expected<S> {
+    fn from(info: Info<S>) -> Self {
+        Expected::Info(info)
+    }
+}
+
+impl<S: Stream> From<u8> for Expected<S> {
+    fn from(b: u8) -> Self {
+        Expected::Info(Info::Item(b.into()))
+    }
+}
+
+impl<S> From<char> for Expected<S>
+where
+    S: Stream<Item = char>,
+{
+    fn from(ch: char) -> Self {
+        Expected::Info(Info::Item(ch))
+    }
+}
+
+impl<S: Stream> From<&'static str> for Expected<S> {
+    fn from(s: &'static str) -> Self {
+        Expected::Info(Info::Msg(s))
+    }
+}
+
+impl<S: Stream> From<String> for Expected<S> {
+    fn from(s: String) -> Self {
+        Expected::Info(Info::MsgOwned(s))
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Error<S: Stream> {
+    cause: Info<S>,
+    expected: Option<Expected<S>>,
+    position: S::Position,
+}
+
+/// A parse error.
+impl<S: Stream> Error<S> {
+    pub fn new(cause: Info<S>) -> Self {
+        Error {
+            cause,
+            expected: None,
+            position: Default::default(),
+        }
+    }
+
+    pub fn eoi() -> Self {
+        Error {
+            cause: Info::EOI,
+            expected: None,
+            position: Default::default(),
+        }
+    }
+
+    pub fn item(item: S::Item) -> Self {
+        Error {
+            cause: Info::Item(item),
+            expected: None,
+            position: Default::default(),
+        }
+    }
+
+    pub fn range(range: S::Range) -> Self {
+        Error {
+            cause: Info::Range(range),
+            expected: None,
+            position: Default::default(),
+        }
+    }
+
+    pub fn at<P>(mut self, position: P) -> Self
+    where
+        P: Into<S::Position>,
+    {
+        self.position = position.into();
+        self
+    }
+
+    pub fn expected<E>(mut self, expected: E) -> Self
+    where
+        E: Into<Expected<S>>,
+    {
+        self.expected = Some(expected.into());
+        self
+    }
+
+    pub fn expected_one_of<E, I>(mut self, errors: I) -> Self
+    where
+        E: Into<Expected<S>>,
+        I: IntoIterator<Item = E>,
+    {
+        self.expected = Some(Expected::OneOf(
+            errors.into_iter().map(|e| e.into()).collect(),
+        ));
+        self
+    }
+
+    pub fn expected_item(mut self, item: S::Item) -> Self {
+        self.expected = Some(Expected::Info(Info::Item(item)));
+        self
+    }
+
+    pub fn expected_range(mut self, range: S::Range) -> Self {
+        self.expected = Some(Expected::Info(Info::Range(range)));
+        self
+    }
+
+    pub fn add_expected<E>(&mut self, expected: E)
+    where
+        E: Into<Expected<S>>,
+    {
+        self.expected = Some(expected.into());
+    }
+}
 
 impl<S: Stream> fmt::Display for Error<S> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Error::Seq(errors) => write!(f, "({})", Error::join_errors(errors, ", ")),
-            Error::OneOf(errors) => write!(f, "({})", Error::join_errors(errors, " OR ")),
-            Error::Unexpected(info) => write!(f, "unexpected {}", info),
-            Error::Expected(info) => write!(f, "expected {}", info),
-            Error::Info(info) => write!(f, "{}", info),
+        write!(
+            f,
+            "{}: unexpected {}",
+            self.position.fmt_msg("parsing failed"),
+            self.cause
+        )?;
+        if let Some(expected) = &self.expected {
+            write!(f, "; expected {}", expected)?;
         }
+        Ok(())
     }
 }
 
@@ -188,37 +308,34 @@ impl<S: Stream> StdError for Error<S> {}
 
 impl<S: Stream> From<Info<S>> for Error<S> {
     fn from(info: Info<S>) -> Self {
-        Error::Info(info)
-    }
-}
-
-impl<S: Stream, T: Into<Error<S>>> From<Vec<T>> for Error<S> {
-    fn from(errors: Vec<T>) -> Self {
-        Error::Seq(
-            errors
-                .into_iter()
-                .map(Into::into)
-                .collect::<Vec<Error<S>>>()
-                .into(),
-        )
+        Error::new(info)
     }
 }
 
 impl<S: Stream> From<u8> for Error<S> {
     fn from(b: u8) -> Self {
-        Error::Info(Info::Item(b.into()))
+        Error::new(Info::Item(b.into()))
+    }
+}
+
+impl<S> From<char> for Error<S>
+where
+    S: Stream<Item = char>,
+{
+    fn from(ch: char) -> Self {
+        Error::new(Info::Item(ch))
     }
 }
 
 impl<S: Stream> From<&'static str> for Error<S> {
     fn from(s: &'static str) -> Self {
-        Error::Info(Info::Msg(s))
+        Error::new(Info::Msg(s))
     }
 }
 
 impl<S: Stream> From<String> for Error<S> {
     fn from(s: String) -> Self {
-        Error::Info(Info::MsgOwned(s))
+        Error::new(Info::MsgOwned(s))
     }
 }
 
@@ -228,110 +345,4 @@ impl<S: Stream, E: StdError + Send + Sync + 'static> From<Box<E>> for Error<S> {
     }
 }
 
-/// A sequence of one or more parse errors.
-#[derive(Debug, Clone)]
-pub struct Errors<S: Stream> {
-    pub position: S::Position,
-    pub errors: Vec<Error<S>>,
-}
-
-impl<S: Stream> Errors<S> {
-    pub fn new(position: S::Position) -> Self {
-        Errors {
-            position,
-            errors: Vec::new(),
-        }
-    }
-
-    pub fn from_error(position: S::Position, error: Error<S>) -> Self {
-        Errors {
-            position,
-            errors: vec![error],
-        }
-    }
-
-    pub fn from_errors(position: S::Position, errors: Vec<Error<S>>) -> Self {
-        Errors { position, errors }
-    }
-
-    pub fn add_error(&mut self, error: Error<S>) {
-        if self.errors.contains(&error) {
-            return;
-        }
-        self.errors.push(error);
-    }
-
-    pub fn add_errors(&mut self, errors: Vec<Error<S>>) {
-        for err in errors {
-            self.add_error(err);
-        }
-    }
-
-    pub fn merge_errors(&mut self, errors: &mut Errors<S>) {
-        match errors.position.cmp(&self.position) {
-            Ordering::Greater => {
-                self.position = errors.position.clone();
-                self.errors.clear();
-                self.errors.extend(errors.errors.drain(..));
-            }
-            Ordering::Equal => {
-                for err in errors.errors.drain(..) {
-                    if !self.errors.contains(&err) {
-                        self.errors.push(err);
-                    }
-                }
-            }
-            Ordering::Less => errors.errors.clear(),
-        }
-    }
-}
-
-impl<S: Stream> PartialEq for Errors<S> {
-    fn eq(&self, other: &Self) -> bool {
-        self.position == other.position && self.errors == other.errors
-    }
-}
-
-impl<S: Stream> fmt::Display for Errors<S> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f, "{}:", self.position.fmt_msg("Parse error"))?;
-        for error in self.errors.iter() {
-            writeln!(f, "{}", error)?;
-        }
-        Ok(())
-    }
-}
-
-impl<S: Stream> Eq for Errors<S> {}
-
-impl<S: Stream> StdError for Errors<S> {}
-
-impl<S: Stream> From<Error<S>> for Errors<S> {
-    fn from(error: Error<S>) -> Self {
-        Self::from_error(Default::default(), error)
-    }
-}
-
-impl<S: Stream> FromIterator<Error<S>> for Errors<S> {
-    fn from_iter<T: IntoIterator<Item = Error<S>>>(iter: T) -> Self {
-        Self::from_errors(Default::default(), iter.into_iter().collect())
-    }
-}
-
-impl<S: Stream> From<Vec<Error<S>>> for Errors<S> {
-    fn from(v: Vec<Error<S>>) -> Self {
-        Self::from_iter(v)
-    }
-}
-
-impl<S: Stream, P, I> From<(P, I)> for Errors<S>
-where
-    I: IntoIterator<Item = Error<S>>,
-    P: Into<S::Position>,
-{
-    fn from((pos, iter): (P, I)) -> Self {
-        Self::from_errors(pos.into(), iter.into_iter().collect())
-    }
-}
-
-pub type ParseResult<S, O> = Result<(Option<O>, S), (Errors<S>, S)>;
+pub type ParseResult<S, O> = Result<(Option<O>, S), (Error<S>, S)>;

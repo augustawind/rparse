@@ -49,8 +49,8 @@ mod test {
         test_parser!(IndexedStream<&str> => Vec<char> | parser, {
             "XO" => ok("XO".chars().collect(), ("", 2)),
             "XOXO" => ok("XO".chars().collect(), ("XO", 2)),
-            "XY" => err(1, vec![Error::unexpected_item('Y'), Error::expected_item('O')]),
-            "ZY" => err(0, vec![Error::unexpected_item('Z'), Error::expected_item('X')]),
+            "XY" => err(Error::item('Y').expected_item('O').at(1)),
+            "ZY" => err(Error::item('Z').expected_item('X').at(0)),
         });
     }
 }

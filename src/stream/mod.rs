@@ -9,7 +9,7 @@ use std::option::Option::*;
 
 pub use self::position::{IndexPosition, LinePosition, NullPosition, Position};
 pub use self::state::State;
-use error::{Error, Errors, ParseResult};
+use error::{Error, ParseResult};
 use traits::StrLike;
 
 /// SourceCode is a type alias for str `Stream` positioned by rows and columns.
@@ -126,7 +126,7 @@ pub trait Stream: Sized + Clone + Debug {
 
     /// Create a failed [`ParseResult`] with the given `position` and `error`.
     fn err_at<O>(self, position: Self::Position, error: Error<Self>) -> ParseResult<Self, O> {
-        Err((Errors::from_error(position, error), self))
+        Err((error.at(position), self))
     }
 
     /// Create a failed `ParseResult` with the given `Error`.
@@ -135,16 +135,7 @@ pub trait Stream: Sized + Clone + Debug {
         self.err_at(position, error)
     }
 
-    /// Create a failed `ParseResult with the given `Errors`.
-    fn errs<O>(self, errors: Errors<Self>) -> ParseResult<Self, O> {
-        Err((errors, self))
-    }
-
-    fn empty_errs<O>(self) -> ParseResult<Self, O> {
-        Err((self.new_errors(), self))
-    }
-
-    fn new_errors(&self) -> Errors<Self> {
-        Errors::new(self.position().clone())
+    fn new_error(&self) -> Error<Self> {
+        Error::eoi().at(self.position().clone())
     }
 }

@@ -172,14 +172,12 @@ mod test {
     // TODO: [u8]
     #[test]
     fn test_http_method() {
-        let expected_error = Error::expected(Error::one_of(
-            [
-                "GET", "PUT", "POST", "HEAD", "PATCH", "TRACE", "DELETE", "OPTIONS", "CONNECT",
-            ]
-            .into_iter()
-            .map(|s| Info::Range(s.as_bytes()))
-            .collect(),
-        ));
+        let into_expected: Vec<_> = [
+            "GET", "PUT", "POST", "HEAD", "PATCH", "TRACE", "DELETE", "OPTIONS", "CONNECT",
+        ]
+        .into_iter()
+        .map(|s| Info::Range(s.as_bytes()))
+        .collect();
 
         test_parser!(IndexedStream<&[u8]> => String | http_method(), {
             &b"GET"[..] => ok("GET".into(), (&b""[..], 3)),
@@ -187,10 +185,7 @@ mod test {
         });
 
         test_parser!(IndexedStream<&[u8]> => String | http_method(), {
-            &b"PUPPYDOG"[..] => err(2, vec![
-                Error::unexpected_item(b'P'),
-                expected_error,
-            ]),
+            &b"PUPPYDOG"[..] => err(Error::item(b'P').expected_one_of(into_expected).at(0)),
         });
 
         assert_eq!(
@@ -204,15 +199,9 @@ mod test {
         test_parser!(&str => String | percent_encoded().collect::<String>(), {
             "%A9" => ok("%A9".into(), ""),
             "%0f/hello" => ok("%0f".into(), "/hello"),
-            "" => err(vec![Error::eoi(), Error::expected_item('%')]),
-            "%%0f" => err(vec![
-                Error::unexpected_item('%'),
-                Error::expected("a hexadecimal digit"),
-            ]),
-            "%xy" => err(vec![
-                Error::unexpected_item('x'),
-                Error::expected("a hexadecimal digit"),
-            ]),
+            "" => err(Error::eoi().expected_item('%')),
+            "%%0f" => err(Error::item('%').expected("a hexadecimal digit")),
+            "%xy" => err(Error::item('x').expected("a hexadecimal digit")),
         });
     }
 

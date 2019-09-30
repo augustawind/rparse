@@ -1,7 +1,7 @@
 use super::position::Position;
 use super::{Stream, Tokens};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Hash)]
 pub struct State<S: Stream, X: Position<S>> {
     pub stream: S,
     pub position: X,
