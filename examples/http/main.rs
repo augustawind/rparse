@@ -1,12 +1,16 @@
+#![feature(trait_alias)]
+
 #[macro_use]
 extern crate lazy_static;
 extern crate regex;
+extern crate serde_json;
 
 #[macro_use]
 extern crate rparse;
 
 mod common;
 mod headers;
+mod json;
 mod request_line;
 
 use rparse::stream::SourceCode;
@@ -22,7 +26,7 @@ GET https://foo.bar/I%20like%20/50 HTTP/1.1\r
 Accept: *\r
 Content-Type: application/json\r
 "
-        .trim_start();
+    .trim_start();
 }
 
 fn request<S: Stream>() -> impl Parser<Stream = S, Output = ((String, String, String), Headers)> {
