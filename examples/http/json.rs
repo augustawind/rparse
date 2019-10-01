@@ -1,14 +1,18 @@
 use serde_json::{Map, Number, Value};
 
 use rparse::parser::{
+    choice::optional,
     combinator::attempt,
-    item::{ascii, item},
+    item::{
+        ascii::{digit, whitespace},
+        item, one_of, satisfy,
+    },
     parser,
     range::range,
     repeat::{many, many1, sep_by},
     seq::between,
 };
-use rparse::stream::RangeStream;
+use rparse::stream::{RangeStream, StreamItem};
 use rparse::{ParseResult, Parser, Stream};
 
 use common::quoted_string;
@@ -26,15 +30,29 @@ fn null<S: Stream>() -> impl JSONParser<S> {
 fn boolean<S: Stream>() -> impl JSONParser<S> {
     range("true")
         .or(range("false"))
-        .expect("a JSON boolean value")
+        .expect("a boolean value")
         .map(|r| Value::Bool(r == S::Range::from_str("true")))
 }
 
 fn number<S: Stream>() -> impl JSONParser<S> {
+    let non_zero_digit = satisfy(|&b: &S::Item| b.is_ascii_digit() && b != b'0'.into());
+    let exponent =
+        one_of(&[b'e', b'E']).with(concat![optional(item(b'-').wrap()), many1(digit()),]);
+
     concat![
-        many1(ascii::digit()),
-        item(b'.').wrap().optional(),
-        many(ascii::digit()),
+        // an optional minus sign,
+        optional(item(b'-').wrap()),
+        // followed by either
+        choice![
+            // a zero
+            item(b'0').wrap(),
+            // or a non-zero digit followed by zero or more digits
+            concat![non_zero_digit.wrap(), many(digit()),]
+        ],
+        // followed by an optional decimal point and zero or more digits
+        optional(item(b'.').wrap().extend(many1(digit()))),
+        // followed by an optional exponent
+        optional(exponent)
     ]
     .collect_string()
     .from_str::<f64>()
@@ -45,6 +63,7 @@ fn number<S: Stream>() -> impl JSONParser<S> {
         });
         stream.ok(num)
     })
+    .expect("a number")
 }
 
 fn string<S: Stream>() -> impl JSONParser<S> {
@@ -78,7 +97,7 @@ fn object<S: Stream>() -> impl JSONParser<S> {
 }
 
 fn sp<S: Stream>() -> impl Parser<Stream = S, Output = ()> {
-    many::<(), _>(ascii::whitespace().map(|_| ()))
+    many::<(), _>(whitespace().map(|_| ()))
 }
 
 #[cfg(test)]
@@ -108,12 +127,15 @@ mod test {
             "true" => ok(Value::Bool(true), ("", 4)),
             "false" => ok(Value::Bool(false), ("", 5)),
             "true, " => ok(Value::Bool(true), (", ", 4)),
-            "" => err(Error::eoi().at(0).expected("a JSON boolean value")),
+            "" => err(Error::eoi().at(0).expected("a boolean value")),
             // FIXME: the error be eoi().at(3)
-            "tru" => err(Error::item('t').at(0).expected("a JSON boolean value")),
-            " false" => err(Error::item(' ').at(0).expected("a JSON boolean value")),
+            "tru" => err(Error::item('t').at(0).expected("a boolean value")),
+            " false" => err(Error::item(' ').at(0).expected("a boolean value")),
         });
     }
+
+    #[test]
+    fn test_number() {}
 
     #[test]
     fn test_sp() {
