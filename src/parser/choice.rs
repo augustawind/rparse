@@ -117,6 +117,13 @@ where
         }
     }
 
+    fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        match self.p1.parse(stream) {
+            Ok((result, stream)) => stream.result(result),
+            Err((_, stream)) => self.p2.parse_partial(stream),
+        }
+    }
+
     fn expected_error(&self) -> Option<Expected<Self::Stream>> {
         Expected::merge_one_of(vec![self.p1.expected_error(), self.p2.expected_error()])
     }
