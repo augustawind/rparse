@@ -260,9 +260,13 @@ mod test {
         assert_eq!(result, Some("abcdef"));
         assert_eq!(stream, ("", 6).into());
 
-        let (_, stream) = range("abcdef").parse_lazy(IndexedStream::from("abcd!!!!")).unwrap_err();
+        let (_, stream) = range("abcdef")
+            .parse_lazy(IndexedStream::from("abcd!!!!"))
+            .unwrap_err();
         assert_eq!(stream, ("!!", 6).into());
-        let (_, stream) = parser.parse_lazy(IndexedStream::from("abcde!!!")).unwrap_err();
+        let (_, stream) = parser
+            .parse_lazy(IndexedStream::from("abcde!!!"))
+            .unwrap_err();
         assert_eq!(stream, ("abcde!!!", 0).into());
     }
 
