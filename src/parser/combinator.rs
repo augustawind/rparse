@@ -6,9 +6,8 @@ use std::marker::PhantomData;
 use std::option::Option::*;
 use std::str;
 
-use error::Expected;
+use crate::{Expected, ParseResult, Parser, Stream};
 use traits::StrLike;
-use {ParseResult, Parser, Stream};
 
 pub struct Expect<P: Parser> {
     parser: P,
@@ -61,6 +60,10 @@ impl<P: Parser> Parser for Attempt<P> {
 
     fn try_parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         self.parse_lazy(stream)
+    }
+
+    fn expected_error(&self) -> Option<Expected<Self::Stream>> {
+        self.p.expected_error()
     }
 }
 

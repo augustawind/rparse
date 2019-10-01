@@ -27,19 +27,17 @@ impl<S: Stream> Parser for Range<S> {
             None => stream.as_range(),
         };
 
-        let err_idx = range
+        let first_bad_idx = range
             .tokens()
             .zip(self.range.tokens())
             .enumerate()
             .find(|&(_, (left, right))| left != right);
-        match err_idx {
-            Some((i, (left, _))) => {
-                let range = range.range(i).unwrap();
-                start_pos.update_range(&range);
-                stream.err_at(start_pos, Error::item(left))
-            }
-            None => stream.err_at(start_pos, Error::eoi()),
-        }
+        let (range, error) = match first_bad_idx {
+            Some((i, (left, _))) => (range.range(i).unwrap(), Error::item(left)),
+            None => (range.as_range(), Error::eoi()),
+        };
+        start_pos.update_range(&range);
+        stream.err_at(start_pos, error)
     }
 
     fn expected_error(&self) -> Option<Expected<Self::Stream>> {

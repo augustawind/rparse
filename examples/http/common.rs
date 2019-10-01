@@ -186,7 +186,7 @@ mod test {
             "\r\n" => ok((), ("", 2)),
             "\r\n\tfoo" => ok((), ("\tfoo", 2)),
             "" => err(Error::eoi().expected_range("\r\n").at(0)),
-            "\r" => err(Error::eoi().expected_range("\r\n").at(0)),
+            "\r" => err(Error::eoi().expected_range("\r\n").at(1)),
             "\r\t" => err(Error::item('\t').expected_range("\r\n").at(1)),
             "\n" => err(Error::item('\n').expected_range("\r\n").at(0)),
         });

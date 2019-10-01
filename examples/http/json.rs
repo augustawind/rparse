@@ -1,6 +1,7 @@
 use serde_json::{Map, Number, Value};
 
 use rparse::parser::{
+    combinator::attempt,
     item::{ascii, item},
     parser,
     range::range,
@@ -14,8 +15,12 @@ use common::quoted_string;
 
 trait JSONParser<S: Stream> = Parser<Stream = S, Output = Value>;
 
+pub fn json_value<S: Stream>() -> fn(S) -> ParseResult<S, Value> {
+    parser(|stream| choice![null(), boolean(), number(), string(), array(), object()].parse(stream))
+}
+
 fn null<S: Stream>() -> impl JSONParser<S> {
-    range("null").map(|_| Value::Null)
+    attempt(range("null")).map(|_| Value::Null)
 }
 
 fn boolean<S: Stream>() -> impl JSONParser<S> {
@@ -72,10 +77,6 @@ fn object<S: Stream>() -> impl JSONParser<S> {
     .map(|map| Value::Object(map))
 }
 
-fn json_value<S: Stream>() -> fn(S) -> ParseResult<S, Value> {
-    parser(|stream| choice![null(), boolean(), number(), string(), array(), object()].parse(stream))
-}
-
 fn sp<S: Stream>() -> impl Parser<Stream = S, Output = ()> {
     many::<(), _>(ascii::whitespace().map(|_| ()))
 }
@@ -87,6 +88,32 @@ mod test {
     use rparse::Error;
 
     type IdxStr = IndexedStream<&'static str>;
+
+    #[test]
+    fn test_null() {
+        let mut p = null();
+        test_parser!(IdxStr => Value | p, {
+            "null" => ok(Value::Null, ("", 4)),
+            "null, " => ok(Value::Null, (", ", 4)),
+            "" => err(Error::eoi().at(0).expected_range("null")),
+            "nul" => err(Error::eoi().at(3).expected_range("null")),
+            " null" => err(Error::item(' ').at(0).expected_range("null")),
+        });
+    }
+
+    #[test]
+    fn test_boolean() {
+        let mut p = boolean();
+        test_parser!(IdxStr => Value | p, {
+            "true" => ok(Value::Bool(true), ("", 4)),
+            "false" => ok(Value::Bool(false), ("", 5)),
+            "true, " => ok(Value::Bool(true), (", ", 4)),
+            "" => err(Error::eoi().at(0).expected("a JSON boolean value")),
+            // FIXME: the error be eoi().at(3)
+            "tru" => err(Error::item('t').at(0).expected("a JSON boolean value")),
+            " false" => err(Error::item(' ').at(0).expected("a JSON boolean value")),
+        });
+    }
 
     #[test]
     fn test_sp() {
