@@ -107,11 +107,20 @@ mod test {
     use rparse::stream::IndexedStream;
     use rparse::Error;
 
-    // #[test]
-    // fn test_json_value() {
-    //     test_parser!(IndexedStream<&str> => Value, json_value(), {
-    //     });
-    // }
+    #[test]
+    fn test_json_value() {
+        test_parser!(IndexedStream<&str> => Value | json_value(), {
+            "null" => ok(json!(null), ("", 4)),
+            "true" => ok(json!(true), ("", 4)),
+            "1.5e-3" => ok(json!(1.5e-3), ("", 6)),
+            r#""heyo","# => ok(json!("heyo"), (",", 6)),
+            r#""""# => ok(json!(""), ("", 2)),
+            r#"["hey", null, -3.2, {"foo": [false]}, [true]],"# => ok(
+                json!(["hey", null, -3.2, {"foo": [false]}, [true]]),
+                (",", 45),
+            ),
+        });
+    }
 
     #[test]
     fn test_null() {
