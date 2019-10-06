@@ -71,6 +71,35 @@ pub fn attempt<P: Parser>(p: P) -> Attempt<P> {
     Attempt { p }
 }
 
+pub struct Lookahead<P: Parser> {
+    p: P,
+}
+
+impl<P: Parser> Parser for Lookahead<P> {
+    type Stream = P::Stream;
+    type Output = P::Output;
+
+    fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        let start = stream.backup();
+        match self.p.parse_lazy(stream) {
+            Ok((result, _)) => start.result(result),
+            Err((error, _)) => start.err(error),
+        }
+    }
+
+    fn try_parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        self.parse_lazy(stream)
+    }
+
+    fn parse(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        self.parse_partial(stream)
+    }
+}
+
+pub fn lookahead<P: Parser>(p: P) -> Lookahead<P> {
+    Lookahead { p }
+}
+
 pub struct Map<P, F> {
     parser: P,
     f: F,
