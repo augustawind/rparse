@@ -42,7 +42,7 @@ Content-Type: application/json\r
 fn request<S: Stream>() -> impl Parser<Stream = S, Output = (RequestLine, Headers, Option<Value>)> {
     (
         request_line().skip(crlf()),
-        headers().skip(crlf()),
+        headers(),
         choice![
             crlf().with(json_value().skip(crlf())).map(|v| Some(v)),
             many::<(), _>(crlf()).map(|_| None),
