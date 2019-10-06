@@ -114,8 +114,7 @@ mod test {
 
     #[test]
     fn test_null() {
-        let mut p = null();
-        test_parser!(IdxStr => Value | p, {
+        test_parser!(IdxStr => Value | null(), {
             "null" => ok(Value::Null, ("", 4)),
             "null, " => ok(Value::Null, (", ", 4)),
             "" => err(Error::eoi().at(0).expected_range("null")),
@@ -126,8 +125,7 @@ mod test {
 
     #[test]
     fn test_boolean() {
-        let mut p = boolean();
-        test_parser!(IdxStr => Value | p, {
+        test_parser!(IdxStr => Value | boolean(), {
             "true" => ok(Value::Bool(true), ("", 4)),
             "false" => ok(Value::Bool(false), ("", 5)),
             "true, " => ok(Value::Bool(true), (", ", 4)),
@@ -140,8 +138,7 @@ mod test {
 
     #[test]
     fn test_number() {
-        let mut p = number();
-        test_parser!(IdxStr => Value | p, {
+        test_parser!(IdxStr => Value | number(), {
             "3" => ok(json_number(3f64), ("", 1)),
             "320" => ok(json_number(320f64), ("", 3)),
             "1.5" => ok(json_number(1.5), ("", 3)),
@@ -163,8 +160,7 @@ mod test {
 
     #[test]
     fn test_sp() {
-        let mut p = sp();
-        test_parser!(IdxStr => () | p, {
+        test_parser!(IdxStr => () | sp(), {
             "" => ok((), ("", 0)),
             " " => ok((), ("", 1)),
             "\t\r\n 123" => ok((), ("123", 4)),
