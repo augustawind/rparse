@@ -116,8 +116,8 @@ mod test {
     #[test]
     fn test_null() {
         test_parser!(IndexedStream<&str> => Value | null(), {
-            "null" => ok(Value::Null, ("", 4)),
-            "null, " => ok(Value::Null, (", ", 4)),
+            "null" => ok(json!(null), ("", 4)),
+            "null, " => ok(json!(null), (", ", 4)),
             "" => err(Error::eoi().at(0).expected_range("null")),
             "nul" => err(Error::eoi().at(3).expected_range("null")),
             " null" => err(Error::item(' ').at(0).expected_range("null")),
@@ -127,9 +127,9 @@ mod test {
     #[test]
     fn test_boolean() {
         test_parser!(IndexedStream<&str> => Value | boolean(), {
-            "true" => ok(Value::Bool(true), ("", 4)),
-            "false" => ok(Value::Bool(false), ("", 5)),
-            "true, " => ok(Value::Bool(true), (", ", 4)),
+            "true" => ok(json!(true), ("", 4)),
+            "false" => ok(json!(false), ("", 5)),
+            "true, " => ok(json!(true), (", ", 4)),
             "" => err(Error::eoi().at(0).expected("a boolean value")),
             // FIXME: the error be eoi().at(3)
             "tru" => err(Error::item('t').at(0).expected("a boolean value")),
