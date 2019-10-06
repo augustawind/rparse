@@ -108,6 +108,10 @@ mod test {
 
     type IdxStr = IndexedStream<&'static str>;
 
+    fn json_number(f: f64) -> Value {
+        Value::Number(Number::from_f64(f).expect("invalid JSON number"))
+    }
+
     #[test]
     fn test_null() {
         let mut p = null();
@@ -135,7 +139,27 @@ mod test {
     }
 
     #[test]
-    fn test_number() {}
+    fn test_number() {
+        let mut p = number();
+        test_parser!(IdxStr => Value | p, {
+            "3" => ok(json_number(3f64), ("", 1)),
+            "320" => ok(json_number(320f64), ("", 3)),
+            "1.5" => ok(json_number(1.5), ("", 3)),
+            "1.50" => ok(json_number(1.5), ("", 4)),
+            "1.55" => ok(json_number(1.55), ("", 4)),
+            "11.5" => ok(json_number(11.5), ("", 4)),
+            "0.5" => ok(json_number(0.5), ("", 3)),
+            "0.52" => ok(json_number(0.52), ("", 4)),
+            "-3" => ok(json_number(-3f64), ("", 2)),
+            "-320" => ok(json_number(-320f64), ("", 4)),
+            "-1.5" => ok(json_number(-1.5), ("", 4)),
+            "-1.50" => ok(json_number(-1.5), ("", 5)),
+            "-1.55" => ok(json_number(-1.55), ("", 5)),
+            "-11.5" => ok(json_number(-11.5), ("", 5)),
+            "-0.5" => ok(json_number(-0.5), ("", 4)),
+            "-0.52" => ok(json_number(-0.52), ("", 5)),
+        });
+    }
 
     #[test]
     fn test_sp() {
