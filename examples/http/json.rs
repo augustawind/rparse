@@ -111,6 +111,10 @@ mod test {
         Value::Number(Number::from_f64(f).expect("invalid JSON number"))
     }
 
+    fn json_string(s: &str) -> Value {
+        Value::String(String::from(s))
+    }
+
     #[test]
     fn test_null() {
         test_parser!(IndexedStream<&str> => Value | null(), {
@@ -166,6 +170,17 @@ mod test {
             "000" => ok(json_number(0f64), ("00", 1)),
             "1..0" => ok(json_number(1f64), ("..0", 1)),
             "--1" => err(Error::item('-').at(1).expected("a number")),
+        });
+    }
+
+    #[test]
+    fn test_string() {
+        test_parser!(IndexedStream<&str> => Value | string(), {
+            r#""""# => ok(json_string(""), ("", 2)),
+            r#""heyo","# => ok(json_string("heyo"), (",", 6)),
+            r#""a\"b\"\n""# => ok(json_string("a\"b\"\n"), ("", 10)),
+            "foo" => err(Error::item('f').at(0).expected_item('"')),
+            r#""foo"# => err(Error::eoi().at(4).expected_item('"')),
         });
     }
 
