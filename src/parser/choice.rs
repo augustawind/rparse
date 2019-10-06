@@ -77,11 +77,14 @@ where
     type Output = P::Output;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        match self.parser.parse_lazy(stream) {
-            Ok((Some(result), stream)) => stream.ok(result),
-            Ok((None, stream)) => stream.noop(),
-            Err((_, stream)) => stream.noop(),
-        }
+        let backup = stream.backup();
+        let mut stream = match self.parser.parse_lazy(stream) {
+            Ok((Some(result), stream)) => return stream.ok(result),
+            Ok((None, stream)) => stream,
+            Err((_, stream)) => stream,
+        };
+        stream.restore(backup);
+        stream.result(None)
     }
 
     fn expected_error(&self) -> Option<Expected<Self::Stream>> {
@@ -114,13 +117,6 @@ where
         match self.p1.try_parse_lazy(stream) {
             Ok((result, stream)) => stream.result(result),
             Err((_, stream)) => self.p2.parse_lazy(stream),
-        }
-    }
-
-    fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        match self.p1.parse(stream) {
-            Ok((result, stream)) => stream.result(result),
-            Err((_, stream)) => self.p2.parse_partial(stream),
         }
     }
 

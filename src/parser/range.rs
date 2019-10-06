@@ -62,8 +62,8 @@ mod test {
         test_parser!(IndexedStream<&str> => &str | parser, {
             "def" => ok("def", ("", 3)),
             "defcon" => ok("def", ("con", 3)),
-            "" => err(Error::eoi().expected_range("def")),
-            "de" => err(Error::eoi().expected_range("def")),
+            "" => err(Error::eoi().at(0).expected_range("def")),
+            "de" => err(Error::eoi().at(2).expected_range("def")),
             "dr" => err(Error::item('r').at(1).expected_range("def")),
             "deg" => err(Error::item('g').at(2).expected_range("def")),
         });
