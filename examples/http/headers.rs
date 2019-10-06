@@ -11,7 +11,7 @@ use common::{atom, crlf, text};
 pub type Headers = HashMap<String, String>;
 
 pub fn headers<S: Stream>() -> impl Parser<Stream = S, Output = Headers> {
-    sep_by::<Headers, _, _>(header_field(), crlf()).skip(crlf())
+    sep_by::<Headers, _, _>(header_field(), crlf())
 }
 
 fn header_field<S: Stream>() -> impl Parser<Stream = S, Output = (String, String)> {

@@ -30,7 +30,14 @@ impl FromStr for HTTPVersion {
     }
 }
 
-pub fn request_line<S>() -> impl Parser<Stream = S, Output = (String, String, String)>
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RequestLine {
+    pub method: String,
+    pub uri: String,
+    pub version: String,
+}
+
+pub fn request_line<S>() -> impl Parser<Stream = S, Output = RequestLine>
 where
     S: Stream,
 {
@@ -38,7 +45,11 @@ where
         let (method, s) = http_method().must_parse(s)?;
         let (uri, s) = item(b' ').with(uri()).must_parse(s)?;
         let (version, s) = item(b' ').with(http_version()).must_parse(s)?;
-        s.ok((method, uri, version))
+        s.ok(RequestLine {
+            method,
+            uri,
+            version,
+        })
     }))
 }
 
