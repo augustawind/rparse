@@ -12,31 +12,37 @@ pub struct Extend<L, R> {
 impl<O, L, R> Parser for Extend<L, R>
 where
     L: Parser,
-    L::Output: iter::Extend<O>,
-    R: Parser<Stream = L::Stream>,
-    R::Output: iter::IntoIterator<Item = O>,
+    L::Output: iter::Extend<O> + Default + iter::IntoIterator<Item = O>,
+    R: Parser<Stream = L::Stream, Output = L::Output>,
 {
     type Stream = L::Stream;
     type Output = L::Output;
 
     fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        match self.p1.parse_partial(stream)? {
-            (Some(mut p1), stream) => {
-                let (p2, stream) = self.p2.parse_partial(stream)?;
-                if let Some(r) = p2 {
-                    p1.extend(r.into_iter());
-                }
-                stream.ok(p1)
+        let mut output: Self::Output = Self::Output::default();
+        let stream = match self.p1.parse_partial(stream)? {
+            (Some(p1), stream) => {
+                output.extend::<L::Output>(p1);
+                stream
             }
-            (None, stream) => stream.noop(),
-        }
+            (None, stream) => stream,
+        };
+        let stream = match self.p2.parse_partial(stream)? {
+            (Some(p2), stream) => {
+                output.extend::<R::Output>(p2);
+                stream
+            }
+            (None, stream) => stream,
+        };
+        stream.ok(output)
     }
 }
 
-pub fn extend<S: Stream, O, L, R>(p1: L, p2: R) -> Extend<L, R>
+pub fn extend<O, L, R>(p1: L, p2: R) -> Extend<L, R>
 where
-    L: Parser<Stream = S, Output = Vec<O>>,
-    R: Parser<Stream = S, Output = Vec<O>>,
+    L: Parser,
+    L::Output: iter::Extend<O> + Default + iter::IntoIterator<Item = O>,
+    R: Parser<Stream = L::Stream, Output = L::Output>,
 {
     Extend { p1, p2 }
 }
