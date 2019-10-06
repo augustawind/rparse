@@ -1,4 +1,4 @@
-use serde_json::{Map, Number, Value};
+use serde_json::{json, Map, Number, Value};
 
 use rparse::parser::{
     choice::optional,
@@ -107,13 +107,11 @@ mod test {
     use rparse::stream::IndexedStream;
     use rparse::Error;
 
-    fn json_number(f: f64) -> Value {
-        Value::Number(Number::from_f64(f).expect("invalid JSON number"))
-    }
-
-    fn json_string(s: &str) -> Value {
-        Value::String(String::from(s))
-    }
+    // #[test]
+    // fn test_json_value() {
+    //     test_parser!(IndexedStream<&str> => Value, json_value(), {
+    //     });
+    // }
 
     #[test]
     fn test_null() {
@@ -142,33 +140,33 @@ mod test {
     #[test]
     fn test_number() {
         test_parser!(IndexedStream<&str> => Value | number(), {
-            "0" => ok(json_number(0f64), ("", 1)),
-            "3" => ok(json_number(3f64), ("", 1)),
-            "320" => ok(json_number(320f64), ("", 3)),
-            "1.5" => ok(json_number(1.5), ("", 3)),
-            "1.50" => ok(json_number(1.5), ("", 4)),
-            "1.55" => ok(json_number(1.55), ("", 4)),
-            "11.5" => ok(json_number(11.5), ("", 4)),
-            "0.5" => ok(json_number(0.5), ("", 3)),
-            "0.52" => ok(json_number(0.52), ("", 4)),
-            "-3" => ok(json_number(-3f64), ("", 2)),
-            "-320" => ok(json_number(-320f64), ("", 4)),
-            "-1.5" => ok(json_number(-1.5), ("", 4)),
-            "-1.50" => ok(json_number(-1.5), ("", 5)),
-            "-1.55" => ok(json_number(-1.55), ("", 5)),
-            "-11.5" => ok(json_number(-11.5), ("", 5)),
-            "-0.5" => ok(json_number(-0.5), ("", 4)),
-            "-0.52" => ok(json_number(-0.52), ("", 5)),
-            "3e2" => ok(json_number(3e2f64), ("", 3)),
-            "320e10" => ok(json_number(320e10f64), ("", 6)),
-            "1.5e-3" => ok(json_number(1.5e-3), ("", 6)),
-            "1.50E-0" => ok(json_number(1.5e-0), ("", 7)),
-            "-3e2" => ok(json_number(-3e2f64), ("", 4)),
-            "-320e10" => ok(json_number(-320e10f64), ("", 7)),
-            "-1.5e-3" => ok(json_number(-1.5e-3), ("", 7)),
-            "-1.50E-0" => ok(json_number(-1.5e-0), ("", 8)),
-            "000" => ok(json_number(0f64), ("00", 1)),
-            "1..0" => ok(json_number(1f64), ("..0", 1)),
+            "0" => ok(json!(0f64), ("", 1)),
+            "3" => ok(json!(3f64), ("", 1)),
+            "320" => ok(json!(320f64), ("", 3)),
+            "1.5" => ok(json!(1.5), ("", 3)),
+            "1.50" => ok(json!(1.5), ("", 4)),
+            "1.55" => ok(json!(1.55), ("", 4)),
+            "11.5" => ok(json!(11.5), ("", 4)),
+            "0.5" => ok(json!(0.5), ("", 3)),
+            "0.52" => ok(json!(0.52), ("", 4)),
+            "-3" => ok(json!(-3f64), ("", 2)),
+            "-320" => ok(json!(-320f64), ("", 4)),
+            "-1.5" => ok(json!(-1.5), ("", 4)),
+            "-1.50" => ok(json!(-1.5), ("", 5)),
+            "-1.55" => ok(json!(-1.55), ("", 5)),
+            "-11.5" => ok(json!(-11.5), ("", 5)),
+            "-0.5" => ok(json!(-0.5), ("", 4)),
+            "-0.52" => ok(json!(-0.52), ("", 5)),
+            "3e2" => ok(json!(3e2f64), ("", 3)),
+            "320e10" => ok(json!(320e10f64), ("", 6)),
+            "1.5e-3" => ok(json!(1.5e-3), ("", 6)),
+            "1.50E-0" => ok(json!(1.5e-0), ("", 7)),
+            "-3e2" => ok(json!(-3e2f64), ("", 4)),
+            "-320e10" => ok(json!(-320e10f64), ("", 7)),
+            "-1.5e-3" => ok(json!(-1.5e-3), ("", 7)),
+            "-1.50E-0" => ok(json!(-1.5e-0), ("", 8)),
+            "000" => ok(json!(0f64), ("00", 1)),
+            "1..0" => ok(json!(1f64), ("..0", 1)),
             "--1" => err(Error::item('-').at(1).expected("a number")),
         });
     }
@@ -176,9 +174,9 @@ mod test {
     #[test]
     fn test_string() {
         test_parser!(IndexedStream<&str> => Value | string(), {
-            r#""""# => ok(json_string(""), ("", 2)),
-            r#""heyo","# => ok(json_string("heyo"), (",", 6)),
-            r#""a\"b\"\n""# => ok(json_string("a\"b\"\n"), ("", 10)),
+            r#""""# => ok(json!(""), ("", 2)),
+            r#""heyo","# => ok(json!("heyo"), (",", 6)),
+            r#""a\"b\"\n""# => ok(json!("a\"b\"\n"), ("", 10)),
             "foo" => err(Error::item('f').at(0).expected_item('"')),
             r#""foo"# => err(Error::eoi().at(4).expected_item('"')),
         });
