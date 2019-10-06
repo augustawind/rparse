@@ -138,6 +138,7 @@ mod test {
     #[test]
     fn test_number() {
         test_parser!(IndexedStream<&str> => Value | number(), {
+            "0" => ok(json_number(0f64), ("", 1)),
             "3" => ok(json_number(3f64), ("", 1)),
             "320" => ok(json_number(320f64), ("", 3)),
             "1.5" => ok(json_number(1.5), ("", 3)),
@@ -162,6 +163,9 @@ mod test {
             "-320e10" => ok(json_number(-320e10f64), ("", 7)),
             "-1.5e-3" => ok(json_number(-1.5e-3), ("", 7)),
             "-1.50E-0" => ok(json_number(-1.5e-0), ("", 8)),
+            "000" => ok(json_number(0f64), ("00", 1)),
+            "1..0" => ok(json_number(1f64), ("..0", 1)),
+            "--1" => err(Error::item('-').at(1).expected("a number")),
         });
     }
 
