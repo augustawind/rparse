@@ -1,6 +1,7 @@
 use std::marker::PhantomData;
 
 use crate::error::Expected;
+use crate::parser::combinator::lookahead;
 use {Error, ParseResult, Parser, Stream};
 
 pub struct TakeUntil<O, P, U> {
@@ -21,16 +22,11 @@ where
     fn parse_lazy(&mut self, mut stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         let mut output = O::default();
         loop {
-            let backup = stream.backup();
-            stream = match self.until.parse_lazy(stream) {
-                Ok((Some(_), mut stream)) => {
-                    stream.restore(backup);
-                    return stream.ok(output);
-                }
+            stream = match lookahead(self.until.by_ref()).parse_lazy(stream) {
+                Ok((Some(_), stream)) => return stream.ok(output),
                 Ok((None, stream)) => stream,
                 Err((_, stream)) => stream,
             };
-            stream.restore(backup);
 
             stream = match self.p.parse_lazy(stream)? {
                 (Some(value), stream) => {
