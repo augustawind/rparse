@@ -19,8 +19,8 @@ use std::str;
 
 use self::choice::{must, optional, or, skip, with, Must, Optional, Or, Skip, With};
 use self::combinator::{
-    bind, collect, expect, flatten, from_str, map, wrap, Bind, Collect, Expect, Flatten, FromStr,
-    Map, Wrap,
+    and_then, collect, expect, flatten, from_str, map, wrap, AndThen, Collect, Expect, Flatten,
+    FromStr, Map, Wrap,
 };
 use self::item::{negate, Negate};
 use self::seq::{and, append, extend, then, And, Append, Extend, Then};
@@ -201,7 +201,7 @@ pub trait Parser {
 
     /// Parses with `self` and if it succeeds with `Some(value)`, apply `f` to the result.
     ///
-    /// If `f` needs to be able to fail, use [`Parser::bind`] instead.
+    /// If `f` needs to be able to fail, use [`Parser::and_then`] instead.
     fn map<F, O>(self, f: F) -> Map<Self, F>
     where
         Self: Sized,
@@ -224,14 +224,14 @@ pub trait Parser {
 
     /// Parses with `self` and if it succeeds with `Some(value)`, apply `f` to the result.
     ///
-    /// Unlike [`map`], `bind` takes a function which returns a [`ParseResult`], so it can be used
+    /// Unlike [`map`], `and_then` takes a function which returns a [`ParseResult`], so it can be used
     /// to signify failure.
-    fn bind<F, O>(self, f: F) -> Bind<Self, F>
+    fn and_then<F, O>(self, f: F) -> AndThen<Self, F>
     where
         Self: Sized,
         F: Fn(Self::Output, Self::Stream) -> ParseResult<Self::Stream, O>,
     {
-        bind(self, f)
+        and_then(self, f)
     }
 
     /// Parses with `self` and transforms the result using [`str::FromStr`].

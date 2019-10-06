@@ -187,12 +187,12 @@ where
     })
 }
 
-pub struct Bind<P, F> {
+pub struct AndThen<P, F> {
     parser: P,
     f: F,
 }
 
-impl<P, F, O> Parser for Bind<P, F>
+impl<P, F, O> Parser for AndThen<P, F>
 where
     P: Parser,
     F: Fn(P::Output, P::Stream) -> ParseResult<P::Stream, O>,
@@ -213,15 +213,15 @@ where
     }
 }
 
-/// Equivalent to [`p.bind()`].
+/// Equivalent to [`p.and_then()`].
 ///
-/// [`p.bind()`]: Parser::bind
-pub fn bind<P, F, O>(p: P, f: F) -> Bind<P, F>
+/// [`p.and_then()`]: Parser::and_then
+pub fn and_then<P, F, O>(p: P, f: F) -> AndThen<P, F>
 where
     P: Parser,
     F: Fn(P::Output, P::Stream) -> O,
 {
-    Bind { parser: p, f }
+    AndThen { parser: p, f }
 }
 
 pub struct FromStr<P, O> {
@@ -327,22 +327,22 @@ mod test {
     }
 
     #[test]
-    fn test_bind() {
+    fn test_and_then() {
         // TODO: use realistic use cases for these tests. many of these are better suited to map()
-        let mut parser = ascii::digit().bind(|c: char, stream: &str| stream.ok(c.to_string()));
+        let mut parser = ascii::digit().and_then(|c: char, stream: &str| stream.ok(c.to_string()));
         test_parser!(&str => String | parser, {
             "3" => ok("3".to_string(), ""),
             "a3" => err(Error::item('a').expected("an ascii digit")),
         });
 
         let mut parser = many1::<String, _>(ascii::letter())
-            .bind(|s: String, stream: &str| stream.ok(s.to_uppercase()));
+            .and_then(|s: String, stream: &str| stream.ok(s.to_uppercase()));
         assert_eq!(
             parser.parse("aBcD12e"),
             ok_result("ABCD".to_string(), "12e")
         );
 
-        let mut parser = many1::<String, _>(ascii::alpha_num()).bind(
+        let mut parser = many1::<String, _>(ascii::alpha_num()).and_then(
             |s: String, stream: IndexedStream<&str>| match s.parse::<usize>() {
                 Ok(n) => stream.ok(n),
                 Err(e) => stream.err(Box::new(e).into()),
@@ -351,7 +351,7 @@ mod test {
         test_parser!(IndexedStream<&str> => usize | parser, {
             "324 dogs" => ok(324 as usize, (" dogs", 3)),
             // TODO: add ability to control consumption, e.g. make this error show at beginning (0)
-            // TODO: e.g.: many1(alpha_num()).bind(...).try()
+            // TODO: e.g.: many1(alpha_num()).and_then(...).try()
             "324dogs" => err(
                 Error::from("invalid digit found in string")
                     .expected("an ascii letter or digit")

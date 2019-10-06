@@ -42,7 +42,7 @@ pub fn quoted_string<S: Stream>() -> impl Parser<Stream = S, Output = String> {
         item(b'"'),
         many(parser(|stream: S| {
             any()
-                .bind(|b: S::Item, stream: S| match b.into() {
+                .and_then(|b: S::Item, stream: S| match b.into() {
                     '\\' => backslash_escaped().parse_lazy(stream),
                     '"' => stream.err(Error::eoi()),
                     ch => stream.ok(ch),
@@ -53,7 +53,7 @@ pub fn quoted_string<S: Stream>() -> impl Parser<Stream = S, Output = String> {
 }
 
 fn backslash_escaped<S: Stream>() -> impl Parser<Stream = S, Output = char> {
-    any().bind(|b: S::Item, stream: S| {
+    any().and_then(|b: S::Item, stream: S| {
         let result = Some(match b.into() {
             '\\' => '\\',
             '\'' => '\'',

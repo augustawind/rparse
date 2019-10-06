@@ -57,7 +57,7 @@ fn number<S: Stream>() -> impl JSONParser<S> {
     ]
     .collect_string()
     .from_str::<f64>()
-    .bind(|n: f64, stream: S| {
+    .and_then(|n: f64, stream: S| {
         let num = Value::Number(match Number::from_f64(n) {
             Some(num) => num,
             None => return stream.err(format!("{} is not a valid JSON number", n).into()),
