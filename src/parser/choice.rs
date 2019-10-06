@@ -66,7 +66,7 @@ pub fn with<P1, P2>(p1: P1, p2: P2) -> With<P1, P2> {
 }
 
 pub struct Optional<P> {
-    parser: P,
+    p: P,
 }
 
 impl<P> Parser for Optional<P>
@@ -78,7 +78,7 @@ where
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         let backup = stream.backup();
-        let mut stream = match self.parser.parse_lazy(stream) {
+        let mut stream = match self.p.parse_lazy(stream) {
             Ok((Some(result), stream)) => return stream.ok(result),
             Ok((None, stream)) => stream,
             Err((_, stream)) => stream,
@@ -88,16 +88,48 @@ where
     }
 
     fn expected_error(&self) -> Option<Expected<Self::Stream>> {
-        self.parser.expected_error()
+        self.p.expected_error()
     }
 }
 
-/// Wrap `parser` so that if it would fail it returns `None` instead. Equivalent to
+pub struct Must<P> {
+    p: P,
+}
+
+impl<P> Parser for Must<P>
+where
+    P: Parser,
+{
+    type Stream = P::Stream;
+    type Output = P::Output;
+
+    fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        match self.p.parse_lazy(stream) {
+            Ok((Some(result), stream)) => stream.ok(result),
+            Ok((None, stream)) => {
+                let mut err = stream.new_error();
+                self.add_expected_error(&mut err);
+                stream.err(err)
+            }
+            Err((err, stream)) => stream.err(err),
+        }
+    }
+
+    fn expected_error(&self) -> Option<Expected<Self::Stream>> {
+        self.p.expected_error()
+    }
+}
+
+pub fn must<P: Parser>(p: P) -> Must<P> {
+    Must { p }
+}
+
+/// Wrap `p` so that if it would fail it returns `None` instead. Equivalent to
 /// [`parser.optional()`].
 ///
 /// [`parser.optional()`]: Parser::optional
-pub fn optional<P: Parser>(parser: P) -> Optional<P> {
-    Optional { parser }
+pub fn optional<P: Parser>(p: P) -> Optional<P> {
+    Optional { p }
 }
 
 pub struct Or<L, R> {
