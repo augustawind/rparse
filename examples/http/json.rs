@@ -154,6 +154,14 @@ mod test {
             "-11.5" => ok(json_number(-11.5), ("", 5)),
             "-0.5" => ok(json_number(-0.5), ("", 4)),
             "-0.52" => ok(json_number(-0.52), ("", 5)),
+            "3e2" => ok(json_number(3e2f64), ("", 3)),
+            "320e10" => ok(json_number(320e10f64), ("", 6)),
+            "1.5e-3" => ok(json_number(1.5e-3), ("", 6)),
+            "1.50E-0" => ok(json_number(1.5e-0), ("", 7)),
+            "-3e2" => ok(json_number(-3e2f64), ("", 4)),
+            "-320e10" => ok(json_number(-320e10f64), ("", 7)),
+            "-1.5e-3" => ok(json_number(-1.5e-3), ("", 7)),
+            "-1.50E-0" => ok(json_number(-1.5e-0), ("", 8)),
         });
     }
 
