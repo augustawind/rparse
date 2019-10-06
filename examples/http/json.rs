@@ -41,13 +41,13 @@ fn number<S: Stream>() -> impl JSONParser<S> {
 
     concat![
         // an optional minus sign,
-        optional(item(b'-').wrap()),
+        optional(item(b'-')).wrap(),
         // followed by either
         choice![
             // a zero
             item(b'0').wrap(),
             // or a non-zero digit followed by zero or more digits
-            concat![non_zero_digit.wrap(), many(digit()),]
+            concat![non_zero_digit.wrap(), many(digit())]
         ],
         // followed by an optional decimal point and zero or more digits
         optional(item(b'.').wrap().extend(many1(digit()))),
