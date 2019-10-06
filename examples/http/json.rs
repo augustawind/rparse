@@ -36,8 +36,9 @@ fn boolean<S: Stream>() -> impl JSONParser<S> {
 
 fn number<S: Stream>() -> impl JSONParser<S> {
     let non_zero_digit = satisfy(|&b: &S::Item| b.is_ascii_digit() && b != b'0'.into());
-    let exponent =
-        one_of(&[b'e', b'E']).with(concat![optional(item(b'-').wrap()), many1(digit()),]);
+    let exponent = one_of(&[b'e', b'E'])
+        .then(optional(item(b'-')))
+        .extend(many1(digit()));
 
     concat![
         // an optional minus sign,
@@ -47,7 +48,7 @@ fn number<S: Stream>() -> impl JSONParser<S> {
             // a zero
             item(b'0').wrap(),
             // or a non-zero digit followed by zero or more digits
-            concat![non_zero_digit.wrap(), many(digit())]
+            non_zero_digit.wrap().extend(many(digit())),
         ],
         // followed by an optional decimal point and zero or more digits
         optional(item(b'.').wrap().extend(many1(digit()))),
@@ -106,15 +107,13 @@ mod test {
     use rparse::stream::IndexedStream;
     use rparse::Error;
 
-    type IdxStr = IndexedStream<&'static str>;
-
     fn json_number(f: f64) -> Value {
         Value::Number(Number::from_f64(f).expect("invalid JSON number"))
     }
 
     #[test]
     fn test_null() {
-        test_parser!(IdxStr => Value | null(), {
+        test_parser!(IndexedStream<&str> => Value | null(), {
             "null" => ok(Value::Null, ("", 4)),
             "null, " => ok(Value::Null, (", ", 4)),
             "" => err(Error::eoi().at(0).expected_range("null")),
@@ -125,7 +124,7 @@ mod test {
 
     #[test]
     fn test_boolean() {
-        test_parser!(IdxStr => Value | boolean(), {
+        test_parser!(IndexedStream<&str> => Value | boolean(), {
             "true" => ok(Value::Bool(true), ("", 4)),
             "false" => ok(Value::Bool(false), ("", 5)),
             "true, " => ok(Value::Bool(true), (", ", 4)),
@@ -138,7 +137,7 @@ mod test {
 
     #[test]
     fn test_number() {
-        test_parser!(IdxStr => Value | number(), {
+        test_parser!(IndexedStream<&str> => Value | number(), {
             "3" => ok(json_number(3f64), ("", 1)),
             "320" => ok(json_number(320f64), ("", 3)),
             "1.5" => ok(json_number(1.5), ("", 3)),
@@ -160,7 +159,7 @@ mod test {
 
     #[test]
     fn test_sp() {
-        test_parser!(IdxStr => () | sp(), {
+        test_parser!(IndexedStream<&str> => () | sp(), {
             "" => ok((), ("", 0)),
             " " => ok((), ("", 1)),
             "\t\r\n 123" => ok((), ("123", 4)),
