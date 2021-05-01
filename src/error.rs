@@ -8,6 +8,9 @@ use stream::{Position, Stream, StreamItem};
 
 pub type ParseResult<S, O> = Result<(Option<O>, S), (Error<S>, S)>;
 
+// --------------------------------------------------------------------
+// struct Error
+
 /// A parse error. This is the library error type.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Error<S: Stream> {
@@ -157,6 +160,148 @@ impl<S: Stream, E: StdError + Send + Sync + 'static> From<Box<E>> for Error<S> {
     }
 }
 
+// --------------------------------------------------------------------
+// enum Expected
+
+#[derive(Debug, Clone)]
+pub enum Expected<S: Stream> {
+    Seq(Vec<Expected<S>>),
+    OneOf(Vec<Expected<S>>),
+    Info(Info<S>),
+}
+
+impl<S: Stream> Expected<S> {
+    pub fn item(item: S::Item) -> Self {
+        Expected::Info(Info::Item(item))
+    }
+
+    pub fn range(range: S::Range) -> Self {
+        Expected::Info(Info::Range(range))
+    }
+
+    pub fn merge_seq<I>(errors: I) -> Option<Self>
+    where
+        I: IntoIterator<Item = Option<Expected<S>>>,
+    {
+        Self::merge_errors(errors, Expected::Seq)
+    }
+
+    pub fn merge_one_of<I>(errors: I) -> Option<Self>
+    where
+        I: IntoIterator<Item = Option<Expected<S>>>,
+    {
+        Self::merge_errors(errors, Expected::OneOf)
+    }
+
+    fn merge_errors<I, F>(errors: I, f: F) -> Option<Expected<S>>
+    where
+        I: IntoIterator<Item = Option<Expected<S>>>,
+        F: FnOnce(Vec<Expected<S>>) -> Expected<S>,
+    {
+        let mut vec = errors.into_iter().fold(Vec::new(), |mut acc, e| {
+            match e {
+                Some(Expected::OneOf(xs)) => acc.extend(xs.into_iter()),
+                Some(expected) => acc.push(expected),
+                _ => (),
+            };
+            acc
+        });
+        match vec.len() {
+            0 => None,
+            1 => vec.pop(),
+            _ => Some(f(vec)),
+        }
+    }
+}
+
+impl<S: Stream> PartialEq for Expected<S> {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Expected::Seq(l), Expected::Seq(r)) => l == r,
+            (Expected::OneOf(l), Expected::OneOf(r)) => l == r,
+            (Expected::Info(l), Expected::Info(r)) => l == r,
+            _ => false,
+        }
+    }
+}
+
+impl<S: Stream> Eq for Expected<S> {}
+
+impl<S: Stream> fmt::Display for Expected<S> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fn join_errors<S: Stream>(errors: &[Expected<S>], sep: &str) -> String {
+            errors
+                .into_iter()
+                .map(|e| e.to_string())
+                .collect::<Vec<String>>()
+                .join(sep)
+        }
+        match self {
+            Self::Seq(errors) => write!(f, "({})", join_errors(errors, ", ")),
+            Self::OneOf(errors) => write!(f, "({})", join_errors(errors, " OR ")),
+            Self::Info(info) => write!(f, "{}", info),
+        }
+    }
+}
+
+impl<S: Stream, T: Into<Expected<S>>> From<Vec<T>> for Expected<S> {
+    fn from(errors: Vec<T>) -> Self {
+        Expected::Seq(
+            errors
+                .into_iter()
+                .map(|e| e.into())
+                .collect::<Vec<Expected<S>>>(),
+        )
+    }
+}
+
+impl<S: Stream, T: Into<Expected<S>>> From<HashSet<T>> for Expected<S> {
+    fn from(errors: HashSet<T>) -> Self {
+        Expected::OneOf(
+            errors
+                .into_iter()
+                .map(|e| e.into())
+                .collect::<Vec<Expected<S>>>(),
+        )
+    }
+}
+
+impl<S: Stream> From<Info<S>> for Expected<S> {
+    fn from(info: Info<S>) -> Self {
+        Expected::Info(info)
+    }
+}
+
+impl<S: Stream> From<u8> for Expected<S> {
+    fn from(b: u8) -> Self {
+        Expected::Info(Info::Item(b.into()))
+    }
+}
+
+impl<S> From<char> for Expected<S>
+where
+    S: Stream<Item = char>,
+{
+    fn from(ch: char) -> Self {
+        Expected::Info(Info::Item(ch))
+    }
+}
+
+impl<S: Stream> From<&'static str> for Expected<S> {
+    fn from(s: &'static str) -> Self {
+        Expected::Info(Info::Msg(s))
+    }
+}
+
+impl<S: Stream> From<String> for Expected<S> {
+    fn from(s: String) -> Self {
+        Expected::Info(Info::MsgOwned(s))
+    }
+}
+
+// --------------------------------------------------------------------
+// enum Info
+
 /// Holds the _cause_ of a parse error.
 #[derive(Debug, Clone, Hash)]
 pub enum Info<S: Stream> {
@@ -228,142 +373,5 @@ where
 {
     fn from(b: u8) -> Self {
         Info::Item(b)
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum Expected<S: Stream> {
-    Seq(Vec<Expected<S>>),
-    OneOf(Vec<Expected<S>>),
-    Info(Info<S>),
-}
-
-impl<S: Stream> Expected<S> {
-    pub fn merge_seq<I>(errors: I) -> Option<Self>
-    where
-        I: IntoIterator<Item = Option<Expected<S>>>,
-    {
-        Self::merge_errors(errors, Expected::Seq)
-    }
-
-    pub fn merge_one_of<I>(errors: I) -> Option<Self>
-    where
-        I: IntoIterator<Item = Option<Expected<S>>>,
-    {
-        Self::merge_errors(errors, Expected::OneOf)
-    }
-
-    fn merge_errors<I, F>(errors: I, f: F) -> Option<Expected<S>>
-    where
-        I: IntoIterator<Item = Option<Expected<S>>>,
-        F: FnOnce(Vec<Expected<S>>) -> Expected<S>,
-    {
-        let mut vec = errors.into_iter().fold(Vec::new(), |mut acc, e| {
-            match e {
-                Some(Expected::OneOf(xs)) => acc.extend(xs.into_iter()),
-                Some(expected) => acc.push(expected),
-                _ => (),
-            };
-            acc
-        });
-        match vec.len() {
-            0 => None,
-            1 => vec.pop(),
-            _ => Some(f(vec)),
-        }
-    }
-
-    pub fn item(item: S::Item) -> Self {
-        Expected::Info(Info::Item(item))
-    }
-
-    pub fn range(range: S::Range) -> Self {
-        Expected::Info(Info::Range(range))
-    }
-
-    fn join_expected(errors: &[Expected<S>], sep: &str) -> String {
-        errors
-            .into_iter()
-            .map(|e| e.to_string())
-            .collect::<Vec<String>>()
-            .join(sep)
-    }
-}
-
-impl<S: Stream> PartialEq for Expected<S> {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Expected::Seq(l), Expected::Seq(r)) => l == r,
-            (Expected::OneOf(l), Expected::OneOf(r)) => l == r,
-            (Expected::Info(l), Expected::Info(r)) => l == r,
-            _ => false,
-        }
-    }
-}
-
-impl<S: Stream> Eq for Expected<S> {}
-
-impl<S: Stream> fmt::Display for Expected<S> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Self::Seq(errors) => write!(f, "({})", Self::join_expected(errors, ", ")),
-            Self::OneOf(errors) => write!(f, "({})", Self::join_expected(errors, " OR ")),
-            Self::Info(info) => write!(f, "{}", info),
-        }
-    }
-}
-
-impl<S: Stream, T: Into<Expected<S>>> From<Vec<T>> for Expected<S> {
-    fn from(errors: Vec<T>) -> Self {
-        Expected::Seq(
-            errors
-                .into_iter()
-                .map(|e| e.into())
-                .collect::<Vec<Expected<S>>>(),
-        )
-    }
-}
-
-impl<S: Stream, T: Into<Expected<S>>> From<HashSet<T>> for Expected<S> {
-    fn from(errors: HashSet<T>) -> Self {
-        Expected::OneOf(
-            errors
-                .into_iter()
-                .map(|e| e.into())
-                .collect::<Vec<Expected<S>>>(),
-        )
-    }
-}
-
-impl<S: Stream> From<Info<S>> for Expected<S> {
-    fn from(info: Info<S>) -> Self {
-        Expected::Info(info)
-    }
-}
-
-impl<S: Stream> From<u8> for Expected<S> {
-    fn from(b: u8) -> Self {
-        Expected::Info(Info::Item(b.into()))
-    }
-}
-
-impl<S> From<char> for Expected<S>
-where
-    S: Stream<Item = char>,
-{
-    fn from(ch: char) -> Self {
-        Expected::Info(Info::Item(ch))
-    }
-}
-
-impl<S: Stream> From<&'static str> for Expected<S> {
-    fn from(s: &'static str) -> Self {
-        Expected::Info(Info::Msg(s))
-    }
-}
-
-impl<S: Stream> From<String> for Expected<S> {
-    fn from(s: String) -> Self {
-        Expected::Info(Info::MsgOwned(s))
     }
 }
