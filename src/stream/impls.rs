@@ -102,7 +102,7 @@ impl<'a> Stream for &'a str {
     }
 
     fn position(&self) -> &Self::Position {
-        &NullPosition(())
+        &NullPosition
     }
 }
 
@@ -159,6 +159,6 @@ impl<'a> Stream for &'a [u8] {
     }
 
     fn position(&self) -> &Self::Position {
-        &NullPosition(())
+        &NullPosition
     }
 }

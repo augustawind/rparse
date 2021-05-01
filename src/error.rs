@@ -6,6 +6,8 @@ use std::fmt;
 
 use stream::{Position, Stream};
 
+pub type ParseResult<S, O> = Result<(Option<O>, S), (Error<S>, S)>;
+
 /// The content of a parse error.
 #[derive(Debug, Clone, Hash)]
 pub enum Info<S: Stream> {
@@ -335,5 +337,3 @@ impl<S: Stream, E: StdError + Send + Sync + 'static> From<Box<E>> for Error<S> {
         error.to_string().into()
     }
 }
-
-pub type ParseResult<S, O> = Result<(Option<O>, S), (Error<S>, S)>;

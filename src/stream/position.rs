@@ -24,7 +24,7 @@ pub trait Position<S: Stream>:
 /// NullPosition is a dummy `Position` for streams that don't keep track of their current position.
 /// This is provided so that primitive types such as `&str` can implement `Stream`.
 #[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
-pub struct NullPosition(pub ());
+pub struct NullPosition;
 
 impl Display for NullPosition {
     fn fmt(&self, _: &mut fmt::Formatter) -> fmt::Result {
@@ -36,7 +36,7 @@ impl<S: Stream> Position<S> for NullPosition {
     type Value = ();
 
     fn value(&self) -> Self::Value {
-        self.0
+        ()
     }
 
     fn update(&mut self, _: &S::Item) {}

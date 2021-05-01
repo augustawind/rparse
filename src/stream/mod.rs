@@ -46,9 +46,9 @@ pub trait StreamItem: Copy + PartialEq + Eq + Debug + From<u8> + Into<char> {
     fn is_ascii_graphic(&self) -> bool;
     fn is_ascii_whitespace(&self) -> bool;
     fn is_ascii_control(&self) -> bool;
-
     fn is_ascii_uppercase(&self) -> bool;
     fn is_ascii_lowercase(&self) -> bool;
+
     fn eq_ignore_ascii_case(&self, other: &Self) -> bool;
 }
 

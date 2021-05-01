@@ -119,7 +119,7 @@ pub trait Parser {
 
     /// Adds this parsers expected errors to `errors`.
     ///
-    /// In most cases, this should be left as the default and [`Parser::expected_errors`]
+    /// In most cases, this should be left as the default and [`Parser::expected_error`]
     /// should be defined instead.
     fn add_expected_error(&self, error: &mut Error<Self::Stream>) {
         if let Some(expected) = self.expected_error() {
@@ -137,7 +137,7 @@ pub trait Parser {
     /// Wrap `self` with a custom error. If parsing fails, the parser's expected errors will be
     /// replaced with [`Expected(error)`].
     ///
-    /// [`Expected(error)`]: Error::Expected
+    /// [`Expected(error)`]: Expected
     fn expect<E>(self, expected: E) -> Expect<Self>
     where
         Self: Sized,
