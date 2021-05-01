@@ -109,7 +109,7 @@ pub trait Parser {
         None
     }
 
-    /// Adds this parsers expected errors to `errors`.
+    /// Adds this parsers expected error to `error`.
     ///
     /// In most cases, this should be left as the default and [`Parser::expected_error`]
     /// should be defined instead.

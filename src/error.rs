@@ -8,13 +8,172 @@ use stream::{Position, Stream, StreamItem};
 
 pub type ParseResult<S, O> = Result<(Option<O>, S), (Error<S>, S)>;
 
-/// The content of a parse error.
+/// A parse error. This is the library error type.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Error<S: Stream> {
+    /// The cause of the error.
+    pub cause: Info<S>,
+    /// The expected input. If `cause` describes the input that _caused_ the error, `expected`
+    /// describes the input that _wouldn't have_ caused an error.
+    pub expected: Option<Expected<S>>,
+    /// The position in the input at which the error occurred.
+    pub position: S::Position,
+}
+
+impl<S: Stream> Error<S> {
+    /// Create a new `Error`.
+    ///
+    /// This is the most general constructor for `Error`, setting all of its fields explicitly.
+    pub fn new(cause: Info<S>, expected: Option<Expected<S>>, position: S::Position) -> Self {
+        Error {
+            cause,
+            expected,
+            position,
+        }
+    }
+
+    /// Create a new `Error` with the given `cause`.
+    ///
+    /// Sets the other fields to their [`Default::default()`] values.
+    pub fn cause<E: Into<Info<S>>>(cause: E) -> Self {
+        Error::new(cause.into(), None, Default::default())
+    }
+
+    /// Create a new `Error` caused by a specific item of the input.
+    ///
+    /// Sets the other fields to their [`Default::default()`] values.
+    pub fn item(item: S::Item) -> Self {
+        Error::cause(Info::Item(item))
+    }
+
+    /// Create a new `Error` caused by a specific range of the input.
+    ///
+    /// Sets the other fields to their [`Default::default()`] values.
+    pub fn range(range: S::Range) -> Self {
+        Error::cause(Info::Range(range))
+    }
+
+    /// Create a new `Error` caused by reaching end-of-input.
+    ///
+    /// Sets the other fields to their [`Default::default()`] values.
+    pub fn eoi() -> Self {
+        Error::cause(Info::EOI)
+    }
+
+    /// Set the error's `position`. Chainable.
+    pub fn at<P: Into<S::Position>>(mut self, position: P) -> Self {
+        self.position = position.into();
+        self
+    }
+
+    /// Sets the error's `expected` field. Chainable.
+    pub fn expected<E: Into<Expected<S>>>(mut self, expected: E) -> Self {
+        self.expected = Some(expected.into());
+        self
+    }
+
+    /// Sets the error's `expected` field, combining multiple [`Expected`] objects into a single
+    /// [`Expected::OneOf`]. Chainable.
+    pub fn expected_one_of<E, I>(mut self, errors: I) -> Self
+    where
+        E: Into<Expected<S>>,
+        I: IntoIterator<Item = E>,
+    {
+        self.expected = Some(Expected::OneOf(
+            errors.into_iter().map(|e| e.into()).collect(),
+        ));
+        self
+    }
+
+    /// Sets the error's `expected` to a specific [item](stream::Item) of input. Chainable.
+    pub fn expected_item(mut self, item: S::Item) -> Self {
+        self.expected = Some(Expected::Info(Info::Item(item)));
+        self
+    }
+
+    /// Sets the error's `expected` to a specific [range](Stream::Range) of input. Chainable.
+    pub fn expected_range(mut self, range: S::Range) -> Self {
+        self.expected = Some(Expected::Info(Info::Range(range)));
+        self
+    }
+
+    /// Add the given [`Expected`] object to the error, merging with its existing `expected`
+    pub fn add_expected<E: Into<Expected<S>>>(&mut self, expected: E) {
+        self.expected = match self.expected.take() {
+            Some(exp) => Expected::merge_one_of(vec![Some(exp), Some(expected.into())]),
+            None => Some(expected.into()),
+        };
+    }
+}
+
+impl<S: Stream> fmt::Display for Error<S> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{}: unexpected {}",
+            self.position.fmt_msg("parsing failed"),
+            self.cause
+        )?;
+        if let Some(expected) = &self.expected {
+            write!(f, ": expected {}", expected)?;
+        }
+        Ok(())
+    }
+}
+
+impl<S: Stream> StdError for Error<S> {}
+
+impl<S: Stream> From<Info<S>> for Error<S> {
+    fn from(info: Info<S>) -> Self {
+        Error::cause(info)
+    }
+}
+
+impl<S: Stream> From<u8> for Error<S> {
+    fn from(b: u8) -> Self {
+        Error::cause(Info::Item(b.into()))
+    }
+}
+
+impl<S> From<char> for Error<S>
+where
+    S: Stream<Item = char>,
+{
+    fn from(ch: char) -> Self {
+        Error::cause(Info::Item(ch))
+    }
+}
+
+impl<S: Stream> From<&'static str> for Error<S> {
+    fn from(s: &'static str) -> Self {
+        Error::cause(Info::Msg(s))
+    }
+}
+
+impl<S: Stream> From<String> for Error<S> {
+    fn from(s: String) -> Self {
+        Error::cause(Info::MsgOwned(s))
+    }
+}
+
+impl<S: Stream, E: StdError + Send + Sync + 'static> From<Box<E>> for Error<S> {
+    fn from(error: Box<E>) -> Self {
+        error.to_string().into()
+    }
+}
+
+/// Holds the _cause_ of a parse error.
 #[derive(Debug, Clone, Hash)]
 pub enum Info<S: Stream> {
+    /// Error caused by a specific [item](stream::StreamItem) of the parsed input.
     Item(S::Item),
+    /// Error caused by a specific [range](stream::RangeStream) of the parsed input.
     Range(S::Range),
+    /// Message describing the cause of the error.
     Msg(&'static str),
+    /// Owned version of [`Msg`].
     MsgOwned(String),
+    /// Parser reached end-of-input too soon.
     EOI,
 }
 
@@ -77,7 +236,7 @@ where
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub enum Expected<S: Stream> {
     Seq(Vec<Expected<S>>),
     OneOf(Vec<Expected<S>>),
@@ -96,7 +255,15 @@ impl<S: Stream> Expected<S> {
     where
         I: IntoIterator<Item = Option<Expected<S>>>,
     {
-        Self::merge_errors(errors).map(Expected::OneOf)
+        Self::merge_errors(errors).map(|v| {
+            let mut vec: Vec<Expected<S>> = Vec::new();
+            for exp in v.iter() {
+                if !vec.contains(exp) {
+                    vec.push(exp.clone());
+                }
+            }
+            Expected::OneOf(vec)
+        })
     }
 
     fn merge_errors<I>(errors: I) -> Option<Vec<Expected<S>>>
@@ -130,6 +297,19 @@ impl<S: Stream> Expected<S> {
             .join(sep)
     }
 }
+
+impl<S: Stream> PartialEq for Expected<S> {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Expected::Seq(l), Expected::Seq(r)) => l == r,
+            (Expected::OneOf(l), Expected::OneOf(r)) => l == r,
+            (Expected::Info(l), Expected::Info(r)) => l == r,
+            _ => false,
+        }
+    }
+}
+
+impl<S: Stream> Eq for Expected<S> {}
 
 impl<S: Stream> fmt::Display for Expected<S> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -193,147 +373,5 @@ impl<S: Stream> From<&'static str> for Expected<S> {
 impl<S: Stream> From<String> for Expected<S> {
     fn from(s: String) -> Self {
         Expected::Info(Info::MsgOwned(s))
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Error<S: Stream> {
-    cause: Info<S>,
-    expected: Option<Expected<S>>,
-    position: S::Position,
-}
-
-/// A parse error.
-impl<S: Stream> Error<S> {
-    pub fn info(cause: Info<S>) -> Self {
-        Error {
-            cause,
-            expected: None,
-            position: Default::default(),
-        }
-    }
-
-    pub fn eoi() -> Self {
-        Error {
-            cause: Info::EOI,
-            expected: None,
-            position: Default::default(),
-        }
-    }
-
-    pub fn item(item: S::Item) -> Self {
-        Error {
-            cause: Info::Item(item),
-            expected: None,
-            position: Default::default(),
-        }
-    }
-
-    pub fn range(range: S::Range) -> Self {
-        Error {
-            cause: Info::Range(range),
-            expected: None,
-            position: Default::default(),
-        }
-    }
-
-    pub fn at<P>(mut self, position: P) -> Self
-    where
-        P: Into<S::Position>,
-    {
-        self.position = position.into();
-        self
-    }
-
-    pub fn expected<E>(mut self, expected: E) -> Self
-    where
-        E: Into<Expected<S>>,
-    {
-        self.expected = Some(expected.into());
-        self
-    }
-
-    pub fn expected_one_of<E, I>(mut self, errors: I) -> Self
-    where
-        E: Into<Expected<S>>,
-        I: IntoIterator<Item = E>,
-    {
-        self.expected = Some(Expected::OneOf(
-            errors.into_iter().map(|e| e.into()).collect(),
-        ));
-        self
-    }
-
-    pub fn expected_item(mut self, item: S::Item) -> Self {
-        self.expected = Some(Expected::Info(Info::Item(item)));
-        self
-    }
-
-    pub fn expected_range(mut self, range: S::Range) -> Self {
-        self.expected = Some(Expected::Info(Info::Range(range)));
-        self
-    }
-
-    pub fn add_expected<E>(&mut self, expected: E)
-    where
-        E: Into<Expected<S>>,
-    {
-        self.expected = Some(expected.into());
-    }
-}
-
-impl<S: Stream> fmt::Display for Error<S> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{}: unexpected {}",
-            self.position.fmt_msg("parsing failed"),
-            self.cause
-        )?;
-        if let Some(expected) = &self.expected {
-            write!(f, ": expected {}", expected)?;
-        }
-        Ok(())
-    }
-}
-
-impl<S: Stream> StdError for Error<S> {}
-
-impl<S: Stream> From<Info<S>> for Error<S> {
-    fn from(info: Info<S>) -> Self {
-        Error::info(info)
-    }
-}
-
-impl<S: Stream> From<u8> for Error<S> {
-    fn from(b: u8) -> Self {
-        Error::info(Info::Item(b.into()))
-    }
-}
-
-impl<S> From<char> for Error<S>
-where
-    S: Stream<Item = char>,
-{
-    fn from(ch: char) -> Self {
-        Error::info(Info::Item(ch))
-    }
-}
-
-impl<S: Stream> From<&'static str> for Error<S> {
-    fn from(s: &'static str) -> Self {
-        Error::info(Info::Msg(s))
-    }
-}
-
-impl<S: Stream> From<String> for Error<S> {
-    fn from(s: String) -> Self {
-        Error::info(Info::MsgOwned(s))
-    }
-}
-
-impl<S: Stream, E: StdError + Send + Sync + 'static> From<Box<E>> for Error<S> {
-    fn from(error: Box<E>) -> Self {
-        error.to_string().into()
     }
 }

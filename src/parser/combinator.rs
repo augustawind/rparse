@@ -210,7 +210,7 @@ where
     type Output = O;
 
     fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
-        let (result, stream) = self.parser.parse_partial(stream)?;
+        let (result, stream) = self.parser.parse_lazy(stream)?;
         match result {
             Some(value) => (self.f)(value, stream),
             None => stream.noop(),
