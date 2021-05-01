@@ -6,6 +6,8 @@ use std::fmt;
 
 use stream::{Position, Stream, StreamItem};
 
+/// A parse result, returned by [`Parser::parse()`](parser::Parser::parse) and all other parsing
+/// functions.
 pub type ParseResult<S, O> = Result<(Option<O>, S), (Error<S>, S)>;
 
 // --------------------------------------------------------------------
