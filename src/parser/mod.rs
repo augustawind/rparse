@@ -15,7 +15,7 @@ pub mod seq;
 
 use std::fmt::Display;
 use std::iter::{self, FromIterator, IntoIterator};
-use std::ops::{Add, BitAnd, BitOr, Sub};
+use std::ops::{Add, BitAnd, BitOr, Mul, Sub};
 use std::str;
 
 use self::choice::{must, optional, or, skip, with, Must, Optional, Or, Skip, With};
@@ -536,6 +536,19 @@ where
     }
 }
 
+impl<S, P, P2> Mul<P2> for Q<P>
+where
+    S: Stream,
+    P: Parser<Stream = S>,
+    P2: Parser<Stream = S>,
+{
+    type Output = Q<With<P, P2>>;
+
+    fn mul(self, rhs: P2) -> Self::Output {
+        Q(with(self.0, rhs))
+    }
+}
+
 impl<S, O, P, P2> BitOr<P2> for Q<P>
 where
     S: Stream,
@@ -656,6 +669,25 @@ mod test {
             "abc-123" => err(Error::item('-').expected("an ascii digit").at(3)),
             " xx" => err(Error::item(' ').expected("an ascii letter").at(0)),
             "xx" => err(Error::eoi().expected("an ascii digit").at(2)),
+        });
+    }
+
+    #[test]
+    fn test_q_mul() {
+        let mut parser = Q(item(b'a')) * item(b'b');
+        test_parser!(IndexedStream<&str> => char | parser, {
+            "abcd" => ok('b', ("cd", 2)),
+            "ab" => ok('b', ("", 2)),
+            "def" => err(Error::item('d').expected(b'a').at(0)),
+            "aab" => err(Error::item('a').expected(b'b').at(1)),
+            "bcd" => err(Error::item('b').expected(b'a').at(0)),
+        });
+
+        let mut parser = Q(many1::<Vec<_>, _>(ascii::digit())) * many1(ascii::letter());
+        test_parser!(IndexedStream<&str> => Vec<char> | parser, {
+            "123abc456" => ok(vec!['a', 'b', 'c'], ("456", 6)),
+            " 1 2 3" => err(Error::item(' ').expected("an ascii digit").at(0)),
+            "123 abc" => err(Error::item(' ').expected("an ascii letter").at(3)),
         });
     }
 
