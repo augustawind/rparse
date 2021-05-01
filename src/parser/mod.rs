@@ -14,7 +14,8 @@ pub mod repeat;
 pub mod seq;
 
 use std::fmt::Display;
-use std::iter::FromIterator;
+use std::iter::{self, FromIterator, IntoIterator};
+use std::ops::{Add, BitAnd, BitOr, Sub};
 use std::str;
 
 use self::choice::{must, optional, or, skip, with, Must, Optional, Or, Skip, With};
@@ -494,10 +495,82 @@ pub fn parser<S: Stream, O>(f: fn(S) -> ParseResult<S, O>) -> fn(S) -> ParseResu
     f
 }
 
+pub struct Q<P>(P);
+
+impl<P: Parser> Parser for Q<P> {
+    type Stream = P::Stream;
+    type Output = P::Output;
+
+    fn parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
+        self.0.parse_lazy(stream)
+    }
+
+    fn expected_error(&self) -> Option<Expected<Self::Stream>> {
+        self.0.expected_error()
+    }
+}
+
+impl<O, P, P2> Add<P2> for Q<P>
+where
+    P: Parser,
+    P::Output: iter::Extend<O> + Default + IntoIterator<Item = O>,
+    P2: Parser<Stream = P::Stream, Output = P::Output>,
+{
+    type Output = Q<Extend<P, P2>>;
+
+    fn add(self, rhs: P2) -> Self::Output {
+        Q(extend(self.0, rhs))
+    }
+}
+
+impl<S, P, P2> Sub<P2> for Q<P>
+where
+    S: Stream,
+    P: Parser<Stream = S>,
+    P2: Parser<Stream = S>,
+{
+    type Output = Q<Skip<P, P2>>;
+
+    fn sub(self, rhs: P2) -> Self::Output {
+        Q(skip(self.0, rhs))
+    }
+}
+
+impl<S, O, P, P2> BitOr<P2> for Q<P>
+where
+    S: Stream,
+    P: Parser<Stream = S, Output = O>,
+    P2: Parser<Stream = S, Output = O>,
+{
+    type Output = Q<Or<P, P2>>;
+
+    fn bitor(self, rhs: P2) -> Self::Output {
+        Q(or(self.0, rhs))
+    }
+}
+
+impl<S, P, P2> BitAnd<P2> for Q<P>
+where
+    S: Stream,
+    P: Parser<Stream = S>,
+    P2: Parser<Stream = S>,
+{
+    type Output = Q<And<P, P2>>;
+
+    fn bitand(self, rhs: P2) -> Self::Output {
+        Q(and(self.0, rhs))
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
-    use error::Error;
+    use error::{Error, Info};
+    use parser::{
+        item::{ascii, item},
+        range::range,
+        repeat::{many, many1, many_n_m},
+    };
     use stream::{IndexedStream, Position};
 
     #[test]
@@ -550,6 +623,81 @@ mod test {
             "\nx".as_bytes() => ok(b'\n', ("x".as_bytes(), 1)),
             "".as_bytes() => err(Error::eoi().at(0)),
             "x\n".as_bytes() => err(Error::item(b'x').at(1)),
+        });
+    }
+
+    #[test]
+    fn test_q_add() {
+        let mut parser = Q(many(ascii::letter())) + many1(item(b'?')) + item(b'!').wrap().opt();
+        test_parser!(IndexedStream<&str> => Vec<char> | parser, {
+            "huh???" => ok("huh???".chars().collect(), ("", 6)),
+            "oh??! cool" => ok("oh??!".chars().collect(), (" cool", 5)),
+            "?!" => ok("?!".chars().collect(), ("", 2)),
+            "!" => err(Error::item('!').expected_item('?').at(0)),
+            "whoops!" => err(Error::item('!').expected_item('?').at(6)),
+            "!?" => err(Error::item('!').expected_item('?').at(0)),
+        });
+    }
+
+    #[test]
+    fn test_q_sub() {
+        let mut parser = Q(item(b'x')) - item(b'.') - many_n_m::<Vec<_>, _>(ascii::digit(), 2, 3);
+        test_parser!(IndexedStream<&str> => char | parser, {
+            "x.12" => ok('x', ("", 4)),
+            "x.6789" => ok('x', ("9", 5)),
+            "x.0" => err(Error::eoi().expected("an ascii digit").at(3)),
+            "x" => err(Error::eoi().expected(b'.').at(1)),
+            "x123" => err(Error::item('1').expected(b'.').at(1)),
+        });
+
+        let mut parser = Q(many1(ascii::letter())) - many1::<Vec<_>, _>(ascii::digit());
+        test_parser!(IndexedStream<&str> => Vec<char> | parser, {
+            "abc123" => ok(vec!['a', 'b', 'c'], ("", 6)),
+            "abc-123" => err(Error::item('-').expected("an ascii digit").at(3)),
+            " xx" => err(Error::item(' ').expected("an ascii letter").at(0)),
+            "xx" => err(Error::eoi().expected("an ascii digit").at(2)),
+        });
+    }
+
+    #[test]
+    fn test_q_bitor() {
+        let mut parser = Q(item(b'a')) | item(b'b');
+        test_parser!(IndexedStream<&str> => char | parser, {
+            "bcd" => ok('b', ("cd", 1)),
+            "a" => ok('a', ("", 1)),
+            "def" => err(Error::item('d').expected_one_of(vec![b'a', b'b']).at(0)),
+        });
+
+        let mut parser = Q(range("feel")) | range("feet") | range("fee");
+        test_parser!(IndexedStream<&str> => &str | parser, {
+            "feel" => ok("feel", ("", 4)),
+            "feet" => ok("feet", ("", 4)),
+            "fees" => ok("fee", ("s", 3)),
+            "fern" => err(Error::item('r').at(2).expected_one_of(vec![
+                Info::Range("feel"),
+                Info::Range("feet"),
+                Info::Range("fee"),
+            ])),
+        });
+    }
+
+    #[test]
+    fn test_q_bitand() {
+        let mut parser = Q(item(b'a')) & item(b'b');
+        test_parser!(IndexedStream<&str> => (char, char) | parser, {
+            "abcd" => ok(('a', 'b'), ("cd", 2)),
+            "ab" => ok(('a', 'b'), ("", 2)),
+            "def" => err(Error::item('d').expected(vec![b'a', b'b']).at(0)),
+            "aab" => err(Error::item('a').expected(vec![b'a', b'b']).at(1)),
+            "bcd" => err(Error::item('b').expected(vec![b'a', b'b']).at(0)),
+        });
+
+        let mut parser = Q(many1(ascii::digit())) & many1(ascii::letter());
+        let into_expected = vec!["an ascii digit", "an ascii letter"];
+        test_parser!(IndexedStream<&str> => (Vec<char>, Vec<char>) | parser, {
+            "123abc456" => ok((vec!['1', '2', '3'], vec!['a', 'b', 'c']), ("456", 6)),
+            " 1 2 3" => err(Error::item(' ').expected(into_expected.clone()).at(0)),
+            "123 abc" => err(Error::item(' ').expected(into_expected.clone()).at(3)),
         });
     }
 }
