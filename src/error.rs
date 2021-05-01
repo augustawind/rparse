@@ -72,19 +72,6 @@ impl<S: Stream> Error<S> {
         self
     }
 
-    /// Sets the error's `expected` field, combining multiple [`Expected`] objects into a single
-    /// [`Expected::OneOf`]. Chainable.
-    pub fn expected_one_of<E, I>(mut self, errors: I) -> Self
-    where
-        E: Into<Expected<S>>,
-        I: IntoIterator<Item = E>,
-    {
-        self.expected = Some(Expected::OneOf(
-            errors.into_iter().map(|e| e.into()).collect(),
-        ));
-        self
-    }
-
     /// Sets the error's `expected` to a specific [item](stream::Item) of input. Chainable.
     pub fn expected_item(mut self, item: S::Item) -> Self {
         self.expected = Some(Expected::Info(Info::Item(item)));
@@ -97,12 +84,20 @@ impl<S: Stream> Error<S> {
         self
     }
 
-    /// Add the given [`Expected`] object to the error, merging with its existing `expected`
+    /// Sets the error's `expected` field, combining multiple [`Expected`] objects into a single
+    /// [`Expected::OneOf`]. Chainable.
+    pub fn expected_one_of<E, I>(mut self, errors: I) -> Self
+    where
+        E: Into<Expected<S>>,
+        I: IntoIterator<Item = E>,
+    {
+        self.expected = Expected::merge_one_of(errors.into_iter().map(|e| Some(e.into())));
+        self
+    }
+
+    /// Add the given [`Expected`] object to the error, merging with its existing `expected`.
     pub fn add_expected<E: Into<Expected<S>>>(&mut self, expected: E) {
-        self.expected = match self.expected.take() {
-            Some(exp) => Expected::merge_one_of(vec![Some(exp), Some(expected.into())]),
-            None => Some(expected.into()),
-        };
+        self.expected = Expected::merge_one_of(vec![self.expected.take(), Some(expected.into())]);
     }
 }
 
@@ -248,29 +243,34 @@ impl<S: Stream> Expected<S> {
     where
         I: IntoIterator<Item = Option<Expected<S>>>,
     {
-        Self::merge_errors(errors).map(Expected::Seq)
+        Self::merge_errors(errors, Expected::Seq)
     }
 
     pub fn merge_one_of<I>(errors: I) -> Option<Self>
     where
         I: IntoIterator<Item = Option<Expected<S>>>,
     {
-        Self::merge_errors(errors).map(|v| Expected::OneOf(v))
+        Self::merge_errors(errors, Expected::OneOf)
     }
 
-    fn merge_errors<I>(errors: I) -> Option<Vec<Expected<S>>>
+    fn merge_errors<I, F>(errors: I, f: F) -> Option<Expected<S>>
     where
         I: IntoIterator<Item = Option<Expected<S>>>,
+        F: FnOnce(Vec<Expected<S>>) -> Expected<S>,
     {
-        let vec = errors.into_iter().fold(Vec::new(), |mut acc, e| {
+        let mut vec = errors.into_iter().fold(Vec::new(), |mut acc, e| {
             match e {
                 Some(Expected::OneOf(xs)) => acc.extend(xs.into_iter()),
                 Some(expected) => acc.push(expected),
-                None => (),
+                _ => (),
             };
             acc
         });
-        (!vec.is_empty()).then(|| vec)
+        match vec.len() {
+            0 => None,
+            1 => vec.pop(),
+            _ => Some(f(vec)),
+        }
     }
 
     pub fn item(item: S::Item) -> Self {
