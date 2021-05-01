@@ -36,7 +36,7 @@ impl<'a, T> Iterator for Tokens<'a, T> {
     }
 }
 
-pub trait StreamItem: Copy + PartialEq + Debug + From<u8> + Into<char> {
+pub trait StreamItem: Copy + PartialEq + Eq + Debug + From<u8> + Into<char> {
     fn is_ascii(&self) -> bool;
     fn is_ascii_alphabetic(&self) -> bool;
     fn is_ascii_alphanumeric(&self) -> bool;
@@ -60,7 +60,7 @@ pub trait RangeStream: Stream + StrLike + PartialEq + Clone + Debug {
 }
 
 /// The Stream trait represents data that can be consumed by a `Parser`.
-pub trait Stream: Sized + Clone + Debug {
+pub trait Stream: Sized + Clone + Debug + PartialEq + Eq {
     /// The underlying Stream type.
     type Stream: Stream<Item = Self::Item, Range = Self::Range>;
 

@@ -7,7 +7,7 @@ use std::fmt;
 use stream::{Position, Stream};
 
 /// The content of a parse error.
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub enum Info<S: Stream> {
     Item(S::Item),
     Range(S::Range),
@@ -15,23 +15,6 @@ pub enum Info<S: Stream> {
     MsgOwned(String),
     EOI,
 }
-
-impl<S: Stream> PartialEq for Info<S> {
-    fn eq(&self, other: &Info<S>) -> bool {
-        match (self, other) {
-            (&Info::Item(ref l), &Info::Item(ref r)) => l == r,
-            (&Info::Range(ref l), &Info::Range(ref r)) => l == r,
-            (&Info::Msg(ref l), &Info::Msg(ref r)) => l == r,
-            (&Info::MsgOwned(ref l), &Info::MsgOwned(ref r)) => l == r,
-            (&Info::Msg(ref l), &Info::MsgOwned(ref r)) => l == r,
-            (&Info::MsgOwned(ref l), &Info::Msg(ref r)) => l == r,
-            (&Info::EOI, &Info::EOI) => true,
-            _ => false,
-        }
-    }
-}
-
-impl<S: Stream> Eq for Info<S> {}
 
 impl<S: Stream> fmt::Display for Info<S> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -87,26 +70,21 @@ impl<S: Stream> Expected<S> {
     where
         I: IntoIterator<Item = Option<Expected<S>>>,
     {
-        let errors: Vec<Expected<S>> = errors.into_iter().fold(Vec::new(), |mut acc, e| {
-            match e {
-                Some(Expected::Seq(xs)) => acc.extend(xs.into_iter()),
-                Some(expected) => acc.push(expected),
-                None => (),
-            };
-            acc
-        });
-        if errors.is_empty() {
-            None
-        } else {
-            Some(Expected::Seq(errors))
-        }
+        Self::merge_errors(errors).map(Expected::Seq)
     }
 
     pub fn merge_one_of<I>(errors: I) -> Option<Self>
     where
         I: IntoIterator<Item = Option<Expected<S>>>,
     {
-        let errors: Vec<Expected<S>> = errors.into_iter().fold(Vec::new(), |mut acc, e| {
+        Self::merge_errors(errors).map(Expected::OneOf)
+    }
+
+    fn merge_errors<I>(errors: I) -> Option<Vec<Expected<S>>>
+    where
+        I: IntoIterator<Item = Option<Expected<S>>>,
+    {
+        let vec = errors.into_iter().fold(Vec::new(), |mut acc, e| {
             match e {
                 Some(Expected::OneOf(xs)) => acc.extend(xs.into_iter()),
                 Some(expected) => acc.push(expected),
@@ -114,11 +92,7 @@ impl<S: Stream> Expected<S> {
             };
             acc
         });
-        if errors.is_empty() {
-            None
-        } else {
-            Some(Expected::OneOf(errors))
-        }
+        (!vec.is_empty()).then(|| vec)
     }
 
     pub fn item(item: S::Item) -> Self {
