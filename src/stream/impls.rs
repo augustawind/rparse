@@ -88,10 +88,10 @@ impl<'a> Stream for &'a str {
     }
 
     fn range(&mut self, to_idx: usize) -> Option<Self::Range> {
-        let range = &self.get(..to_idx);
-        range.map(|range| {
-            *self = &mut &self[to_idx..];
-            range
+        (to_idx <= self.len()).then(|| {
+            let (head, tail) = self.split_at(to_idx);
+            *self = &tail;
+            head
         })
     }
 
@@ -128,7 +128,7 @@ impl<'a> Stream for &'a [u8] {
     type Range = Self;
 
     fn peek(&self) -> Option<Self::Item> {
-        self.first().map(|&t| t)
+        self.first().map(|t| *t)
     }
 
     fn pop(&mut self) -> Option<Self::Item> {
@@ -143,13 +143,11 @@ impl<'a> Stream for &'a [u8] {
     }
 
     fn range(&mut self, to_idx: usize) -> Option<Self::Range> {
-        if to_idx > self.len() {
-            None
-        } else {
+        (to_idx <= self.len()).then(|| {
             let (head, tail) = self.split_at(to_idx);
             *self = &tail;
-            Some(head)
-        }
+            head
+        })
     }
 
     fn as_range(&mut self) -> Self::Range {
