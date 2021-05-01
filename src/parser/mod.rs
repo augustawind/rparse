@@ -19,8 +19,8 @@ use std::str;
 
 use self::choice::{must, optional, or, skip, with, Must, Optional, Or, Skip, With};
 use self::combinator::{
-    and_then, collect, expect, flatten, from_str, map, wrap, AndThen, Collect, Expect, Flatten,
-    FromStr, Map, Wrap,
+    and_then, collect, expect, flatten, from_str, map, no_expect, wrap, AndThen, Collect, Expect,
+    Flatten, FromStr, Map, Wrap,
 };
 use self::item::{negate, Negate};
 use self::seq::{and, append, extend, then, And, Append, Extend, Then};
@@ -135,7 +135,7 @@ pub trait Parser {
     }
 
     /// Wrap `self` with a custom error. If parsing fails, the parser's expected errors will be
-    /// replaced with [`Expected(error)`].
+    /// replaced with [`Expected(error)`](Expected).
     ///
     /// [`Expected(error)`]: Expected
     fn expect<E>(self, expected: E) -> Expect<Self>
@@ -144,6 +144,15 @@ pub trait Parser {
         E: Into<Expected<Self::Stream>>,
     {
         expect(self, expected)
+    }
+
+    /// Remove expected errors from `self`. If parsing fails, the parser will not have expected
+    /// errors.
+    fn no_expect(self) -> Expect<Self>
+    where
+        Self: Sized,
+    {
+        no_expect(self)
     }
 
     /// Reverses the parse behavior of `self`. Fails if `self` succeeds, succeeds if `self` fails.

@@ -11,7 +11,7 @@ use traits::StrLike;
 
 pub struct Expect<P: Parser> {
     parser: P,
-    expected: Expected<P::Stream>,
+    expected: Option<Expected<P::Stream>>,
 }
 
 impl<P: Parser> Parser for Expect<P> {
@@ -23,13 +23,11 @@ impl<P: Parser> Parser for Expect<P> {
     }
 
     fn expected_error(&self) -> Option<Expected<Self::Stream>> {
-        Some(self.expected.clone())
+        self.expected.clone()
     }
 }
 
-/// Equivalent to [`parser.expect(error)`].
-///
-/// [`parser.expect(error)`]: Parser::expect
+/// Equivalent to [`parser.expect(error)`](Parser::expect).
 pub fn expect<P, I>(parser: P, expected: I) -> Expect<P>
 where
     P: Parser,
@@ -37,7 +35,18 @@ where
 {
     Expect {
         parser,
-        expected: expected.into(),
+        expected: Some(expected.into()),
+    }
+}
+
+/// Equivalent to [`parser.no_expect(error)`](Parser::no_expect).
+pub fn no_expect<P>(parser: P) -> Expect<P>
+where
+    P: Parser,
+{
+    Expect {
+        parser,
+        expected: None,
     }
 }
 

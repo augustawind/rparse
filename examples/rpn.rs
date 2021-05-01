@@ -3,18 +3,18 @@
 #[macro_use]
 extern crate rparse;
 
-use std::fmt;
+use std::fmt::{self, Write};
 use std::str::FromStr;
 
 use rparse::parser::{
     choice::optional,
-    item::{ascii, item},
+    item::{ascii, eoi_, item},
     parser,
     repeat::{many, many1},
 };
 use rparse::stream::IndexedStream;
 use rparse::traits::StrLike;
-use rparse::{Parser, Stream};
+use rparse::{Error, Parser, Stream};
 
 macro_rules! fail {
     ($msg:expr $(, $args:expr)* $(,)*) => {{
@@ -23,21 +23,43 @@ macro_rules! fail {
     }}
 }
 
-fn solve_rpn(tokens: Vec<Token>) -> Result<f64, Error> {
-    let mut stack = tokens
-        .iter()
-        .try_fold(Vec::new(), |mut stack, t| -> Result<_, Error> {
-            let n = match *t {
-                Token::Op(ref op) => op.eval(&mut stack)?,
-                Token::Number(n) => n,
-            };
-            stack.push(n);
-            Ok(stack)
-        })?;
-    if stack.len() > 1 {
-        return Err(Error::UnusedItems(stack));
-    }
-    stack.pop().ok_or(Error::TooFewItems)
+fn rpn<S>() -> impl Parser<Stream = S, Output = f64>
+where
+    S: Stream,
+{
+    tokens()
+        .skip(many::<Vec<_>, _>(ascii::whitespace()))
+        .skip(eoi_().no_expect())
+        .and_then(|tokens, stream: S| {
+            match tokens
+                .iter()
+                .try_fold(Vec::new(), |mut stack, t| -> Result<_, Error<S>> {
+                    let n = match *t {
+                        Token::Op(ref op) => op.eval(&mut stack)?,
+                        Token::Number(n) => n,
+                    };
+                    stack.push(n);
+                    Ok(stack)
+                }) {
+                Ok(mut stack) => {
+                    if stack.len() > 1 {
+                        return stream.err(Error::from(format!(
+                            "items still on stack: {}",
+                            stack
+                                .into_iter()
+                                .map(|t| t.to_string())
+                                .intersperse(" ".to_string())
+                                .collect::<String>()
+                        )));
+                    }
+                    match stack.pop() {
+                        None => stream.err(Error::eoi().expected("a number")),
+                        Some(n) => stream.ok(n),
+                    }
+                }
+                Err(err) => stream.err(err),
+            }
+        })
 }
 
 fn main() {
@@ -49,48 +71,11 @@ fn main() {
         fail!("input needed");
     }
 
-    match tokens().must_parse(IndexedStream::from(input.as_bytes())) {
-        Ok((tokens, mut stream)) => match stream.as_range() {
-            b"" => match solve_rpn(tokens) {
-                Ok(result) => println!("{} = {}", input, result),
-                Err(err) => fail!("{}", err),
-            },
-            _ => fail!(
-                "{}",
-                rparse::Error::<IndexedStream<&[u8]>>::from("token")
-                    .at(*stream.position())
-                    .expected_one_of(vec!["an operator", "a number"])
-            ),
-        },
+    match rpn().must_parse(IndexedStream::from(input.as_bytes())) {
+        Ok((result, _)) => println!("{} = {}", input, result),
         Err((err, _)) => fail!("parsing failed: {}", err),
     };
 }
-
-#[derive(Debug, PartialEq)]
-enum Error {
-    Arity(Op),
-    TooFewItems,
-    UnusedItems(Vec<f64>),
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Error::Arity(op) => write!(f, "not enough arguments for operator '{}'", op),
-            Error::TooFewItems => write!(f, "not enough items on stack"),
-            Error::UnusedItems(xs) => write!(
-                f,
-                "unused items on stack: {}",
-                xs.into_iter()
-                    .map(|t| t.to_string())
-                    .intersperse(" ".to_string())
-                    .collect::<String>()
-            ),
-        }
-    }
-}
-
-impl ::std::error::Error for Error {}
 
 enum Token {
     Op(Op),
@@ -121,24 +106,23 @@ impl FromStr for Op {
 
 impl fmt::Display for Op {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Op::Add => '+',
-                Op::Sub => '-',
-                Op::Mul => '*',
-                Op::Div => '/',
-            }
-        )
+        match self {
+            Op::Add => f.write_char('+'),
+            Op::Sub => f.write_char('-'),
+            Op::Mul => f.write_char('*'),
+            Op::Div => f.write_char('/'),
+        }
     }
 }
 
 impl Op {
-    fn eval(&self, stack: &mut Vec<f64>) -> Result<f64, Error> {
+    fn eval<S: Stream>(&self, stack: &mut Vec<f64>) -> Result<f64, Error<S>> {
+        fn error<S: Stream>(op: &Op) -> Error<S> {
+            Error::from(format!("operator '{}'", op)).expected("a number")
+        }
         let (x, y) = (
-            stack.pop().ok_or_else(|| Error::Arity(*self))?,
-            stack.pop().ok_or_else(|| Error::Arity(*self))?,
+            stack.pop().ok_or_else(|| error(self))?,
+            stack.pop().ok_or_else(|| error(self))?,
         );
         Ok(match self {
             Op::Add => x + y,
@@ -153,7 +137,7 @@ fn tokens<S>() -> impl Parser<Stream = S, Output = Vec<Token>>
 where
     S: Stream,
 {
-    concat![token().wrap(), many(sep().with(token())),]
+    concat![token().wrap(), many(sep().with(token()))]
 }
 
 fn token<S>() -> impl Parser<Stream = S, Output = Token>

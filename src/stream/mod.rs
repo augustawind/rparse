@@ -50,6 +50,8 @@ pub trait StreamItem: Copy + PartialEq + Eq + Debug + From<u8> + Into<char> {
     fn is_ascii_lowercase(&self) -> bool;
 
     fn eq_ignore_ascii_case(&self, other: &Self) -> bool;
+
+    fn as_char(&self) -> char;
 }
 
 pub trait RangeStream: Stream + StrLike + PartialEq + Clone + Debug {

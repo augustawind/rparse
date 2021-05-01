@@ -39,6 +39,9 @@ macro_rules! impl_StreamItem {
             fn eq_ignore_ascii_case(&self, other: &$T) -> bool {
                 <$T>::eq_ignore_ascii_case(self, other)
             }
+            fn as_char(&self) -> char {
+                char::from(*self)
+            }
         }
     };
 }

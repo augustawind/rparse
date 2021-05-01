@@ -4,7 +4,7 @@ use std::collections::HashSet;
 use std::error::Error as StdError;
 use std::fmt;
 
-use stream::{Position, Stream};
+use stream::{Position, Stream, StreamItem};
 
 pub type ParseResult<S, O> = Result<(Option<O>, S), (Error<S>, S)>;
 
@@ -38,7 +38,7 @@ impl<S: Stream> Eq for Info<S> {}
 impl<S: Stream> fmt::Display for Info<S> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Info::Item(item) => write!(f, "item {:?}", item),
+            Info::Item(item) => write!(f, "item '{}'", item.as_char()),
             Info::Range(range) => write!(f, "range {:?}", range),
             Info::Msg(msg) => write!(f, "{}", msg),
             Info::MsgOwned(msg) => write!(f, "{}", msg),
