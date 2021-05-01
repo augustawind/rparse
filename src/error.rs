@@ -255,15 +255,7 @@ impl<S: Stream> Expected<S> {
     where
         I: IntoIterator<Item = Option<Expected<S>>>,
     {
-        Self::merge_errors(errors).map(|v| {
-            let mut vec: Vec<Expected<S>> = Vec::new();
-            for exp in v.iter() {
-                if !vec.contains(exp) {
-                    vec.push(exp.clone());
-                }
-            }
-            Expected::OneOf(vec)
-        })
+        Self::merge_errors(errors).map(|v| Expected::OneOf(v))
     }
 
     fn merge_errors<I>(errors: I) -> Option<Vec<Expected<S>>>
