@@ -500,25 +500,24 @@ mod test {
     use error::Error;
     use stream::{IndexedStream, Position};
 
-    fn vowel<S>() -> impl Parser<Stream = S, Output = char>
-    where
-        S: Stream<Item = char>,
-        S::Position: Position<S::Stream>,
-    {
-        parser(|mut stream: S| {
-            let start = stream.position().clone();
-            match stream.pop() {
-                Some(t) => match t {
-                    'a' | 'e' | 'i' | 'o' | 'u' => stream.ok(t),
-                    _ => stream.err_at(start, Error::item(t)),
-                },
-                None => stream.err_at(start, Error::eoi()),
-            }
-        })
-    }
-
     #[test]
     fn test_parser_from_closure() {
+        fn vowel<S>() -> impl Parser<Stream = S, Output = char>
+        where
+            S: Stream<Item = char>,
+            S::Position: Position<S::Stream>,
+        {
+            parser(|mut stream: S| {
+                let start = stream.position().clone();
+                match stream.pop() {
+                    Some(t) => match t {
+                        'a' | 'e' | 'i' | 'o' | 'u' => stream.ok(t),
+                        _ => stream.err_at(start, Error::item(t)),
+                    },
+                    None => stream.err_at(start, Error::eoi()),
+                }
+            })
+        }
         test_parser!(IndexedStream<&str> => char | vowel(), {
             "a" => ok('a', ("", 1)),
             "ooh" => ok('o', ("oh", 1)),
@@ -528,25 +527,24 @@ mod test {
         });
     }
 
-    fn newline<S>(mut stream: S) -> ParseResult<S, S::Item>
-    where
-        S: Stream,
-        S::Position: Position<S::Stream>,
-    {
-        match stream.pop().ok_or_else(|| Error::eoi()).and_then(|t| {
-            if t == b'\n'.into() {
-                Ok(t)
-            } else {
-                Err(Error::item(t))
-            }
-        }) {
-            Ok(ok) => stream.ok(ok),
-            Err(err) => stream.err(err),
-        }
-    }
-
     #[test]
     fn test_parser_from_fn() {
+        fn newline<S>(mut stream: S) -> ParseResult<S, S::Item>
+        where
+            S: Stream,
+            S::Position: Position<S::Stream>,
+        {
+            match stream.pop().ok_or_else(|| Error::eoi()).and_then(|t| {
+                if t == b'\n'.into() {
+                    Ok(t)
+                } else {
+                    Err(Error::item(t))
+                }
+            }) {
+                Ok(ok) => stream.ok(ok),
+                Err(err) => stream.err(err),
+            }
+        }
         test_parser!(IndexedStream<&[u8]> => u8 | parser(newline), {
             "\n".as_bytes() => ok(b'\n', ("".as_bytes(), 1)),
             "\nx".as_bytes() => ok(b'\n', ("x".as_bytes(), 1)),
