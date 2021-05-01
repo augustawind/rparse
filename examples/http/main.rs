@@ -15,7 +15,10 @@ mod headers;
 mod json;
 mod request_line;
 
-use rparse::parser::repeat::many;
+use rparse::parser::{
+    item::{ascii, eoi_},
+    repeat::many,
+};
 use rparse::stream::SourceCode;
 use rparse::{Parser, Stream};
 
@@ -24,8 +27,7 @@ use headers::{headers, Headers};
 use json::json_value;
 use request_line::{request_line, RequestLine};
 
-lazy_static! {
-    static ref INPUT: &'static str = "
+static INPUT: &'static str = "\
 GET https://foo.bar/I%20like%20/50 HTTP/1.1\r
 Accept: *\r
 Content-Type: application/json\r
@@ -34,9 +36,7 @@ Content-Type: application/json\r
     \"foo\": true,
     \"bar\": 3
 }\r
-"
-    .trim_start();
-}
+";
 
 fn request<S: Stream>() -> impl Parser<Stream = S, Output = (RequestLine, Headers, Option<Value>)> {
     (
@@ -47,10 +47,12 @@ fn request<S: Stream>() -> impl Parser<Stream = S, Output = (RequestLine, Header
             many::<(), _>(crlf()).map(|_| None),
         ],
     )
+        .skip(many::<Vec<_>, _>(ascii::whitespace()))
+        .skip(eoi_())
 }
 
 fn main() {
-    let stream = SourceCode::from(INPUT.as_ref());
+    let stream = SourceCode::from(INPUT);
     match request().must_parse(stream) {
         Ok((result, _)) => {
             println!("Parsing succeeded!");
