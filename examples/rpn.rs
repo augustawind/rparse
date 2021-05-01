@@ -6,10 +6,13 @@ extern crate rparse;
 use std::fmt;
 use std::str::FromStr;
 
-use rparse::parser::choice::optional;
-use rparse::parser::item::{ascii, item};
-use rparse::parser::parser;
-use rparse::parser::repeat::{many, many1};
+use rparse::parser::{
+    choice::optional,
+    item::{ascii, item},
+    parser,
+    repeat::{many, many1},
+};
+use rparse::stream::IndexedStream;
 use rparse::traits::StrLike;
 use rparse::{Parser, Stream};
 
@@ -45,15 +48,20 @@ fn main() {
     if input.is_empty() {
         fail!("input needed");
     }
-    match tokens().must_parse(input.as_str()) {
-        Ok((tokens, "")) => match solve_rpn(tokens) {
-            Ok(result) => println!("{} = {}", input, result),
-            Err(err) => fail!("{}", err),
+
+    match tokens().must_parse(IndexedStream::from(input.as_bytes())) {
+        Ok((tokens, mut stream)) => match stream.as_range() {
+            b"" => match solve_rpn(tokens) {
+                Ok(result) => println!("{} = {}", input, result),
+                Err(err) => fail!("{}", err),
+            },
+            _ => fail!(
+                "{}",
+                rparse::Error::<IndexedStream<&[u8]>>::from("token")
+                    .at(*stream.position())
+                    .expected_one_of(vec!["an operator", "a number"])
+            ),
         },
-        Ok((_, rest)) => fail!(
-            "invalid token '{}'",
-            rest.split_ascii_whitespace().next().unwrap()
-        ),
         Err((err, _)) => fail!("parsing failed: {}", err),
     };
 }
