@@ -96,9 +96,7 @@ impl<'a> Stream for &'a str {
     }
 
     fn as_range(&mut self) -> Self::Range {
-        let range = &self[..];
-        *self = "";
-        range
+        std::mem::take(self)
     }
 
     fn position(&self) -> &Self::Position {
@@ -151,9 +149,7 @@ impl<'a> Stream for &'a [u8] {
     }
 
     fn as_range(&mut self) -> Self::Range {
-        let range = &self[..];
-        *self = &[][..];
-        range
+        std::mem::take(self)
     }
 
     fn position(&self) -> &Self::Position {
