@@ -48,18 +48,15 @@ pub trait Parser {
     /// their default definitions each reference each other.
     fn parse_partial(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         let mut result = self.parse_lazy(stream);
-        if let Err((ref mut errors, _)) = result {
-            self.add_expected_error(errors);
+        if let Err((ref mut error, _)) = result {
+            self.add_expected_error(error);
         }
         result
     }
 
     /// Parses `stream` and reverts `stream` if parsing fails, so that parsing may continue
     /// from its pre-failure state.
-    fn try_parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output>
-    where
-        Self: Sized,
-    {
+    fn try_parse_lazy(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         let backup = stream.backup();
         let mut result = self.parse_lazy(stream);
         if let Err((_, ref mut stream)) = result {
@@ -72,10 +69,7 @@ pub trait Parser {
     ///
     /// This is typically used to initiate parsing from the top-level parser. It is provided as the
     /// main entrypoint into parsing.
-    fn parse(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output>
-    where
-        Self: Sized,
-    {
+    fn parse(&mut self, stream: Self::Stream) -> ParseResult<Self::Stream, Self::Output> {
         let backup = stream.backup();
         let mut result = self.parse_partial(stream);
         if let Err((_, ref mut stream)) = result {
@@ -89,10 +83,7 @@ pub trait Parser {
     fn must_parse(
         &mut self,
         stream: Self::Stream,
-    ) -> Result<(Self::Output, Self::Stream), (Error<Self::Stream>, Self::Stream)>
-    where
-        Self: Sized,
-    {
+    ) -> Result<(Self::Output, Self::Stream), (Error<Self::Stream>, Self::Stream)> {
         let backup = stream.backup();
         match self.parse_partial(stream) {
             Ok((Some(output), stream)) => Ok((output, stream)),

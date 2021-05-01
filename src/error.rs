@@ -205,7 +205,7 @@ pub struct Error<S: Stream> {
 
 /// A parse error.
 impl<S: Stream> Error<S> {
-    pub fn new(cause: Info<S>) -> Self {
+    pub fn info(cause: Info<S>) -> Self {
         Error {
             cause,
             expected: None,
@@ -301,13 +301,13 @@ impl<S: Stream> StdError for Error<S> {}
 
 impl<S: Stream> From<Info<S>> for Error<S> {
     fn from(info: Info<S>) -> Self {
-        Error::new(info)
+        Error::info(info)
     }
 }
 
 impl<S: Stream> From<u8> for Error<S> {
     fn from(b: u8) -> Self {
-        Error::new(Info::Item(b.into()))
+        Error::info(Info::Item(b.into()))
     }
 }
 
@@ -316,19 +316,19 @@ where
     S: Stream<Item = char>,
 {
     fn from(ch: char) -> Self {
-        Error::new(Info::Item(ch))
+        Error::info(Info::Item(ch))
     }
 }
 
 impl<S: Stream> From<&'static str> for Error<S> {
     fn from(s: &'static str) -> Self {
-        Error::new(Info::Msg(s))
+        Error::info(Info::Msg(s))
     }
 }
 
 impl<S: Stream> From<String> for Error<S> {
     fn from(s: String) -> Self {
-        Error::new(Info::MsgOwned(s))
+        Error::info(Info::MsgOwned(s))
     }
 }
 

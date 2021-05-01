@@ -139,6 +139,10 @@ pub trait Stream: Sized + Clone + Debug {
     }
 
     fn new_error(&self) -> Error<Self> {
-        Error::eoi().at(self.position().clone())
+        let error = match self.peek() {
+            Some(item) => Error::item(item),
+            None => Error::eoi(),
+        };
+        error.at(self.position().clone())
     }
 }

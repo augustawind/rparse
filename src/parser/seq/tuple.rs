@@ -43,13 +43,13 @@ where
                     (Some(r2), stream) => stream.ok((r0, r1, r2)),
                     (None, stream) => {
                         let mut error = stream.new_error();
-                        self.0.add_expected_error(&mut error);
+                        self.2.add_expected_error(&mut error);
                         stream.err(error)
                     }
                 },
                 (None, stream) => {
                     let mut error = stream.new_error();
-                    self.0.add_expected_error(&mut error);
+                    self.1.add_expected_error(&mut error);
                     stream.err(error)
                 }
             },

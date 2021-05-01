@@ -115,9 +115,9 @@ where
         match self.p.parse_lazy(stream) {
             Ok((Some(result), stream)) => stream.ok(result),
             Ok((None, stream)) => {
-                let mut err = stream.new_error();
-                self.add_expected_error(&mut err);
-                stream.err(err)
+                let mut error = stream.new_error();
+                self.add_expected_error(&mut error);
+                stream.err(error)
             }
             Err((err, stream)) => stream.err(err),
         }
