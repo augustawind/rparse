@@ -27,10 +27,7 @@ impl<S: Stream, X: Position<S>> From<S> for State<S, X> {
 
 impl<S: Stream, X: Position<S>, T: Into<X>> From<(S, T)> for State<S, X> {
     fn from((stream, pos): (S, T)) -> Self {
-        State {
-            stream,
-            position: pos.into(),
-        }
+        State::new(stream, pos)
     }
 }
 
@@ -59,8 +56,8 @@ where
         self.stream.tokens()
     }
 
-    fn range(&mut self, idx: usize) -> Option<Self::Range> {
-        self.stream.range(idx).map(|range| {
+    fn range(&mut self, to_idx: usize) -> Option<Self::Range> {
+        self.stream.range(to_idx).map(|range| {
             self.position.update_range(&range);
             range
         })

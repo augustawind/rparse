@@ -56,8 +56,8 @@ impl<'a> RangeStream for &'a str {
     fn from_str(s: &'static str) -> Self {
         s
     }
-    fn to_string(self) -> String {
-        String::from(self)
+    fn into_string(self) -> Result<String, Self> {
+        Ok(String::from(self))
     }
 }
 
@@ -87,10 +87,10 @@ impl<'a> Stream for &'a str {
         Tokens::new(self.chars())
     }
 
-    fn range(&mut self, idx: usize) -> Option<Self::Range> {
-        let range = &self.get(..idx);
+    fn range(&mut self, to_idx: usize) -> Option<Self::Range> {
+        let range = &self.get(..to_idx);
         range.map(|range| {
-            *self = &mut &self[idx..];
+            *self = &mut &self[to_idx..];
             range
         })
     }
@@ -116,8 +116,8 @@ impl<'a> RangeStream for &'a [u8] {
     fn from_str(s: &'static str) -> Self {
         s.as_ref()
     }
-    fn to_string(self) -> String {
-        self.into_iter().map(|&b| <char>::from(b)).collect()
+    fn into_string(self) -> Result<String, Self> {
+        String::from_utf8(self.to_vec()).map_err(|_| self)
     }
 }
 
@@ -142,11 +142,11 @@ impl<'a> Stream for &'a [u8] {
         Tokens::new(self.iter().cloned())
     }
 
-    fn range(&mut self, idx: usize) -> Option<Self::Range> {
-        if idx > self.len() {
+    fn range(&mut self, to_idx: usize) -> Option<Self::Range> {
+        if to_idx > self.len() {
             None
         } else {
-            let (head, tail) = self.split_at(idx);
+            let (head, tail) = self.split_at(to_idx);
             *self = &tail;
             Some(head)
         }

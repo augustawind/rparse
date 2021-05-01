@@ -247,20 +247,31 @@ pub trait Parser {
 
     /// Parses with `self` and converts the result into a [`String`].
     ///
-    /// Can only be used if `Self::Output` is a [`RangeStream`], and will panic if `Self::Output`
-    /// is not valid UTF-8.
-    fn as_string(self) -> Map<Self, fn(Self::Output) -> String>
+    /// Can only be used if `Self::Output` is a [`RangeStream`], and will return an error if
+    /// `Self::Output` is not valid UTF-8.
+    fn as_string<S, O>(
+        self,
+    ) -> AndThen<Self, fn(Self::Output, Self::Stream) -> ParseResult<Self::Stream, String>>
     where
         Self: Sized,
-        Self::Output: RangeStream,
+        Self: Parser<Stream = S, Output = O>,
+        S: Stream<Range = O>,
+        O: RangeStream,
     {
-        map(self, RangeStream::to_string)
+        and_then(self, |range, stream| match range.into_string() {
+            Ok(s) => stream.ok(s),
+            Err(range) => stream.err(Error::range(range)),
+        })
     }
 
-    fn s(self) -> Map<Self, fn(Self::Output) -> String>
+    fn s<S, O>(
+        self,
+    ) -> AndThen<Self, fn(Self::Output, Self::Stream) -> ParseResult<Self::Stream, String>>
     where
         Self: Sized,
-        Self::Output: RangeStream,
+        Self: Parser<Stream = S, Output = O>,
+        S: Stream<Range = O>,
+        O: RangeStream,
     {
         self.as_string()
     }

@@ -56,7 +56,7 @@ pub trait RangeStream: Stream + StrLike + PartialEq + Clone + Debug {
     fn empty() -> Self;
     fn len(&self) -> usize;
     fn from_str(s: &'static str) -> Self;
-    fn to_string(self) -> String;
+    fn into_string(self) -> Result<String, Self>;
 }
 
 /// The Stream trait represents data that can be consumed by a `Parser`.
@@ -85,8 +85,9 @@ pub trait Stream: Sized + Clone + Debug {
     fn tokens(&self) -> Tokens<Self::Item>;
 
     /// Consumes and returns a continuous range of the stream.
-    fn range(&mut self, idx: usize) -> Option<Self::Range>;
+    fn range(&mut self, to_idx: usize) -> Option<Self::Range>;
 
+    /// Consumes and returns the entire stream as a range.
     fn as_range(&mut self) -> Self::Range;
 
     /// Return the current position in the stream.
