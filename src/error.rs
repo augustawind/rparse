@@ -291,7 +291,7 @@ impl<S: Stream> fmt::Display for Error<S> {
             self.cause
         )?;
         if let Some(expected) = &self.expected {
-            write!(f, "; expected {}", expected)?;
+            write!(f, ": expected {}", expected)?;
         }
         Ok(())
     }

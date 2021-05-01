@@ -4,6 +4,7 @@
 extern crate rparse;
 
 use std::fmt::{self, Write};
+use std::process::exit;
 use std::str::FromStr;
 
 use rparse::parser::{
@@ -16,25 +17,22 @@ use rparse::stream::IndexedStream;
 use rparse::traits::StrLike;
 use rparse::{Error, Parser, Stream};
 
-macro_rules! fail {
-    ($msg:expr $(, $args:expr)* $(,)*) => {{
-        println!(::std::concat!("error: ", $msg) $(, $args)*);
-        ::std::process::exit(1);
-    }}
-}
-
 fn main() {
     let input: String = std::env::args()
         .skip(1)
         .intersperse(" ".to_string())
         .collect();
     if input.is_empty() {
-        fail!("input needed");
+        println!("error: input needed");
+        exit(1);
     }
 
     match rpn().must_parse(IndexedStream::from(input.as_bytes())) {
-        Ok((result, _)) => println!("{} = {}", input, result),
-        Err((err, _)) => fail!("parsing failed: {}", err),
+        Ok((result, _)) => println!("{}", result),
+        Err((err, _)) => {
+            println!("{}", err);
+            exit(1);
+        }
     };
 }
 
