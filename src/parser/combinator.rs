@@ -353,7 +353,7 @@ mod test {
             // TODO: add ability to control consumption, e.g. make this error show at beginning (0)
             // TODO: e.g.: many1(alpha_num()).and_then(...).try()
             "324dogs" => err(
-                Error::from("invalid digit found in string")
+                Error::from("invalid digit found in string".to_string())
                     .expected("an ascii letter or digit")
                     .at(7)
             ),
@@ -410,7 +410,7 @@ mod test {
             "12e" => ok(12 as f32, "e"),
             "-12e" => ok(-12 as f32, "e"),
             "-12.5e" => ok(-12.5 as f32, "e"),
-            "12.5.9" =>  err(Error::from("invalid float literal")),
+            "12.5.9" =>  err(Error::from("invalid float literal".to_string())),
         });
 
         let mut parser = many1::<String, _>(ascii::digit()).from_str::<f32>();
