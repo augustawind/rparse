@@ -2,10 +2,10 @@ use regex::Regex;
 
 use rparse::error::Expected;
 use rparse::parser::{
-    item::{any, eoi, item, none_of, one_of, satisfy},
+    item::{any, eoi, item, none_of, satisfy},
     parser,
     range::range,
-    repeat::{many, many1, take_until},
+    repeat::{many, take_until},
     seq::between,
 };
 use rparse::stream::StreamItem;
@@ -90,13 +90,6 @@ pub fn text<S: Stream>() -> impl Parser<Stream = S, Output = String> {
     })
 }
 
-/// Parses one or more linear whitespace characters.
-///
-/// Linear whitespace is any whitespace character that doesn't start a new line.
-pub fn lws<S: Stream>() -> impl Parser<Stream = S, Output = ()> {
-    many1(one_of(LWS).map(|_| ()))
-}
-
 /// Parses a carriage return/line feed sequence (\r\n).
 pub fn crlf<S: Stream>() -> impl Parser<Stream = S, Output = ()> {
     range("\r\n").map(|_| ())
@@ -161,21 +154,6 @@ mod test {
         let mut parser = text();
         test_parser!(&str => String | parser, {
             "foo\r\n bar\r\n\tbaz\r\nbiff" => ok("foo bar baz".to_string(), "\r\nbiff"),
-        });
-    }
-
-    #[test]
-    fn test_lws() {
-        let mut parser = lws();
-        test_parser!(IndexedStream<&str> => () | parser, {
-            " " => ok((), ("", 1)),
-            "\t" => ok((), ("", 1)),
-            "  \t\t " => ok((), ("", 5)),
-            "\t \tfoo" => ok((), ("foo", 3)),
-            " foo" => ok((), ("foo", 1)),
-            " \t foo" => ok((), ("foo", 3)),
-            "" => err(Error::eoi().expected_one_of(vec![b' ', b'\t']).at(0)),
-            "\r\n" => err(Error::item('\r').expected_one_of(vec![b' ', b'\t']).at(0)),
         });
     }
 

@@ -156,7 +156,7 @@ where
     satisfy(|item: &S::Item| {
         item.is_ascii_alphanumeric()
             || [b'-', b'_', b'.', b'!', b'~', b'*', b'\'', b'(', b')']
-                .into_iter()
+                .iter()
                 .any(|&b| &S::Item::from(b) == item)
     })
 }
@@ -180,7 +180,7 @@ mod test {
         let into_expected: Vec<_> = [
             "GET", "PUT", "POST", "HEAD", "PATCH", "TRACE", "DELETE", "OPTIONS", "CONNECT",
         ]
-        .into_iter()
+        .iter()
         .map(|s| Info::Range(s.as_bytes()))
         .collect();
 

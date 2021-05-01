@@ -49,13 +49,13 @@ pub trait StreamItem: Copy + PartialEq + Debug + From<u8> + Into<char> {
 
     fn is_ascii_uppercase(&self) -> bool;
     fn is_ascii_lowercase(&self) -> bool;
-    fn eq_ignore_ascii_case(&self, &Self) -> bool;
+    fn eq_ignore_ascii_case(&self, other: &Self) -> bool;
 }
 
 pub trait RangeStream: Stream + StrLike + PartialEq + Clone + Debug {
     fn empty() -> Self;
     fn len(&self) -> usize;
-    fn from_str(&'static str) -> Self;
+    fn from_str(s: &'static str) -> Self;
     fn to_string(self) -> String;
 }
 

@@ -103,6 +103,8 @@ fn sp<S: Stream>() -> impl Parser<Stream = S, Output = ()> {
 
 #[cfg(test)]
 mod test {
+    use serde_json::json;
+
     use super::*;
     use rparse::stream::IndexedStream;
     use rparse::Error;
