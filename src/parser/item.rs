@@ -87,6 +87,10 @@ pub fn eoi<O, S: Stream>() -> EOI<O, S> {
     EOI(PhantomData)
 }
 
+pub fn eoi_<S: Stream>() -> EOI<(), S> {
+    EOI(PhantomData)
+}
+
 pub struct Satisfy<S: Stream, F>
 where
     F: Fn(&S::Item) -> bool,
