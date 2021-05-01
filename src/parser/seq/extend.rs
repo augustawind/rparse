@@ -59,10 +59,11 @@ macro_rules! concat {
 mod test {
     use super::*;
     use error::Error;
-    use parser::item::ascii;
-    use parser::item::item;
-    use parser::repeat::{many, many1};
-    use parser::Parser;
+    use parser::{
+        item::{ascii, item},
+        repeat::{many, many1},
+        Parser,
+    };
     use stream::IndexedStream;
 
     #[test]
