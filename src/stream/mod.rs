@@ -60,7 +60,7 @@ pub trait RangeStream: Stream + StrLike + PartialEq + Clone + Debug {
 }
 
 /// The Stream trait represents data that can be consumed by a `Parser`.
-pub trait Stream: Sized + Clone + Debug + PartialEq + Eq {
+pub trait Stream: Sized + Clone + Debug {
     /// The underlying Stream type.
     type Stream: Stream<Item = Self::Item, Range = Self::Range>;
 

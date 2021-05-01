@@ -7,7 +7,7 @@ use std::fmt;
 use stream::{Position, Stream};
 
 /// The content of a parse error.
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Hash)]
 pub enum Info<S: Stream> {
     Item(S::Item),
     Range(S::Range),
@@ -15,6 +15,23 @@ pub enum Info<S: Stream> {
     MsgOwned(String),
     EOI,
 }
+
+impl<S: Stream> PartialEq for Info<S> {
+    fn eq(&self, other: &Info<S>) -> bool {
+        match (self, other) {
+            (&Info::Item(ref l), &Info::Item(ref r)) => l == r,
+            (&Info::Range(ref l), &Info::Range(ref r)) => l == r,
+            (&Info::Msg(ref l), &Info::Msg(ref r)) => l == r,
+            (&Info::MsgOwned(ref l), &Info::MsgOwned(ref r)) => l == r,
+            (&Info::Msg(ref l), &Info::MsgOwned(ref r)) => l == r,
+            (&Info::MsgOwned(ref l), &Info::Msg(ref r)) => l == r,
+            (&Info::EOI, &Info::EOI) => true,
+            _ => false,
+        }
+    }
+}
+
+impl<S: Stream> Eq for Info<S> {}
 
 impl<S: Stream> fmt::Display for Info<S> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
