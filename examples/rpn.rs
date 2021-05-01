@@ -23,6 +23,77 @@ macro_rules! fail {
     }}
 }
 
+fn main() {
+    let input: String = std::env::args()
+        .skip(1)
+        .intersperse(" ".to_string())
+        .collect();
+    if input.is_empty() {
+        fail!("input needed");
+    }
+
+    match rpn().must_parse(IndexedStream::from(input.as_bytes())) {
+        Ok((result, _)) => println!("{} = {}", input, result),
+        Err((err, _)) => fail!("parsing failed: {}", err),
+    };
+}
+
+enum Token {
+    Op(Op),
+    Number(f64),
+}
+
+#[derive(Clone, Copy)]
+enum Op {
+    Add,
+    Sub,
+    Mul,
+    Div,
+}
+
+impl Op {
+    fn eval<S: Stream>(&self, stack: &mut Vec<f64>) -> Result<f64, Error<S>> {
+        fn error<S: Stream>(op: &Op) -> Error<S> {
+            Error::from(format!("operator '{}'", op)).expected("a number")
+        }
+        let (x, y) = (
+            stack.pop().ok_or_else(|| error(self))?,
+            stack.pop().ok_or_else(|| error(self))?,
+        );
+        Ok(match self {
+            Op::Add => x + y,
+            Op::Sub => x - y,
+            Op::Mul => x * y,
+            Op::Div => x / y,
+        })
+    }
+}
+
+impl FromStr for Op {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "+" => Ok(Op::Add),
+            "-" => Ok(Op::Sub),
+            "*" => Ok(Op::Mul),
+            "/" => Ok(Op::Div),
+            _ => Err(format!("invalid operator '{}'", s)),
+        }
+    }
+}
+
+impl fmt::Display for Op {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Op::Add => f.write_char('+'),
+            Op::Sub => f.write_char('-'),
+            Op::Mul => f.write_char('*'),
+            Op::Div => f.write_char('/'),
+        }
+    }
+}
+
 fn rpn<S>() -> impl Parser<Stream = S, Output = f64>
 where
     S: Stream,
@@ -60,77 +131,6 @@ where
                 Err(err) => stream.err(err),
             }
         })
-}
-
-fn main() {
-    let input: String = std::env::args()
-        .skip(1)
-        .intersperse(" ".to_string())
-        .collect();
-    if input.is_empty() {
-        fail!("input needed");
-    }
-
-    match rpn().must_parse(IndexedStream::from(input.as_bytes())) {
-        Ok((result, _)) => println!("{} = {}", input, result),
-        Err((err, _)) => fail!("parsing failed: {}", err),
-    };
-}
-
-enum Token {
-    Op(Op),
-    Number(f64),
-}
-
-#[derive(Debug, PartialEq, Clone, Copy)]
-enum Op {
-    Add,
-    Sub,
-    Mul,
-    Div,
-}
-
-impl FromStr for Op {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "+" => Ok(Op::Add),
-            "-" => Ok(Op::Sub),
-            "*" => Ok(Op::Mul),
-            "/" => Ok(Op::Div),
-            _ => Err(format!("invalid operator '{}'", s)),
-        }
-    }
-}
-
-impl fmt::Display for Op {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Op::Add => f.write_char('+'),
-            Op::Sub => f.write_char('-'),
-            Op::Mul => f.write_char('*'),
-            Op::Div => f.write_char('/'),
-        }
-    }
-}
-
-impl Op {
-    fn eval<S: Stream>(&self, stack: &mut Vec<f64>) -> Result<f64, Error<S>> {
-        fn error<S: Stream>(op: &Op) -> Error<S> {
-            Error::from(format!("operator '{}'", op)).expected("a number")
-        }
-        let (x, y) = (
-            stack.pop().ok_or_else(|| error(self))?,
-            stack.pop().ok_or_else(|| error(self))?,
-        );
-        Ok(match self {
-            Op::Add => x + y,
-            Op::Sub => x - y,
-            Op::Mul => x * y,
-            Op::Div => x / y,
-        })
-    }
 }
 
 fn tokens<S>() -> impl Parser<Stream = S, Output = Vec<Token>>
