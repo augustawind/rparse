@@ -22,6 +22,12 @@ where
         let mut output = O::default();
         let mut i = 0;
         loop {
+            if let Some(max) = self.max {
+                if i == max {
+                    return stream.ok(output);
+                }
+            }
+
             stream = match self.p.try_parse_lazy(stream) {
                 Ok((Some(result), stream)) => {
                     output.extend(std::iter::once(result));
@@ -31,12 +37,6 @@ where
                 Err((error, stream)) => {
                     if i < self.min {
                         return stream.err(error);
-                    } else {
-                        if let Some(max) = self.max {
-                            if i >= max {
-                                return stream.err(error);
-                            }
-                        }
                     }
                     return stream.ok(output);
                 }
