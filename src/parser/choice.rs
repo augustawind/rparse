@@ -92,6 +92,14 @@ where
     }
 }
 
+/// Wrap `p` so that if it would fail it returns `None` instead. Equivalent to
+/// [`parser.optional()`].
+///
+/// [`parser.optional()`]: Parser::optional
+pub fn optional<P: Parser>(p: P) -> Optional<P> {
+    Optional { p }
+}
+
 pub struct Must<P> {
     p: P,
 }
@@ -122,14 +130,6 @@ where
 
 pub fn must<P: Parser>(p: P) -> Must<P> {
     Must { p }
-}
-
-/// Wrap `p` so that if it would fail it returns `None` instead. Equivalent to
-/// [`parser.optional()`].
-///
-/// [`parser.optional()`]: Parser::optional
-pub fn optional<P: Parser>(p: P) -> Optional<P> {
-    Optional { p }
 }
 
 pub struct Or<L, R> {
