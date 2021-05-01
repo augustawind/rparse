@@ -36,7 +36,7 @@ fn boolean<S: Stream>() -> impl JSONParser<S> {
 
 fn number<S: Stream>() -> impl JSONParser<S> {
     let non_zero_digit = satisfy(|&b: &S::Item| b.is_ascii_digit() && b != b'0'.into());
-    let exponent = one_of(&[b'e', b'E'])
+    let exponent = one_of([b'e', b'E'])
         .then(optional(item(b'-')))
         .extend(many1(digit()));
 

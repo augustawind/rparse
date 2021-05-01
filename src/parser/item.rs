@@ -186,9 +186,13 @@ impl<S: Stream> Parser for OneOf<S> {
     }
 }
 
-pub fn one_of<'a, S: Stream>(items: &'a [u8]) -> OneOf<S> {
+pub fn one_of<'a, S, I>(items: I) -> OneOf<S>
+where
+    S: Stream,
+    I: AsRef<[u8]> + 'a,
+{
     OneOf {
-        items: items.into_iter().map(|&b| b.into()).collect(),
+        items: items.as_ref().into_iter().map(|&b| b.into()).collect(),
     }
 }
 
@@ -205,9 +209,13 @@ impl<S: Stream> Parser for NoneOf<S> {
     }
 }
 
-pub fn none_of<'a, S: Stream>(items: &'a [u8]) -> NoneOf<S> {
+pub fn none_of<'a, S, I>(items: I) -> NoneOf<S>
+where
+    S: Stream,
+    I: AsRef<[u8]> + 'a,
+{
     NoneOf {
-        items: items.into_iter().map(|&b| b.into()).collect(),
+        items: items.as_ref().into_iter().map(|&b| b.into()).collect(),
     }
 }
 
@@ -501,7 +509,7 @@ mod test {
 
     #[test]
     fn test_one_of() {
-        let mut parser = one_of(&[b'a', b'0']);
+        let mut parser = one_of([b'a', b'0']);
         test_parser!(IStr => char | parser, {
             "ab" => ok('a', ("b", 1)),
             "0" => ok('0', ("", 1)),
@@ -512,7 +520,7 @@ mod test {
 
     #[test]
     fn test_none_of() {
-        let mut parser = none_of(&[b'a', b'0']);
+        let mut parser = none_of([b'a', b'0']);
         test_parser!(IStr => char | parser, {
             "bc" => ok('b', ("c", 1)),
             "1" => ok('1', ("", 1)),
